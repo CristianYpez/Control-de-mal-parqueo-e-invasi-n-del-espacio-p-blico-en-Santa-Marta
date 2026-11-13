@@ -1,0 +1,122 @@
+[
+  {
+    "id": "MP-014",
+    "origen": "campo",
+    "fecha_hora": "2026-11-13T11:40",
+    "lat": 11.2418,
+    "lng": -74.2015,
+    "cuadra": "CR5-C14-C15",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "vehiculo_particular",
+    "foto": "",
+    "criticidad": {
+      "puntaje": 9,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-015",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-13T07:10",
+    "lat": 11.2426,
+    "lng": -74.2008,
+    "cuadra": "CR5-C14-C15",
+    "categoria": "invasion_anden",
+    "actor": "motocicleta",
+    "foto": "",
+    "criticidad": {
+      "puntaje": 8,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-016",
+    "origen": "campo",
+    "fecha_hora": "2026-11-13T18:20",
+    "lat": 11.2412,
+    "lng": -74.2021,
+    "cuadra": "CR5-C14-C15",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_particular",
+    "foto": "",
+    "criticidad": {
+      "puntaje": 9,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-017",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-13T10:00",
+    "lat": 11.2431,
+    "lng": -74.1994,
+    "cuadra": "CR5-C15-C16",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_carga",
+    "foto": "",
+    "criticidad": {
+      "puntaje": 7,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-018",
+    "origen": "campo",
+    "fecha_hora": "2026-11-13T12:15",
+    "lat": 11.2438,
+    "lng": -74.1989,
+    "cuadra": "CR5-C15-C16",
+    "categoria": "invasion_anden",
+    "actor": "vehiculo_carga",
+    "foto": "",
+    "criticidad": {
+      "puntaje": 8,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-019",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-13T09:10",
+    "lat": 11.2398,
+    "lng": -74.203,
+    "cuadra": "CR4-C14-C15",
+    "categoria": "invasion_anden",
+    "actor": "mobiliario_comercial",
+    "foto": "",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-020",
+    "origen": "campo",
+    "fecha_hora": "2026-11-13T08:30",
+    "lat": 11.2389,
+    "lng": -74.2041,
+    "cuadra": "CR3-C14-C15",
+    "categoria": "doble_fila",
+    "actor": "motocicleta",
+    "foto": "",
+    "criticidad": {
+      "puntaje": 5,
+      "nivel": "Medio"
+    }
+  },
+  {
+    "id": "MP-021",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-13T17:00",
+    "lat": 11.2444,
+    "lng": -74.1981,
+    "cuadra": "CR6-C14-C15",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "vehiculo_particular",
+    "foto": "",
+    "criticidad": {
+      "puntaje": 9,
+      "nivel": "Alto"
+    }
+  }
+]

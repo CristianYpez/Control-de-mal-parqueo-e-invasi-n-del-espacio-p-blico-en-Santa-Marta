@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Prototipo ciudadano para registrar y consultar situaciones de mal parqueo e invasión del espacio público en Santa Marta."
+    />
+    <title>Santa Marta en orden | Reportes ciudadanos</title>
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #17333a;
+        background: #f3f7f6;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        --verde: #126b5c;
+        --verde-oscuro: #0b5147;
+        --borde: #d3e1de;
+        --texto-suave: #49636a;
+        --superficie: #fff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button,
+      .boton {
+        min-height: 44px;
+        padding: 0.7rem 1rem;
+        border: 1px solid var(--verde);
+        border-radius: 0.65rem;
+        background: var(--verde);
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:hover,
+      .boton:hover {
+        background: var(--verde-oscuro);
+      }
+
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible,
+      select:focus-visible {
+        outline: 3px solid #e29a37;
+        outline-offset: 2px;
+      }
+
+      .encabezado {
+        padding: 1rem;
+        background: var(--verde-oscuro);
+        color: white;
+      }
+
+      .encabezado-contenido,
+      main {
+        width: min(100% - 2rem, 76rem);
+        margin-inline: auto;
+      }
+
+      .encabezado h1 {
+        margin: 0;
+        font-size: clamp(1.35rem, 5vw, 2rem);
+      }
+
+      .encabezado p {
+        margin: 0.35rem 0 0;
+        color: #d9efea;
+      }
+
+      main {
+        padding-block: 1rem 2rem;
+      }
+
+      .navegacion {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+        margin-bottom: 1rem;
+      }
+
+      .navegacion button {
+        border-color: var(--borde);
+        background: var(--superficie);
+        color: var(--verde-oscuro);
+      }
+
+      .navegacion button[aria-pressed="true"] {
+        border-color: var(--verde);
+        background: var(--verde);
+        color: white;
+      }
+
+      .panel {
+        padding: 1rem;
+        border: 1px solid var(--borde);
+        border-radius: 1rem;
+        background: var(--superficie);
+        box-shadow: 0 0.25rem 1rem rgb(18 64 58 / 5%);
+      }
+
+      .panel + .panel,
+      .seccion + .seccion {
+        margin-top: 1rem;
+      }
+
+      .panel h2,
+      .seccion h2 {
+        margin: 0 0 0.35rem;
+        font-size: 1.2rem;
+      }
+
+      .ayuda,
+      .privacidad,
+      .estado {
+        color: var(--texto-suave);
+        font-size: 0.9rem;
+      }
+
+      .formulario,
+      .filtros {
+        display: grid;
+        gap: 0.9rem;
+      }
+
+      .campo {
+        display: grid;
+        gap: 0.35rem;
+      }
+
+      .campo label,
+      .etiqueta {
+        font-weight: 700;
+      }
+
+      select,
+      input[type="file"] {
+        width: 100%;
+        min-height: 44px;
+        padding: 0.55rem;
+        border: 1px solid #9db6b1;
+        border-radius: 0.55rem;
+        background: white;
+        color: inherit;
+      }
+
+      .acciones-ubicacion,
+      .acciones-datos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+
+      .acciones-ubicacion button:nth-child(2),
+      .boton-secundario {
+        border-color: #9db6b1;
+        background: white;
+        color: var(--verde-oscuro);
+      }
+
+      .acciones-ubicacion button:nth-child(2):hover,
+      .boton-secundario:hover {
+        background: #eaf3f1;
+      }
+
+      .mapa {
+        min-height: 19rem;
+        height: 55vh;
+        max-height: 34rem;
+        margin-top: 0.8rem;
+        overflow: hidden;
+        border: 1px solid var(--borde);
+        border-radius: 0.75rem;
+        background: #e5efec;
+      }
+
+      .estado {
+        min-height: 1.4rem;
+        margin: 0.5rem 0 0;
+      }
+
+      .filtros {
+        grid-template-columns: 1fr;
+      }
+
+      .opcion-capa {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      .opcion-capa input {
+        width: 1.2rem;
+        height: 1.2rem;
+      }
+
+      .lista-resumen {
+        display: grid;
+        gap: 0.65rem;
+        padding-left: 1.25rem;
+      }
+
+      .nota-privacidad {
+        margin-top: 1.25rem;
+        padding: 0.85rem 1rem;
+        border-left: 4px solid #e29a37;
+        border-radius: 0.4rem;
+        background: #fff8eb;
+        color: #513f20;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (min-width: 42rem) {
+        .encabezado {
+          padding-block: 1.4rem;
+        }
+
+        main {
+          padding-block: 1.5rem 3rem;
+        }
+
+        .panel {
+          padding: 1.4rem;
+        }
+
+        .formulario,
+        .filtros {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .campo-ancho {
+          grid-column: 1 / -1;
+        }
+
+        .mapa {
+          height: 26rem;
+        }
+      }
+
+      @media print {
+        body {
+          background: white;
+          color: black;
+        }
+
+        .encabezado,
+        .navegacion,
+        #vista-captura,
+        #controles-tablero,
+        #tablero-mapa,
+        .nota-privacidad,
+        .pie {
+          display: none !important;
+        }
+
+        main,
+        #vista-tablero,
+        #resumen-operativo {
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          border: 0;
+          box-shadow: none;
+        }
+
+        #vista-tablero[hidden] {
+          display: block !important;
+        }
+
+        #resumen-operativo {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="encabezado">
+      <div class="encabezado-contenido">
+        <h1>Santa Marta en orden</h1>
+        <p>Reporta el mal parqueo y la invasión del espacio público.</p>
+      </div>
+    </header>
+
+    <main>
+      <nav class="navegacion" aria-label="Vistas principales">
+        <button id="boton-vista-captura" type="button" aria-controls="vista-captura" aria-pressed="true">
+          Hacer reporte
+        </button>
+        <button id="boton-vista-tablero" type="button" aria-controls="vista-tablero" aria-pressed="false">
+          Ver tablero
+        </button>
+      </nav>
+
+      <section id="vista-captura" aria-labelledby="titulo-captura">
+        <div class="panel">
+          <h2 id="titulo-captura">Nuevo reporte</h2>
+          <p class="ayuda">Completa los datos y marca la ubicación en el mapa. No escribas placas ni datos personales.</p>
+
+          <form id="formulario-reporte" class="formulario">
+            <div class="campo">
+              <label for="reporte-cuadra">Cuadra</label>
+              <select id="reporte-cuadra" name="cuadra" required>
+                <option value="">Selecciona la cuadra</option>
+              </select>
+            </div>
+
+            <div class="campo">
+              <label for="reporte-categoria">Situación observada</label>
+              <select id="reporte-categoria" name="categoria" required>
+                <option value="">Selecciona una situación</option>
+                <option value="doble_fila">Vehículo en doble fila</option>
+                <option value="bloqueo_rampa_cebra_paradero">Bloqueo de rampa, cebra o paradero</option>
+                <option value="invasion_anden">Invasión del andén</option>
+              </select>
+            </div>
+
+            <div class="campo">
+              <label for="reporte-actor">Tipo de actor</label>
+              <select id="reporte-actor" name="actor" required>
+                <option value="">Selecciona un tipo</option>
+                <option value="vehiculo_particular">Vehículo particular</option>
+                <option value="motocicleta">Motocicleta</option>
+                <option value="vehiculo_carga">Vehículo de carga</option>
+                <option value="mobiliario_comercial">Mobiliario comercial</option>
+              </select>
+            </div>
+
+            <div class="campo campo-ancho">
+              <span class="etiqueta">Ubicación del reporte</span>
+              <div class="acciones-ubicacion">
+                <button id="boton-geolocalizacion" type="button">Usar mi ubicación</button>
+                <button id="boton-limpiar-ubicacion" type="button">Quitar ubicación</button>
+              </div>
+              <p id="estado-ubicacion" class="estado" aria-live="polite">Toca el mapa o usa tu ubicación.</p>
+              <div
+                id="mapa-captura"
+                class="mapa"
+                role="application"
+                aria-label="Mapa para marcar la ubicación del reporte"
+              ></div>
+            </div>
+
+            <div class="campo campo-ancho">
+              <label for="reporte-foto">Foto (opcional)</label>
+              <input id="reporte-foto" name="foto" type="file" accept="image/*" />
+              <span class="ayuda">Evita incluir rostros, placas o información personal.</span>
+            </div>
+
+            <div class="campo campo-ancho">
+              <button type="submit">Guardar reporte</button>
+              <p id="estado-captura" class="estado" role="status" aria-live="polite"></p>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="vista-tablero" aria-labelledby="titulo-tablero" hidden>
+        <div id="controles-tablero" class="panel seccion">
+          <h2 id="titulo-tablero">Tablero operativo</h2>
+          <p class="ayuda">Filtra los reportes y consulta las cuadras con mayor criticidad.</p>
+
+          <div class="filtros">
+            <div class="campo">
+              <label for="filtro-cuadra">Cuadra</label>
+              <select id="filtro-cuadra">
+                <option value="">Todas las cuadras</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label for="filtro-franja">Franja horaria</label>
+              <select id="filtro-franja">
+                <option value="">Todas las franjas</option>
+                <option value="pico">Hora pico</option>
+                <option value="valle">Hora valle</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label for="filtro-categoria">Situación</label>
+              <select id="filtro-categoria">
+                <option value="">Todas las situaciones</option>
+                <option value="doble_fila">Doble fila</option>
+                <option value="bloqueo_rampa_cebra_paradero">Bloqueo de rampa, cebra o paradero</option>
+                <option value="invasion_anden">Invasión del andén</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label for="filtro-actor">Tipo de actor</label>
+              <select id="filtro-actor">
+                <option value="">Todos los tipos</option>
+                <option value="vehiculo_particular">Vehículo particular</option>
+                <option value="motocicleta">Motocicleta</option>
+                <option value="vehiculo_carga">Vehículo de carga</option>
+                <option value="mobiliario_comercial">Mobiliario comercial</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="opcion-capa" for="mostrar-puntos">
+            <input id="mostrar-puntos" type="checkbox" checked />
+            Mostrar puntos individuales
+          </label>
+
+          <div
+            id="mapa-tablero"
+            class="mapa"
+            role="application"
+            aria-label="Mapa de calor y reportes"
+          ></div>
+          <p id="estado-tablero" class="estado" role="status" aria-live="polite"></p>
+
+          <div class="acciones-datos">
+            <button id="boton-exportar" type="button">Descargar reportes JSON</button>
+            <button id="boton-importar" class="boton-secundario" type="button">Importar reportes JSON</button>
+            <input id="archivo-importar" type="file" accept="application/json,.json" hidden />
+            <button id="boton-imprimir" class="boton-secundario" type="button">Imprimir resumen</button>
+          </div>
+        </div>
+
+        <section id="resumen-operativo" class="panel seccion" aria-labelledby="titulo-resumen">
+          <h2 id="titulo-resumen">Prioridades por cuadra</h2>
+          <ol id="lista-resumen" class="lista-resumen">
+            <li class="ayuda">El resumen aparecerá cuando se carguen los reportes.</li>
+          </ol>
+        </section>
+      </section>
+
+      <aside class="nota-privacidad">
+        <strong>Privacidad:</strong> este prototipo no debe guardar ni mostrar placas, rostros ni datos personales.
+      </aside>
+    </main>
+
+    <footer class="pie encabezado">
+      <div class="encabezado-contenido">
+        Prototipo educativo · Santa Marta, Colombia
+      </div>
+    </footer>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script type="module" src="./captura.js"></script>
+  </body>
+</html>

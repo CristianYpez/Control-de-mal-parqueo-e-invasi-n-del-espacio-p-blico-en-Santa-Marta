@@ -1,0 +1,22 @@
+[
+  {
+    "id": "CR5-C14-C15",
+    "tipo": "arterial"
+  },
+  {
+    "id": "CR5-C15-C16",
+    "tipo": "arterial"
+  },
+  {
+    "id": "CR4-C14-C15",
+    "tipo": "secundaria"
+  },
+  {
+    "id": "CR3-C14-C15",
+    "tipo": "secundaria"
+  },
+  {
+    "id": "CR6-C14-C15",
+    "tipo": "arterial"
+  }
+]
