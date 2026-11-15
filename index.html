@@ -162,7 +162,7 @@
 
       .navegacion {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.6rem;
         margin-bottom: 1rem;
       }
@@ -321,6 +321,79 @@
         padding-left: 1.25rem;
       }
 
+      .estadisticas-resumen,
+      .estadisticas-graficas {
+        display: grid;
+        gap: 0.8rem;
+      }
+
+      .estadistica-kpi,
+      .grafica-estadistica {
+        min-width: 0;
+        padding: 1rem;
+        border: 1px solid var(--borde);
+        border-radius: 0.55rem;
+        background: var(--superficie);
+      }
+
+      .estadistica-kpi h3,
+      .grafica-estadistica h3 {
+        margin: 0 0 0.65rem;
+        font-size: 1rem;
+      }
+
+      .estadistica-kpi p {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+
+      .estadisticas-graficas {
+        margin-top: 1rem;
+      }
+
+      .lista-barras {
+        display: grid;
+        gap: 0.8rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .barra-estadistica-info {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.3rem;
+      }
+
+      .barra-estadistica-etiqueta {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-weight: 600;
+      }
+
+      .barra-estadistica-valor {
+        flex: 0 0 auto;
+        color: var(--texto-suave);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .barra-estadistica-pista {
+        height: 0.7rem;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--fondo-secundario);
+      }
+
+      .barra-estadistica-relleno {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--boton-fondo);
+      }
+
       .explorador-infracciones {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
@@ -446,9 +519,17 @@
           padding: 1.4rem;
         }
 
+        .navegacion {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
         .formulario,
         .filtros {
           grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .estadisticas-resumen {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
         }
 
         .campo-ancho {
@@ -461,6 +542,14 @@
       }
 
       @media (min-width: 64rem) {
+        .estadisticas-graficas {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grafica-estadistica:first-child {
+          grid-column: 1 / -1;
+        }
+
         .explorador-infracciones {
           grid-template-columns: minmax(0, 2.1fr) minmax(19rem, 0.9fr);
           gap: 1.25rem;
@@ -506,6 +595,7 @@
         .navegacion,
         #vista-captura,
         #vista-infracciones,
+        #vista-estadisticas,
         #controles-tablero,
         #tablero-mapa,
         .nota-privacidad,
@@ -569,6 +659,9 @@
         </button>
         <button id="boton-vista-infracciones" type="button" aria-controls="vista-infracciones" aria-pressed="false">
           Infracciones
+        </button>
+        <button id="boton-vista-estadisticas" type="button" aria-controls="vista-estadisticas" aria-pressed="false">
+          Estadísticas
         </button>
       </nav>
 
@@ -770,6 +863,47 @@
         </div>
       </section>
 
+      <section id="vista-estadisticas" aria-labelledby="titulo-estadisticas" hidden>
+        <div class="panel seccion">
+          <h2 id="titulo-estadisticas">Estadísticas de reportes</h2>
+          <p class="ayuda">Resumen de todos los reportes cargados, independiente de los filtros del tablero.</p>
+
+          <div class="estadisticas-resumen" aria-live="polite">
+            <article class="estadistica-kpi">
+              <h3>Total de reportes</h3>
+              <p id="estadistica-total">0</p>
+            </article>
+            <article class="estadistica-kpi">
+              <h3>Cuadra con más reportes</h3>
+              <p id="estadistica-lugar">Sin datos</p>
+            </article>
+            <article class="estadistica-kpi">
+              <h3>Actor más reportado</h3>
+              <p id="estadistica-actor">Sin datos</p>
+            </article>
+            <article class="estadistica-kpi">
+              <h3>Situación más reportada</h3>
+              <p id="estadistica-situacion">Sin datos</p>
+            </article>
+          </div>
+
+          <div class="estadisticas-graficas">
+            <section class="grafica-estadistica" aria-labelledby="titulo-grafica-cuadras">
+              <h3 id="titulo-grafica-cuadras">Reportes por cuadra</h3>
+              <ol id="grafica-cuadras" class="lista-barras"></ol>
+            </section>
+            <section class="grafica-estadistica" aria-labelledby="titulo-grafica-actores">
+              <h3 id="titulo-grafica-actores">Reportes por actor</h3>
+              <ol id="grafica-actores" class="lista-barras"></ol>
+            </section>
+            <section class="grafica-estadistica" aria-labelledby="titulo-grafica-situaciones">
+              <h3 id="titulo-grafica-situaciones">Reportes por situación</h3>
+              <ol id="grafica-situaciones" class="lista-barras"></ol>
+            </section>
+          </div>
+        </div>
+      </section>
+
       <aside class="nota-privacidad">
         <strong>Privacidad:</strong> este prototipo no debe guardar ni mostrar placas, rostros ni datos personales.
       </aside>
@@ -787,7 +921,7 @@
       crossorigin=""
     ></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    <script type="module" src="./captura.js?v=5"></script>
+    <script type="module" src="./captura.js?v=6"></script>
     <script>
       const botonTema = document.querySelector("#boton-tema");
       const temaGuardado = localStorage.getItem("santaMartaTema");

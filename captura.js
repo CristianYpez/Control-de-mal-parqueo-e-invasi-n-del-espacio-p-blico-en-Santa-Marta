@@ -23,12 +23,23 @@ const botonLimpiarUbicacion = document.querySelector("#boton-limpiar-ubicacion")
 const botonVistaCaptura = document.querySelector("#boton-vista-captura");
 const botonVistaTablero = document.querySelector("#boton-vista-tablero");
 const botonVistaInfracciones = document.querySelector("#boton-vista-infracciones");
+const botonVistaEstadisticas = document.querySelector("#boton-vista-estadisticas");
 const vistaCaptura = document.querySelector("#vista-captura");
 const vistaTablero = document.querySelector("#vista-tablero");
 const vistaInfracciones = document.querySelector("#vista-infracciones");
+const vistaEstadisticas = document.querySelector("#vista-estadisticas");
 const estadoTablero = document.querySelector("#estado-tablero");
 const listaResumen = document.querySelector("#lista-resumen");
 const listaInfracciones = document.querySelector("#lista-infracciones");
+const elementosEstadisticas = {
+  total: document.querySelector("#estadistica-total"),
+  cuadra: document.querySelector("#estadistica-lugar"),
+  actor: document.querySelector("#estadistica-actor"),
+  situacion: document.querySelector("#estadistica-situacion"),
+  cuadras: document.querySelector("#grafica-cuadras"),
+  actores: document.querySelector("#grafica-actores"),
+  situaciones: document.querySelector("#grafica-situaciones"),
+};
 const selectorArchivoImportar = document.querySelector("#archivo-importar");
 const controlesFiltros = {
   cuadra: document.querySelector("#filtro-cuadra"),
@@ -147,18 +158,102 @@ function obtenerReportesActuales() {
   return [...reportesPorId.values()];
 }
 
+function contarPor(reportes, campo, etiquetas = {}) {
+  const conteos = new Map();
+  for (const reporte of reportes) {
+    const codigo = reporte[campo] ?? "";
+    conteos.set(codigo, (conteos.get(codigo) ?? 0) + 1);
+  }
+
+  return [...conteos.entries()]
+    .map(([codigo, cantidad]) => ({
+      etiqueta: (etiquetas[codigo] ?? codigo) || "Sin especificar",
+      cantidad,
+    }))
+    .sort((a, b) => b.cantidad - a.cantidad || a.etiqueta.localeCompare(b.etiqueta, "es"));
+}
+
+function mostrarFrecuenciaMaxima(elemento, conteos) {
+  if (conteos.length === 0) {
+    elemento.textContent = "Sin datos";
+    return;
+  }
+
+  const cantidad = conteos[0].cantidad;
+  const ganadores = conteos
+    .filter((conteo) => conteo.cantidad === cantidad)
+    .map((conteo) => conteo.etiqueta);
+  const prefijo = ganadores.length > 1 ? "Empate: " : "";
+  const unidad = cantidad === 1 ? "reporte" : "reportes";
+  elemento.textContent = `${prefijo}${ganadores.join(", ")} · ${cantidad} ${unidad}`;
+}
+
+function renderizarBarras(elemento, conteos) {
+  elemento.replaceChildren();
+  if (conteos.length === 0) {
+    const vacio = document.createElement("li");
+    vacio.className = "ayuda";
+    vacio.textContent = "No hay reportes para mostrar.";
+    elemento.append(vacio);
+    return;
+  }
+
+  const maximo = conteos[0].cantidad;
+  for (const { etiqueta, cantidad } of conteos) {
+    const fila = document.createElement("li");
+    const informacion = document.createElement("div");
+    informacion.className = "barra-estadistica-info";
+
+    const nombre = document.createElement("span");
+    nombre.className = "barra-estadistica-etiqueta";
+    nombre.textContent = etiqueta;
+
+    const valor = document.createElement("span");
+    valor.className = "barra-estadistica-valor";
+    valor.textContent = `${cantidad} ${cantidad === 1 ? "reporte" : "reportes"}`;
+    informacion.append(nombre, valor);
+
+    const pista = document.createElement("div");
+    pista.className = "barra-estadistica-pista";
+    pista.setAttribute("aria-hidden", "true");
+    const relleno = document.createElement("span");
+    relleno.className = "barra-estadistica-relleno";
+    relleno.style.width = `${Math.max(4, (cantidad / maximo) * 100)}%`;
+    pista.append(relleno);
+
+    fila.append(informacion, pista);
+    elemento.append(fila);
+  }
+}
+
+function renderizarEstadisticas(reportes) {
+  const conteosCuadras = contarPor(reportes, "cuadra");
+  const conteosActores = contarPor(reportes, "actor", nombresActores);
+  const conteosSituaciones = contarPor(reportes, "categoria", nombresCategorias);
+
+  elementosEstadisticas.total.textContent = String(reportes.length);
+  mostrarFrecuenciaMaxima(elementosEstadisticas.cuadra, conteosCuadras);
+  mostrarFrecuenciaMaxima(elementosEstadisticas.actor, conteosActores);
+  mostrarFrecuenciaMaxima(elementosEstadisticas.situacion, conteosSituaciones);
+  renderizarBarras(elementosEstadisticas.cuadras, conteosCuadras);
+  renderizarBarras(elementosEstadisticas.actores, conteosActores);
+  renderizarBarras(elementosEstadisticas.situaciones, conteosSituaciones);
+}
+
 function publicarReportesActualizados() {
+  const reportes = obtenerReportesActuales();
   window.dispatchEvent(
     new CustomEvent("reportes:actualizados", {
       detail: {
-        reportes: obtenerReportesActuales(),
+        reportes,
         vias,
         criterios,
       },
     }),
   );
   actualizarTablero();
-  renderizarInfracciones(obtenerReportesActuales());
+  renderizarInfracciones(reportes);
+  renderizarEstadisticas(reportes);
 }
 
 function cargarOpcionesCuadra() {
@@ -177,12 +272,15 @@ function cambiarVista(nombreVista) {
   const mostrarCaptura = nombreVista === "captura";
   const mostrarTablero = nombreVista === "tablero";
   const mostrarInfracciones = nombreVista === "infracciones";
+  const mostrarEstadisticas = nombreVista === "estadisticas";
   vistaCaptura.hidden = !mostrarCaptura;
   vistaTablero.hidden = !mostrarTablero;
   vistaInfracciones.hidden = !mostrarInfracciones;
+  vistaEstadisticas.hidden = !mostrarEstadisticas;
   botonVistaCaptura.setAttribute("aria-pressed", String(mostrarCaptura));
   botonVistaTablero.setAttribute("aria-pressed", String(mostrarTablero));
   botonVistaInfracciones.setAttribute("aria-pressed", String(mostrarInfracciones));
+  botonVistaEstadisticas.setAttribute("aria-pressed", String(mostrarEstadisticas));
 
   if (mostrarCaptura) {
     window.dispatchEvent(new Event("tablero:desactivar"));
@@ -192,6 +290,8 @@ function cambiarVista(nombreVista) {
   } else if (mostrarInfracciones) {
     window.dispatchEvent(new Event("tablero:desactivar"));
     window.dispatchEvent(new Event("infracciones:activar"));
+  } else if (mostrarEstadisticas) {
+    window.dispatchEvent(new Event("tablero:desactivar"));
   }
 }
 
@@ -921,6 +1021,7 @@ botonLimpiarUbicacion.addEventListener("click", () => {
 botonVistaCaptura.addEventListener("click", () => cambiarVista("captura"));
 botonVistaTablero.addEventListener("click", () => cambiarVista("tablero"));
 botonVistaInfracciones.addEventListener("click", () => cambiarVista("infracciones"));
+botonVistaEstadisticas.addEventListener("click", () => cambiarVista("estadisticas"));
 for (const control of Object.values(controlesFiltros)) {
   control.addEventListener("change", actualizarTablero);
 }
