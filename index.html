@@ -353,45 +353,69 @@
         margin-top: 1rem;
       }
 
-      .lista-barras {
-        display: grid;
-        gap: 0.8rem;
-        margin: 0;
-        padding: 0;
-        list-style: none;
+      .grafica-cartesiana-contenedor {
+        max-width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
       }
 
-      .barra-estadistica-info {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.75rem;
-        margin-bottom: 0.3rem;
-      }
-
-      .barra-estadistica-etiqueta {
-        min-width: 0;
-        overflow-wrap: anywhere;
-        font-weight: 600;
-      }
-
-      .barra-estadistica-valor {
-        flex: 0 0 auto;
-        color: var(--texto-suave);
-        font-variant-numeric: tabular-nums;
-      }
-
-      .barra-estadistica-pista {
-        height: 0.7rem;
-        overflow: hidden;
-        border-radius: 999px;
-        background: var(--fondo-secundario);
-      }
-
-      .barra-estadistica-relleno {
+      .grafica-cartesiana {
         display: block;
-        height: 100%;
-        border-radius: inherit;
-        background: var(--boton-fondo);
+        max-width: none;
+        color: var(--texto);
+      }
+
+      .grafica-cartesiana-linea {
+        fill: none;
+        stroke: var(--boton-fondo);
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        animation: trazar-grafica 900ms ease-out both;
+      }
+
+      .grafica-cartesiana-punto {
+        fill: var(--superficie);
+        stroke: var(--boton-fondo);
+        stroke-width: 3;
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: aparecer-punto 420ms ease-out both;
+      }
+
+      .grafica-cartesiana-cuadricula {
+        stroke: var(--borde);
+        stroke-width: 1;
+      }
+
+      .grafica-cartesiana-eje {
+        stroke: var(--texto-suave);
+        stroke-width: 1.5;
+      }
+
+      .grafica-cartesiana-etiqueta {
+        fill: currentColor;
+        font-size: 11px;
+      }
+
+      @keyframes trazar-grafica {
+        from {
+          stroke-dashoffset: var(--longitud-grafica);
+        }
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+
+      @keyframes aparecer-punto {
+        from {
+          opacity: 0;
+          transform: scale(0.3);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
       }
 
       .explorador-infracciones {
@@ -890,15 +914,24 @@
           <div class="estadisticas-graficas">
             <section class="grafica-estadistica" aria-labelledby="titulo-grafica-cuadras">
               <h3 id="titulo-grafica-cuadras">Reportes por cuadra</h3>
-              <ol id="grafica-cuadras" class="lista-barras"></ol>
+              <p class="ayuda">Eje X: cuadras · Eje Y: número de reportes.</p>
+              <div class="grafica-cartesiana-contenedor" role="region" aria-label="Gráfica cartesiana de reportes por cuadra" tabindex="0">
+                <svg id="grafica-cuadras" class="grafica-cartesiana" role="img"></svg>
+              </div>
             </section>
             <section class="grafica-estadistica" aria-labelledby="titulo-grafica-actores">
               <h3 id="titulo-grafica-actores">Reportes por actor</h3>
-              <ol id="grafica-actores" class="lista-barras"></ol>
+              <p class="ayuda">Eje X: tipo de actor · Eje Y: número de reportes.</p>
+              <div class="grafica-cartesiana-contenedor" role="region" aria-label="Gráfica cartesiana de reportes por actor" tabindex="0">
+                <svg id="grafica-actores" class="grafica-cartesiana" role="img"></svg>
+              </div>
             </section>
             <section class="grafica-estadistica" aria-labelledby="titulo-grafica-situaciones">
               <h3 id="titulo-grafica-situaciones">Reportes por situación</h3>
-              <ol id="grafica-situaciones" class="lista-barras"></ol>
+              <p class="ayuda">Eje X: situación · Eje Y: número de reportes.</p>
+              <div class="grafica-cartesiana-contenedor" role="region" aria-label="Gráfica cartesiana de reportes por situación" tabindex="0">
+                <svg id="grafica-situaciones" class="grafica-cartesiana" role="img"></svg>
+              </div>
             </section>
           </div>
         </div>
@@ -921,7 +954,7 @@
       crossorigin=""
     ></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    <script type="module" src="./captura.js?v=6"></script>
+    <script type="module" src="./captura.js?v=7"></script>
     <script>
       const botonTema = document.querySelector("#boton-tema");
       const temaGuardado = localStorage.getItem("santaMartaTema");

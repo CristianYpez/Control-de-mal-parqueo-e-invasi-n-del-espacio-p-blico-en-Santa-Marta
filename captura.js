@@ -188,42 +188,191 @@ function mostrarFrecuenciaMaxima(elemento, conteos) {
   elemento.textContent = `${prefijo}${ganadores.join(", ")} · ${cantidad} ${unidad}`;
 }
 
-function renderizarBarras(elemento, conteos) {
+function crearElementoSVG(nombre, atributos = {}) {
+  const elemento = document.createElementNS("http://www.w3.org/2000/svg", nombre);
+  for (const [atributo, valor] of Object.entries(atributos)) {
+    elemento.setAttribute(atributo, String(valor));
+  }
+  return elemento;
+}
+
+function dividirEtiqueta(etiqueta, maximoCaracteres = 14) {
+  const palabras = etiqueta.split(/\s+/);
+  const lineas = [];
+  let linea = "";
+  for (const palabra of palabras) {
+    const siguiente = linea ? `${linea} ${palabra}` : palabra;
+    if (linea && siguiente.length > maximoCaracteres) {
+      lineas.push(linea);
+      linea = palabra;
+    } else {
+      linea = siguiente;
+    }
+  }
+  if (linea) {
+    lineas.push(linea);
+  }
+  return lineas;
+}
+
+function renderizarGraficaCartesiana(elemento, conteos, titulo, nombreEjeX) {
   elemento.replaceChildren();
+  const idTitulo = `${elemento.id}-titulo`;
+  const idDescripcion = `${elemento.id}-descripcion`;
+  const tituloSVG = crearElementoSVG("title", { id: idTitulo });
+  tituloSVG.textContent = titulo;
+  const descripcionSVG = crearElementoSVG("desc", { id: idDescripcion });
+  elemento.append(tituloSVG, descripcionSVG);
+  elemento.setAttribute("aria-labelledby", `${idTitulo} ${idDescripcion}`);
+
   if (conteos.length === 0) {
-    const vacio = document.createElement("li");
-    vacio.className = "ayuda";
+    const ancho = Math.max(elemento.parentElement.clientWidth, 360);
+    elemento.setAttribute("viewBox", `0 0 ${ancho} 180`);
+    elemento.setAttribute("width", String(ancho));
+    elemento.setAttribute("height", "180");
+    elemento.style.width = `${ancho}px`;
+    descripcionSVG.textContent = "No hay reportes para mostrar.";
+    const vacio = crearElementoSVG("text", {
+      x: ancho / 2,
+      y: 95,
+      "text-anchor": "middle",
+      class: "grafica-cartesiana-etiqueta",
+    });
     vacio.textContent = "No hay reportes para mostrar.";
     elemento.append(vacio);
     return;
   }
 
-  const maximo = conteos[0].cantidad;
-  for (const { etiqueta, cantidad } of conteos) {
-    const fila = document.createElement("li");
-    const informacion = document.createElement("div");
-    informacion.className = "barra-estadistica-info";
+  const margenIzquierdo = 58;
+  const margenDerecho = 22;
+  const margenSuperior = 24;
+  const alturaGrafica = 200;
+  const etiquetas = conteos.map(({ etiqueta }) => dividirEtiqueta(etiqueta));
+  const maximoLineas = Math.max(...etiquetas.map((lineas) => lineas.length));
+  const margenInferior = 26 + maximoLineas * 14;
+  const alto = margenSuperior + alturaGrafica + margenInferior;
+  const anchoEtiqueta = Math.max(...conteos.map(({ etiqueta }) => etiqueta.length));
+  const espacioPuntos = Math.max(108, Math.min(170, anchoEtiqueta * 5 + 28));
+  const anchoMinimo =
+    margenIzquierdo +
+    margenDerecho +
+    Math.max(160, (conteos.length - 1) * espacioPuntos);
+  const ancho = Math.max(elemento.parentElement.clientWidth, anchoMinimo);
+  const anchoTrazado = ancho - margenIzquierdo - margenDerecho;
+  const altoTrazado = alturaGrafica;
+  const yInferior = margenSuperior + altoTrazado;
+  const maximo = Math.max(...conteos.map(({ cantidad }) => cantidad));
+  const paso = Math.max(1, Math.ceil(maximo / 4));
+  const maximoEje = Math.max(paso, Math.ceil(maximo / paso) * paso);
+  const posicionesX = conteos.map((_, indice) =>
+    conteos.length === 1
+      ? margenIzquierdo + anchoTrazado / 2
+      : margenIzquierdo + (indice * anchoTrazado) / (conteos.length - 1),
+  );
+  const posicionesY = conteos.map(
+    ({ cantidad }) => yInferior - (cantidad / maximoEje) * altoTrazado,
+  );
 
-    const nombre = document.createElement("span");
-    nombre.className = "barra-estadistica-etiqueta";
-    nombre.textContent = etiqueta;
+  elemento.setAttribute("viewBox", `0 0 ${ancho} ${alto}`);
+  elemento.setAttribute("width", String(ancho));
+  elemento.setAttribute("height", String(alto));
+  elemento.style.width = `${ancho}px`;
+  descripcionSVG.textContent =
+    `Eje X: ${nombreEjeX}. Eje Y: número de reportes. ` +
+    conteos.map(({ etiqueta, cantidad }) => `${etiqueta}: ${cantidad}`).join("; ");
 
-    const valor = document.createElement("span");
-    valor.className = "barra-estadistica-valor";
-    valor.textContent = `${cantidad} ${cantidad === 1 ? "reporte" : "reportes"}`;
-    informacion.append(nombre, valor);
-
-    const pista = document.createElement("div");
-    pista.className = "barra-estadistica-pista";
-    pista.setAttribute("aria-hidden", "true");
-    const relleno = document.createElement("span");
-    relleno.className = "barra-estadistica-relleno";
-    relleno.style.width = `${Math.max(4, (cantidad / maximo) * 100)}%`;
-    pista.append(relleno);
-
-    fila.append(informacion, pista);
-    elemento.append(fila);
+  for (let valor = 0; valor <= maximoEje; valor += paso) {
+    const y = yInferior - (valor / maximoEje) * altoTrazado;
+    const lineaCuadricula = crearElementoSVG("line", {
+      x1: margenIzquierdo,
+      y1: y,
+      x2: ancho - margenDerecho,
+      y2: y,
+      class: "grafica-cartesiana-cuadricula",
+    });
+    const etiquetaY = crearElementoSVG("text", {
+      x: margenIzquierdo - 10,
+      y: y + 4,
+      "text-anchor": "end",
+      class: "grafica-cartesiana-etiqueta",
+    });
+    etiquetaY.textContent = new Intl.NumberFormat("es-CO").format(valor);
+    elemento.append(lineaCuadricula, etiquetaY);
   }
+
+  const ejeY = crearElementoSVG("line", {
+    x1: margenIzquierdo,
+    y1: margenSuperior,
+    x2: margenIzquierdo,
+    y2: yInferior,
+    class: "grafica-cartesiana-eje",
+  });
+  const ejeX = crearElementoSVG("line", {
+    x1: margenIzquierdo,
+    y1: yInferior,
+    x2: ancho - margenDerecho,
+    y2: yInferior,
+    class: "grafica-cartesiana-eje",
+  });
+  const tituloEjeY = crearElementoSVG("text", {
+    x: 15,
+    y: margenSuperior + altoTrazado / 2,
+    "text-anchor": "middle",
+    class: "grafica-cartesiana-etiqueta",
+    transform: `rotate(-90 15 ${margenSuperior + altoTrazado / 2})`,
+  });
+  tituloEjeY.textContent = "Número de reportes";
+  elemento.append(ejeY, ejeX, tituloEjeY);
+
+  for (let indice = 0; indice < conteos.length; indice += 1) {
+    const marcaX = crearElementoSVG("line", {
+      x1: posicionesX[indice],
+      y1: yInferior,
+      x2: posicionesX[indice],
+      y2: yInferior + 5,
+      class: "grafica-cartesiana-eje",
+    });
+    const etiquetaX = crearElementoSVG("text", {
+      x: posicionesX[indice],
+      y: yInferior + 18,
+      "text-anchor": "middle",
+      class: "grafica-cartesiana-etiqueta",
+    });
+    etiquetas[indice].forEach((linea, numeroLinea) => {
+      const tramo = crearElementoSVG("tspan", {
+        x: posicionesX[indice],
+        dy: numeroLinea === 0 ? 0 : 13,
+      });
+      tramo.textContent = linea;
+      etiquetaX.append(tramo);
+    });
+    elemento.append(marcaX, etiquetaX);
+  }
+
+  if (conteos.length > 1) {
+    const linea = crearElementoSVG("polyline", {
+      points: posicionesX.map((x, indice) => `${x},${posicionesY[indice]}`).join(" "),
+      class: "grafica-cartesiana-linea",
+    });
+    elemento.append(linea);
+    const longitud = linea.getTotalLength();
+    linea.style.strokeDasharray = String(longitud);
+    linea.style.setProperty("--longitud-grafica", String(longitud));
+  }
+
+  conteos.forEach(({ etiqueta, cantidad }, indice) => {
+    const punto = crearElementoSVG("circle", {
+      cx: posicionesX[indice],
+      cy: posicionesY[indice],
+      r: 5,
+      class: "grafica-cartesiana-punto",
+    });
+    punto.style.animationDelay = `${Math.min(indice * 80, 1200)}ms`;
+    const detalle = crearElementoSVG("title");
+    detalle.textContent = `${etiqueta}: ${cantidad} ${cantidad === 1 ? "reporte" : "reportes"}`;
+    punto.append(detalle);
+    elemento.append(punto);
+  });
 }
 
 function renderizarEstadisticas(reportes) {
@@ -235,9 +384,24 @@ function renderizarEstadisticas(reportes) {
   mostrarFrecuenciaMaxima(elementosEstadisticas.cuadra, conteosCuadras);
   mostrarFrecuenciaMaxima(elementosEstadisticas.actor, conteosActores);
   mostrarFrecuenciaMaxima(elementosEstadisticas.situacion, conteosSituaciones);
-  renderizarBarras(elementosEstadisticas.cuadras, conteosCuadras);
-  renderizarBarras(elementosEstadisticas.actores, conteosActores);
-  renderizarBarras(elementosEstadisticas.situaciones, conteosSituaciones);
+  renderizarGraficaCartesiana(
+    elementosEstadisticas.cuadras,
+    conteosCuadras,
+    "Gráfica cartesiana de reportes por cuadra",
+    "cuadra",
+  );
+  renderizarGraficaCartesiana(
+    elementosEstadisticas.actores,
+    conteosActores,
+    "Gráfica cartesiana de reportes por actor",
+    "tipo de actor",
+  );
+  renderizarGraficaCartesiana(
+    elementosEstadisticas.situaciones,
+    conteosSituaciones,
+    "Gráfica cartesiana de reportes por situación",
+    "situación",
+  );
 }
 
 function publicarReportesActualizados() {
@@ -273,10 +437,14 @@ function cambiarVista(nombreVista) {
   const mostrarTablero = nombreVista === "tablero";
   const mostrarInfracciones = nombreVista === "infracciones";
   const mostrarEstadisticas = nombreVista === "estadisticas";
+  const entrarEstadisticas = mostrarEstadisticas && vistaEstadisticas.hidden;
   vistaCaptura.hidden = !mostrarCaptura;
   vistaTablero.hidden = !mostrarTablero;
   vistaInfracciones.hidden = !mostrarInfracciones;
   vistaEstadisticas.hidden = !mostrarEstadisticas;
+  if (entrarEstadisticas) {
+    renderizarEstadisticas(obtenerReportesActuales());
+  }
   botonVistaCaptura.setAttribute("aria-pressed", String(mostrarCaptura));
   botonVistaTablero.setAttribute("aria-pressed", String(mostrarTablero));
   botonVistaInfracciones.setAttribute("aria-pressed", String(mostrarInfracciones));
