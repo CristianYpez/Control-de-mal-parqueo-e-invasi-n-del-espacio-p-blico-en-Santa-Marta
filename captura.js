@@ -674,6 +674,37 @@ function renderizarResumen(reportes) {
       ? `Regla aplicada: ${prioridad.regla}`
       : "Regla aplicada: ninguna; no se cumplieron las condiciones.";
     elemento.append(regla);
+
+    const fotosDeCuadra = reportes
+      .filter(
+        (reporte) =>
+          reporte.cuadra === prioridad.cuadra &&
+          typeof reporte.foto === "string" &&
+          reporte.foto.length > 0,
+      )
+      .sort((primero, segundo) => segundo.fecha_hora.localeCompare(primero.fecha_hora));
+    if (fotosDeCuadra.length > 0) {
+      const tituloFotos = document.createElement("p");
+      tituloFotos.className = "ayuda";
+      tituloFotos.textContent = `Fotos censuradas (${fotosDeCuadra.length})`;
+      elemento.append(tituloFotos);
+
+      const galeria = document.createElement("div");
+      galeria.className = "resumen-fotos";
+      galeria.setAttribute("role", "group");
+      galeria.setAttribute("aria-label", `Fotos censuradas de ${prioridad.cuadra}`);
+      galeria.style.display = "flex";
+      galeria.style.gap = "0.5rem";
+      galeria.style.maxWidth = "100%";
+      galeria.style.marginTop = "0.4rem";
+      galeria.style.overflowX = "auto";
+
+      for (const reporte of fotosDeCuadra) {
+        agregarFotoInfraccion(galeria, reporte);
+      }
+      elemento.append(galeria);
+    }
+
     listaResumen.append(elemento);
   }
 }
@@ -689,6 +720,9 @@ function agregarDetalleInfraccion(contenedor, etiqueta, valor) {
 function agregarFotoInfraccion(tarjeta, reporte) {
   const figura = document.createElement("figure");
   figura.className = "foto-infraccion";
+  figura.style.flex = "0 0 220px";
+  figura.style.maxWidth = "80%";
+  figura.style.margin = "0";
   let fuente = "";
   if (/^data:image\/(?:jpeg|png|webp);base64,/i.test(reporte.foto)) {
     fuente = reporte.foto;
@@ -710,6 +744,12 @@ function agregarFotoInfraccion(tarjeta, reporte) {
     imagen.alt = `Foto censurada del reporte ${reporte.id}`;
     imagen.loading = "lazy";
     imagen.referrerPolicy = "no-referrer";
+    imagen.style.display = "block";
+    imagen.style.width = "100%";
+    imagen.style.height = "140px";
+    imagen.style.maxWidth = "100%";
+    imagen.style.objectFit = "contain";
+    imagen.style.borderRadius = "8px";
     imagen.addEventListener("error", () => {
       figura.replaceChildren();
       pie.textContent = "No se pudo cargar la foto del reporte.";
@@ -1347,7 +1387,7 @@ function guardarReporte(evento) {
       lat: ubicacionSeleccionada.lat,
       lng: ubicacionSeleccionada.lng,
       cuadra: datos.get("cuadra"),
-      direccion: datos.get("direccion"),
+      direccion: datos.get("direccion") ?? "",
       categoria: datos.get("categoria"),
       actor: datos.get("actor"),
       foto: archivoFoto ? fotoConfirmada : "",
@@ -1362,6 +1402,8 @@ function guardarReporte(evento) {
     for (const boton of [...botonesCategoria, ...botonesActor]) {
       boton.setAttribute("aria-pressed", "false");
     }
+    document.querySelector("#reporte-categoria").value = "";
+    document.querySelector("#reporte-actor").value = "";
     actualizarVistaCriticidad();
     mostrarEstado(estadoCaptura, `Reporte ${reporte.id} guardado en este dispositivo.`);
   } catch (error) {
