@@ -1,7 +1,7 @@
-const CENTRO_SANTA_MARTA = [11.208, -74.18];
+const CENTRO_SANTA_MARTA = [11.195, -74.19];
 const NIVEL_ZOOM_INICIAL = 12;
 
-// Perímetro de trabajo ampliado hacia la vía de Minca; no es un límite oficial.
+// Perímetro de trabajo ampliado hacia Minca, Gaira y Pozos Colorados; no es oficial.
 const PERIMETRO_APROXIMADO = [
   [11.218, -74.185],
   [11.211, -74.172],
@@ -16,7 +16,17 @@ const PERIMETRO_APROXIMADO = [
   [11.16, -74.17],
   [11.178, -74.19],
   [11.2, -74.21],
-  [11.218, -74.221],
+  [11.195, -74.207],
+  [11.18, -74.205],
+  [11.16, -74.203],
+  [11.14, -74.203],
+  [11.12, -74.209],
+  [11.118, -74.231],
+  [11.13, -74.248],
+  [11.15, -74.252],
+  [11.174, -74.251],
+  [11.198, -74.246],
+  [11.218, -74.238],
   [11.229, -74.237],
   [11.249, -74.238],
   [11.266, -74.219],
