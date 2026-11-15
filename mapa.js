@@ -1,16 +1,27 @@
-const CENTRO_SANTA_MARTA = [11.24, -74.20];
-const NIVEL_ZOOM_INICIAL = 13;
+const CENTRO_SANTA_MARTA = [11.208, -74.18];
+const NIVEL_ZOOM_INICIAL = 12;
 
-// Perímetro ilustrativo del área urbana; no reemplaza un límite oficial.
+// Perímetro de trabajo ampliado hacia la vía de Minca; no es un límite oficial.
 const PERIMETRO_APROXIMADO = [
-  [11.218, -74.221],
   [11.218, -74.185],
-  [11.232, -74.171],
-  [11.252, -74.172],
-  [11.267, -74.188],
-  [11.266, -74.219],
-  [11.249, -74.238],
+  [11.211, -74.172],
+  [11.202, -74.156],
+  [11.193, -74.149],
+  [11.184, -74.145],
+  [11.174, -74.139],
+  [11.163, -74.132],
+  [11.15, -74.13],
+  [11.14, -74.138],
+  [11.148, -74.153],
+  [11.16, -74.17],
+  [11.178, -74.19],
+  [11.2, -74.21],
+  [11.218, -74.221],
   [11.229, -74.237],
+  [11.249, -74.238],
+  [11.266, -74.219],
+  [11.267, -74.188],
+  [11.252, -74.172],
 ];
 
 const mapaCapturaElemento = document.querySelector("#mapa-captura");

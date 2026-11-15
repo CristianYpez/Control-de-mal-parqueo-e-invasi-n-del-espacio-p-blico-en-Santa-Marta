@@ -19,14 +19,40 @@
       :root {
         color-scheme: light;
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: #171717;
-        background: #f4f4f4;
         font-synthesis: none;
         text-rendering: optimizeLegibility;
         --negro: #111;
+        --fondo: #f4f4f4;
+        --texto: #171717;
         --borde: #d4d4d4;
         --texto-suave: #626262;
         --superficie: #fff;
+        --boton-fondo: #111;
+        --boton-texto: #fff;
+        --campo-fondo: #fff;
+        --borde-campo: #aaa;
+        --fondo-secundario: #eee;
+        --fondo-privacidad: #e9e9e9;
+        --texto-privacidad: #252525;
+        color: var(--texto);
+        background: var(--fondo);
+      }
+
+      :root[data-tema="oscuro"] {
+        color-scheme: dark;
+        --negro: #f4f4f4;
+        --fondo: #151515;
+        --texto: #f1f1f1;
+        --borde: #414141;
+        --texto-suave: #b7b7b7;
+        --superficie: #202020;
+        --boton-fondo: #f1f1f1;
+        --boton-texto: #111;
+        --campo-fondo: #292929;
+        --borde-campo: #555;
+        --fondo-secundario: #333;
+        --fondo-privacidad: #242424;
+        --texto-privacidad: #e5e5e5;
       }
 
       * {
@@ -36,7 +62,8 @@
       body {
         min-width: 320px;
         margin: 0;
-        background: #f4f4f4;
+        background: var(--fondo);
+        color: var(--texto);
       }
 
       button,
@@ -51,8 +78,8 @@
         padding: 0.7rem 1rem;
         border: 1px solid var(--negro);
         border-radius: 0.45rem;
-        background: var(--negro);
-        color: white;
+        background: var(--boton-fondo);
+        color: var(--boton-texto);
         font-weight: 700;
         cursor: pointer;
         transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
@@ -60,8 +87,9 @@
 
       button:hover,
       .boton:hover {
-        border-color: #444;
-        background: #444;
+        border-color: #666;
+        background: var(--fondo-secundario);
+        color: var(--texto);
       }
 
       button:focus-visible,
@@ -85,6 +113,13 @@
         margin-inline: auto;
       }
 
+      .encabezado-contenido {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
       .encabezado h1 {
         margin: 0;
         font-size: clamp(1.35rem, 5vw, 2rem);
@@ -94,6 +129,19 @@
       .encabezado p {
         margin: 0.35rem 0 0;
         color: #c9c9c9;
+      }
+
+      .boton-tema {
+        flex: 0 0 auto;
+        border-color: #777;
+        background: transparent;
+        color: #fff;
+      }
+
+      .boton-tema:hover {
+        border-color: #aaa;
+        background: #333;
+        color: #fff;
       }
 
       main {
@@ -110,13 +158,13 @@
       .navegacion button {
         border-color: var(--borde);
         background: var(--superficie);
-        color: var(--negro);
+        color: var(--texto);
       }
 
       .navegacion button[aria-pressed="true"] {
-        border-color: var(--negro);
-        background: var(--negro);
-        color: white;
+        border-color: var(--boton-fondo);
+        background: var(--boton-fondo);
+        color: var(--boton-texto);
       }
 
       .panel {
@@ -167,10 +215,10 @@
         width: 100%;
         min-height: 44px;
         padding: 0.55rem;
-        border: 1px solid #aaa;
+        border: 1px solid var(--borde-campo);
         border-radius: 0.4rem;
-        background: white;
-        color: inherit;
+        background: var(--campo-fondo);
+        color: var(--texto);
       }
 
       .acciones-ubicacion,
@@ -182,16 +230,16 @@
 
       .acciones-ubicacion button:nth-child(2),
       .boton-secundario {
-        border-color: #aaa;
-        background: white;
-        color: var(--negro);
+        border-color: var(--borde-campo);
+        background: var(--superficie);
+        color: var(--texto);
       }
 
       .acciones-ubicacion button:nth-child(2):hover,
       .boton-secundario:hover {
         border-color: #777;
-        background: #eee;
-        color: var(--negro);
+        background: var(--fondo-secundario);
+        color: var(--texto);
       }
 
       .mapa {
@@ -203,7 +251,6 @@
         border: 1px solid var(--borde);
         border-radius: 0.5rem;
         background: #e5e5e5;
-        filter: grayscale(1);
       }
 
       .estado {
@@ -239,8 +286,8 @@
         padding: 0.85rem 1rem;
         border-left: 4px solid var(--negro);
         border-radius: 0.25rem;
-        background: #e9e9e9;
-        color: #252525;
+        background: var(--fondo-privacidad);
+        color: var(--texto-privacidad);
       }
 
       .pie {
@@ -291,7 +338,22 @@
         }
       }
 
+      @media (max-width: 28rem) {
+        .encabezado-contenido {
+          align-items: flex-start;
+        }
+
+        .boton-tema {
+          padding-inline: 0.65rem;
+          font-size: 0.9rem;
+        }
+      }
+
       @media print {
+        :root {
+          color-scheme: light;
+        }
+
         body {
           background: white;
           color: black;
@@ -323,6 +385,8 @@
 
         #resumen-operativo {
           display: block;
+          background: white;
+          color: black;
         }
       }
 
@@ -341,8 +405,13 @@
   <body>
     <header class="encabezado">
       <div class="encabezado-contenido">
-        <h1>Santa Marta en orden</h1>
-        <p>Reporta el mal parqueo y la invasión del espacio público.</p>
+        <div>
+          <h1>Santa Marta en orden</h1>
+          <p>Reporta el mal parqueo y la invasión del espacio público.</p>
+        </div>
+        <button id="boton-tema" class="boton-tema" type="button" aria-pressed="false">
+          Modo oscuro
+        </button>
       </div>
     </header>
 
@@ -507,6 +576,34 @@
     ></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script type="module" src="./captura.js"></script>
+    <script>
+      const botonTema = document.querySelector("#boton-tema");
+      const temaGuardado = localStorage.getItem("santaMartaTema");
+      const temaInicial =
+        ["claro", "oscuro"].includes(temaGuardado)
+          ? temaGuardado
+          : window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "oscuro"
+            : "claro";
+
+      function aplicarTema(tema) {
+        const esOscuro = tema === "oscuro";
+        document.documentElement.dataset.tema = tema;
+        botonTema.textContent = esOscuro ? "Modo claro" : "Modo oscuro";
+        botonTema.setAttribute("aria-pressed", String(esOscuro));
+        botonTema.setAttribute(
+          "aria-label",
+          esOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro",
+        );
+      }
+
+      aplicarTema(temaInicial);
+      botonTema.addEventListener("click", () => {
+        const temaNuevo = document.documentElement.dataset.tema === "oscuro" ? "claro" : "oscuro";
+        localStorage.setItem("santaMartaTema", temaNuevo);
+        aplicarTema(temaNuevo);
+      });
+    </script>
     <script>
       const seccionesAnimadas = document.querySelectorAll(".panel, .nota-privacidad");
       const reducirMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
