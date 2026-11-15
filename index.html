@@ -5,801 +5,283 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Prototipo ciudadano para registrar y consultar situaciones de mal parqueo e invasión del espacio público en Santa Marta."
+      content="Prototipo para reportar y consultar mal parqueo e invasión del espacio público en Santa Marta."
     />
-    <title>Santa Marta en orden | Reportes ciudadanos</title>
+    <meta name="theme-color" content="#F5F2EA" />
+    <title>Control de mal parqueo en Santa Marta</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
-    <style>
-      :root {
-        color-scheme: light;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        font-synthesis: none;
-        text-rendering: optimizeLegibility;
-        --negro: #111;
-        --fondo: #f4f4f4;
-        --texto: #171717;
-        --borde: #d4d4d4;
-        --texto-suave: #626262;
-        --superficie: #fff;
-        --boton-fondo: #111;
-        --boton-texto: #fff;
-        --campo-fondo: #fff;
-        --borde-campo: #aaa;
-        --fondo-secundario: #eee;
-        --fondo-privacidad: #e9e9e9;
-        --texto-privacidad: #252525;
-        --fondo-cabecera: #111;
-        --texto-cabecera: #fff;
-        --texto-cabecera-secundario: #c9c9c9;
-        --borde-cabecera: #333;
-        --fondo-boton-tema-hover: #333;
-        --borde-boton-tema: #777;
-        color: var(--texto);
-        background: var(--fondo);
-      }
-
-      :root[data-tema="oscuro"] {
-        color-scheme: dark;
-        --negro: #f4f4f4;
-        --fondo: #151515;
-        --texto: #f1f1f1;
-        --borde: #414141;
-        --texto-suave: #b7b7b7;
-        --superficie: #202020;
-        --boton-fondo: #f1f1f1;
-        --boton-texto: #111;
-        --campo-fondo: #292929;
-        --borde-campo: #555;
-        --fondo-secundario: #333;
-        --fondo-privacidad: #242424;
-        --texto-privacidad: #e5e5e5;
-        --fondo-cabecera: #202020;
-        --texto-cabecera: #f5f5f5;
-        --texto-cabecera-secundario: #c5c5c5;
-        --borde-cabecera: #444;
-        --fondo-boton-tema-hover: #383838;
-        --borde-boton-tema: #888;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        min-width: 320px;
-        margin: 0;
-        background: var(--fondo);
-        color: var(--texto);
-      }
-
-      button,
-      input,
-      select {
-        font: inherit;
-      }
-
-      button,
-      .boton {
-        min-height: 44px;
-        padding: 0.7rem 1rem;
-        border: 1px solid var(--negro);
-        border-radius: 0.45rem;
-        background: var(--boton-fondo);
-        color: var(--boton-texto);
-        font-weight: 700;
-        cursor: pointer;
-        transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
-      }
-
-      button:hover,
-      .boton:hover {
-        border-color: #666;
-        background: var(--fondo-secundario);
-        color: var(--texto);
-      }
-
-      button:focus-visible,
-      a:focus-visible,
-      input:focus-visible,
-      select:focus-visible {
-        outline: 3px solid #666;
-        outline-offset: 2px;
-      }
-
-      .encabezado {
-        padding: 1.5rem 1rem;
-        border-bottom: 1px solid var(--borde-cabecera);
-        background: var(--fondo-cabecera);
-        color: var(--texto-cabecera);
-      }
-
-      .encabezado-contenido,
-      main {
-        width: min(100% - 2rem, 76rem);
-        margin-inline: auto;
-      }
-
-      .encabezado-contenido {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-      }
-
-      .encabezado h1 {
-        margin: 0;
-        font-size: clamp(1.35rem, 5vw, 2rem);
-        letter-spacing: -0.04em;
-      }
-
-      .encabezado p {
-        margin: 0.35rem 0 0;
-        color: var(--texto-cabecera-secundario);
-      }
-
-      .boton-tema {
-        flex: 0 0 auto;
-        border-color: var(--borde-boton-tema);
-        background: transparent;
-        color: var(--texto-cabecera);
-      }
-
-      .boton-tema:hover {
-        border-color: var(--texto-cabecera-secundario);
-        background: var(--fondo-boton-tema-hover);
-        color: var(--texto-cabecera);
-      }
-
-      main {
-        padding-block: 1.5rem 3rem;
-      }
-
-      .navegacion {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.6rem;
-        margin-bottom: 1rem;
-      }
-
-      .navegacion button {
-        border-color: var(--borde);
-        background: var(--superficie);
-        color: var(--texto);
-      }
-
-      .navegacion button[aria-pressed="true"] {
-        border-color: var(--boton-fondo);
-        background: var(--boton-fondo);
-        color: var(--boton-texto);
-      }
-
-      .panel {
-        padding: 1.2rem;
-        border: 1px solid var(--borde);
-        border-radius: 0.7rem;
-        background: var(--superficie);
-        box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 4%);
-      }
-
-      .panel + .panel,
-      .seccion + .seccion {
-        margin-top: 1rem;
-      }
-
-      .panel h2,
-      .seccion h2 {
-        margin: 0 0 0.35rem;
-        font-size: 1.2rem;
-        letter-spacing: -0.025em;
-      }
-
-      .ayuda,
-      .privacidad,
-      .estado {
-        color: var(--texto-suave);
-        font-size: 0.9rem;
-      }
-
-      .formulario,
-      .filtros {
-        display: grid;
-        gap: 0.9rem;
-      }
-
-      .campo {
-        display: grid;
-        gap: 0.35rem;
-      }
-
-      .campo label,
-      .etiqueta {
-        font-weight: 700;
-      }
-
-      select,
-      input:not([type="file"]):not([type="checkbox"]),
-      input[type="file"] {
-        width: 100%;
-        min-height: 44px;
-        padding: 0.55rem;
-        border: 1px solid var(--borde-campo);
-        border-radius: 0.4rem;
-        background: var(--campo-fondo);
-        color: var(--texto);
-      }
-
-      .acciones-ubicacion,
-      .acciones-datos {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.6rem;
-      }
-
-      .visor-censura {
-        position: relative;
-        width: fit-content;
-        max-width: 100%;
-        overflow: hidden;
-        border: 1px solid var(--borde);
-        border-radius: 0.4rem;
-        background: #111;
-      }
-
-      .visor-censura canvas {
-        display: block;
-        max-width: 100%;
-        height: auto;
-        cursor: crosshair;
-        touch-action: none;
-      }
-
-      .marco-seleccion-censura {
-        position: absolute;
-        display: none;
-        border: 2px dashed white;
-        outline: 1px solid #111;
-        background: rgb(255 255 255 / 15%);
-        pointer-events: none;
-      }
-
-      .acciones-ubicacion button:nth-child(2),
-      .boton-secundario {
-        border-color: var(--borde-campo);
-        background: var(--superficie);
-        color: var(--texto);
-      }
-
-      .acciones-ubicacion button:nth-child(2):hover,
-      .boton-secundario:hover {
-        border-color: #777;
-        background: var(--fondo-secundario);
-        color: var(--texto);
-      }
-
-      .mapa {
-        min-height: 19rem;
-        height: 55vh;
-        max-height: 34rem;
-        margin-top: 0.8rem;
-        overflow: hidden;
-        border: 1px solid var(--borde);
-        border-radius: 0.5rem;
-        background: #e5e5e5;
-      }
-
-      .estado {
-        min-height: 1.4rem;
-        margin: 0.5rem 0 0;
-      }
-
-      .filtros {
-        grid-template-columns: 1fr;
-      }
-
-      .opcion-capa {
-        display: inline-flex;
-        min-height: 44px;
-        align-items: center;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-      }
-
-      .opcion-capa input {
-        width: 1.2rem;
-        height: 1.2rem;
-      }
-
-      .lista-resumen {
-        display: grid;
-        gap: 0.65rem;
-        padding-left: 1.25rem;
-      }
-
-      .estadisticas-resumen,
-      .estadisticas-graficas {
-        display: grid;
-        gap: 0.8rem;
-      }
-
-      .estadistica-kpi,
-      .grafica-estadistica {
-        min-width: 0;
-        padding: 1rem;
-        border: 1px solid var(--borde);
-        border-radius: 0.55rem;
-        background: var(--superficie);
-      }
-
-      .estadistica-kpi h3,
-      .grafica-estadistica h3 {
-        margin: 0 0 0.65rem;
-        font-size: 1rem;
-      }
-
-      .estadistica-kpi p {
-        margin: 0;
-        font-size: 1.1rem;
-        font-weight: 700;
-        overflow-wrap: anywhere;
-      }
-
-      .estadisticas-graficas {
-        margin-top: 1rem;
-      }
-
-      .grafica-cartesiana-contenedor {
-        max-width: 100%;
-        overflow-x: auto;
-        overscroll-behavior-x: contain;
-      }
-
-      .grafica-cartesiana {
-        display: block;
-        max-width: none;
-        color: var(--texto);
-      }
-
-      .grafica-cartesiana-linea {
-        fill: none;
-        stroke: var(--boton-fondo);
-        stroke-width: 3;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        animation: trazar-grafica 900ms ease-out both;
-      }
-
-      .grafica-cartesiana-punto {
-        fill: var(--superficie);
-        stroke: var(--boton-fondo);
-        stroke-width: 3;
-        transform-box: fill-box;
-        transform-origin: center;
-        animation: aparecer-punto 420ms ease-out both;
-      }
-
-      .grafica-cartesiana-cuadricula {
-        stroke: var(--borde);
-        stroke-width: 1;
-      }
-
-      .grafica-cartesiana-eje {
-        stroke: var(--texto-suave);
-        stroke-width: 1.5;
-      }
-
-      .grafica-cartesiana-etiqueta {
-        fill: currentColor;
-        font-size: 11px;
-      }
-
-      @keyframes trazar-grafica {
-        from {
-          stroke-dashoffset: var(--longitud-grafica);
-        }
-        to {
-          stroke-dashoffset: 0;
-        }
-      }
-
-      @keyframes aparecer-punto {
-        from {
-          opacity: 0;
-          transform: scale(0.3);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-
-      .explorador-infracciones {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        align-items: start;
-        gap: 1rem;
-      }
-
-      .explorador-infracciones > * {
-        min-width: 0;
-      }
-
-      #mapa-infracciones {
-        height: min(65vh, 36rem);
-        min-height: 22rem;
-        max-height: 36rem;
-      }
-
-      .lista-infracciones {
-        display: grid;
-        min-width: 0;
-        align-content: start;
-        gap: 0.75rem;
-        padding: 0.15rem;
-      }
-
-      .tarjeta-infraccion {
-        min-width: 0;
-        overflow-wrap: anywhere;
-        padding: 1rem;
-        border: 1px solid var(--borde);
-        border-radius: 0.55rem;
-        background: var(--superficie);
-      }
-
-      .tarjeta-infraccion h3 {
-        margin: 0 0 0.65rem;
-        font-size: 1rem;
-      }
-
-      .detalle-infraccion {
-        display: grid;
-        grid-template-columns: minmax(5.5rem, 7rem) minmax(0, 1fr);
-        gap: 0.35rem 0.6rem;
-        margin: 0 0 0.8rem;
-        font-size: 0.9rem;
-      }
-
-      .detalle-infraccion dt {
-        color: var(--texto-suave);
-        font-weight: 700;
-      }
-
-      .detalle-infraccion dd {
-        min-width: 0;
-        margin: 0;
-        overflow-wrap: anywhere;
-      }
-
-      .tarjeta-infraccion button {
-        width: 100%;
-      }
-
-      .foto-infraccion {
-        margin: 0 0 0.8rem;
-      }
-
-      .foto-infraccion img {
-        display: block;
-        width: 100%;
-        max-height: 18rem;
-        border-radius: 0.4rem;
-        background: var(--fondo-secundario);
-        object-fit: contain;
-      }
-
-      .foto-infraccion figcaption {
-        margin-top: 0.35rem;
-        color: var(--texto-suave);
-        font-size: 0.85rem;
-      }
-
-      .nota-privacidad {
-        margin-top: 1.25rem;
-        padding: 0.85rem 1rem;
-        border-left: 4px solid var(--negro);
-        border-radius: 0.25rem;
-        background: var(--fondo-privacidad);
-        color: var(--texto-privacidad);
-      }
-
-      .pie {
-        border-top: 1px solid var(--borde-cabecera);
-        border-bottom: 0;
-        background: var(--fondo-cabecera);
-        color: var(--texto-cabecera-secundario);
-      }
-
-      .animaciones-scroll .revelar {
-        opacity: 0;
-        transform: translateY(1.25rem);
-        transition: opacity 650ms ease, transform 650ms cubic-bezier(0.2, 0.7, 0.2, 1);
-      }
-
-      .animaciones-scroll .revelar.visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      [hidden] {
-        display: none !important;
-      }
-
-      @media (min-width: 42rem) {
-        .encabezado {
-          padding-block: 1.4rem;
-        }
-
-        main {
-          padding-block: 1.5rem 3rem;
-        }
-
-        .panel {
-          padding: 1.4rem;
-        }
-
-        .navegacion {
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-
-        .formulario,
-        .filtros {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .estadisticas-resumen {
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-
-        .campo-ancho {
-          grid-column: 1 / -1;
-        }
-
-        .mapa {
-          height: 26rem;
-        }
-      }
-
-      @media (min-width: 64rem) {
-        .estadisticas-graficas {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .grafica-estadistica:first-child {
-          grid-column: 1 / -1;
-        }
-
-        .explorador-infracciones {
-          grid-template-columns: minmax(0, 2.1fr) minmax(19rem, 0.9fr);
-          gap: 1.25rem;
-        }
-
-        #mapa-infracciones {
-          height: min(78vh, 58rem);
-          min-height: 34rem;
-          max-height: 58rem;
-        }
-
-        .lista-infracciones {
-          height: min(78vh, 58rem);
-          max-height: 58rem;
-          overflow-x: hidden;
-          overflow-y: auto;
-          overscroll-behavior: contain;
-        }
-      }
-
-      @media (max-width: 28rem) {
-        .encabezado-contenido {
-          align-items: flex-start;
-        }
-
-        .boton-tema {
-          padding-inline: 0.65rem;
-          font-size: 0.9rem;
-        }
-      }
-
-      @media print {
-        :root {
-          color-scheme: light;
-        }
-
-        body {
-          background: white;
-          color: black;
-        }
-
-        .encabezado,
-        .navegacion,
-        #vista-captura,
-        #vista-infracciones,
-        #vista-estadisticas,
-        #controles-tablero,
-        #tablero-mapa,
-        .nota-privacidad,
-        .pie {
-          display: none !important;
-        }
-
-        main,
-        #vista-tablero,
-        #resumen-operativo {
-          width: 100%;
-          margin: 0;
-          padding: 0;
-          border: 0;
-          box-shadow: none;
-        }
-
-        #vista-tablero[hidden] {
-          display: block !important;
-        }
-
-        #resumen-operativo {
-          display: block;
-          background: white;
-          color: black;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          scroll-behavior: auto !important;
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <header class="encabezado">
-      <div class="encabezado-contenido">
-        <div>
-          <h1>Santa Marta en orden</h1>
-          <p>Reporta el mal parqueo y la invasión del espacio público.</p>
-        </div>
-        <button id="boton-tema" class="boton-tema" type="button" aria-pressed="false">
-          Modo oscuro
+      <a class="marca" href="./index.html" aria-label="Control de mal parqueo, inicio">
+        <span class="marca__nombre">Control de mal parqueo</span>
+        <span class="marca__ciudad">Santa Marta</span>
+      </a>
+      <nav class="navegacion-vistas" aria-label="Vistas principales">
+        <button
+          id="boton-vista-captura"
+          class="boton-vista"
+          type="button"
+          aria-controls="vista-captura"
+          aria-pressed="true"
+        >
+          Reportar obstrucción
         </button>
-      </div>
-    </header>
-
-    <main>
-      <nav class="navegacion" aria-label="Vistas principales">
-        <button id="boton-vista-captura" type="button" aria-controls="vista-captura" aria-pressed="true">
-          Hacer reporte
-        </button>
-        <button id="boton-vista-tablero" type="button" aria-controls="vista-tablero" aria-pressed="false">
+        <button
+          id="boton-vista-tablero"
+          class="boton-vista"
+          type="button"
+          aria-controls="vista-tablero"
+          aria-pressed="false"
+        >
           Ver tablero
         </button>
-        <button id="boton-vista-infracciones" type="button" aria-controls="vista-infracciones" aria-pressed="false">
-          Infracciones
-        </button>
-        <button id="boton-vista-estadisticas" type="button" aria-controls="vista-estadisticas" aria-pressed="false">
-          Estadísticas
-        </button>
       </nav>
+    </header>
 
-      <section id="vista-captura" aria-labelledby="titulo-captura">
-        <div class="panel">
-          <h2 id="titulo-captura">Nuevo reporte</h2>
-          <p class="ayuda">Completa los datos y marca la ubicación en el mapa. No escribas placas ni datos personales.</p>
+    <main id="contenido-principal">
+      <section id="vista-captura" class="vista vista--captura" aria-labelledby="titulo-captura">
+        <div class="encabezado-vista">
+          <div>
+            <p class="sobretitulo">REPORTE CIUDADANO</p>
+            <h1 id="titulo-captura">Reportar obstrucción</h1>
+          </div>
+          <p class="tiempo-estimado">Toma menos de 30 segundos</p>
+        </div>
 
-          <form id="formulario-reporte" class="formulario">
-            <div class="campo">
-              <label for="reporte-cuadra">Cuadra</label>
+        <form id="formulario-reporte" class="formulario-captura" novalidate>
+          <section class="bloque-ubicacion" aria-labelledby="titulo-ubicacion">
+            <div class="fila-titulo">
+              <h2 id="titulo-ubicacion">Ubicación</h2>
+              <button id="boton-geolocalizacion" class="boton-texto" type="button">
+                Usar mi ubicación
+              </button>
+            </div>
+            <div
+              id="mapa-captura"
+              class="mapa mapa--captura"
+              role="application"
+              aria-label="Toca el mapa para marcar dónde ocurre la obstrucción"
+            ></div>
+            <p id="estado-ubicacion" class="estado" aria-live="polite">
+              Toca el mapa para marcar el punto.
+            </p>
+            <label class="campo campo--cuadra" for="reporte-cuadra">
+              <span class="etiqueta">Cuadra o sector</span>
               <input
                 id="reporte-cuadra"
                 name="cuadra"
                 list="opciones-cuadras"
                 autocomplete="off"
-                placeholder="Busca una cuadra"
+                placeholder="Busca o elige una cuadra"
                 required
               />
               <datalist id="opciones-cuadras"></datalist>
-              <span class="ayuda">Escribe para buscar; se agregan opciones desde el catálogo de vías.</span>
-            </div>
+            </label>
+            <button id="boton-limpiar-ubicacion" class="oculto" type="button">
+              Quitar ubicación
+            </button>
+          </section>
 
-            <div class="campo">
-              <label for="reporte-categoria">Situación observada</label>
-              <select id="reporte-categoria" name="categoria" required>
-                <option value="">Selecciona una situación</option>
-                <option value="doble_fila">Vehículo en doble fila</option>
-                <option value="bloqueo_rampa_cebra_paradero">Bloqueo de rampa, cebra o paradero</option>
-                <option value="invasion_anden">Invasión del andén</option>
-              </select>
+          <fieldset class="grupo-seleccion">
+            <legend class="etiqueta">Categoría</legend>
+            <input id="reporte-categoria" type="hidden" name="categoria" value="" />
+            <div class="opciones-categoria" role="group" aria-label="Elige una categoría">
+              <button
+                class="boton-opcion"
+                type="button"
+                data-seleccion-categoria="doble_fila"
+                aria-pressed="false"
+              >
+                Doble fila / vía prohibida
+              </button>
+              <button
+                class="boton-opcion"
+                type="button"
+                data-seleccion-categoria="bloqueo_rampa_cebra_paradero"
+                aria-pressed="false"
+              >
+                Rampa, cebra o paradero
+              </button>
+              <button
+                class="boton-opcion"
+                type="button"
+                data-seleccion-categoria="invasion_anden"
+                aria-pressed="false"
+              >
+                Invasión de andén
+              </button>
             </div>
+          </fieldset>
 
-            <div class="campo">
-              <label for="reporte-actor">Tipo de actor</label>
-              <select id="reporte-actor" name="actor" required>
-                <option value="">Selecciona un tipo</option>
-                <option value="vehiculo_particular">Vehículo particular</option>
-                <option value="motocicleta">Motocicleta</option>
-                <option value="vehiculo_carga">Vehículo de carga</option>
-                <option value="mobiliario_comercial">Mobiliario comercial</option>
-              </select>
+          <fieldset class="grupo-seleccion">
+            <legend class="etiqueta">Tipo de actor</legend>
+            <input id="reporte-actor" type="hidden" name="actor" value="" />
+            <div class="opciones-actor" role="group" aria-label="Elige un tipo de actor">
+              <button
+                class="boton-opcion"
+                type="button"
+                data-seleccion-actor="vehiculo_particular"
+                aria-pressed="false"
+              >
+                Vehículo particular
+              </button>
+              <button
+                class="boton-opcion"
+                type="button"
+                data-seleccion-actor="motocicleta"
+                aria-pressed="false"
+              >
+                Motocicleta
+              </button>
+              <button
+                class="boton-opcion"
+                type="button"
+                data-seleccion-actor="vehiculo_carga"
+                aria-pressed="false"
+              >
+                Carga descargando
+              </button>
+              <button
+                class="boton-opcion"
+                type="button"
+                data-seleccion-actor="mobiliario_comercial"
+                aria-pressed="false"
+              >
+                Mobiliario comercial
+              </button>
             </div>
+          </fieldset>
 
-            <div class="campo campo-ancho">
-              <label for="reporte-direccion">Dirección o referencia (opcional)</label>
-              <input
-                id="reporte-direccion"
-                name="direccion"
-                autocomplete="street-address"
-                placeholder="Ej.: Carrera 5 con calle 14"
-              />
+          <section class="fila-foto" aria-labelledby="titulo-foto">
+            <div>
+              <h2 id="titulo-foto">Foto <span class="texto-secundario">(opcional)</span></h2>
+              <p id="estado-foto" class="ayuda">No incluyas rostros ni placas sin censurar.</p>
             </div>
+            <input
+              id="reporte-foto"
+              class="oculto"
+              name="foto"
+              type="file"
+              accept="image/*"
+              capture="environment"
+            />
+            <button id="boton-tomar-foto" class="boton boton--secundario" type="button">
+              Tomar foto
+            </button>
+          </section>
 
-            <div class="campo campo-ancho">
-              <span class="etiqueta">Ubicación del reporte</span>
-              <div class="acciones-ubicacion">
-                <button id="boton-geolocalizacion" type="button">Usar mi ubicación</button>
-                <button id="boton-limpiar-ubicacion" type="button">Quitar ubicación</button>
+          <section class="tarjeta-criticidad" aria-labelledby="titulo-criticidad">
+            <div class="fila-titulo">
+              <div>
+                <p class="sobretitulo">EVALUACIÓN AUTOMÁTICA</p>
+                <h2 id="titulo-criticidad">Se calcula solo</h2>
               </div>
-              <p id="estado-ubicacion" class="estado" aria-live="polite">Toca el mapa o usa tu ubicación.</p>
-              <div
-                id="mapa-captura"
-                class="mapa"
-                role="application"
-                aria-label="Mapa para marcar la ubicación del reporte"
-              ></div>
-            </div>
-
-            <div class="campo campo-ancho">
-              <label for="reporte-foto">Foto (opcional)</label>
-              <input id="reporte-foto" name="foto" type="file" accept="image/*" />
-              <span class="ayuda">Antes de enviar, censura rostros, placas y otros datos personales.</span>
-            </div>
-
-            <div id="editor-censura" class="campo campo-ancho" hidden>
-              <span class="etiqueta">Censura de la foto</span>
-              <p id="instrucciones-censura" class="ayuda">
-                Arrastra sobre cada rostro, placa o dato personal. Las áreas seleccionadas se pixelan.
-              </p>
-              <div class="visor-censura">
-                <canvas
-                  id="canvas-censura"
-                  aria-label="Foto para censurar; arrastra para marcar cada área"
-                ></canvas>
-                <div id="marco-seleccion-censura" class="marco-seleccion-censura" aria-hidden="true"></div>
+              <div id="insignia-criticidad" class="insignia-criticidad" aria-live="polite">
+                <span id="vista-puntaje">—</span>
+                <span id="vista-nivel">Sin calcular</span>
               </div>
-              <div class="acciones-datos">
-                <button id="boton-deshacer-censura" class="boton-secundario" type="button" disabled>
-                  Deshacer
-                </button>
-                <button id="boton-confirmar-foto" type="button" disabled>
-                  Confirmar: sin rostros ni placas
-                </button>
+            </div>
+            <dl class="detalle-criticidad">
+              <div>
+                <dt>Categoría</dt>
+                <dd id="vista-categoria">Elige una categoría</dd>
               </div>
-              <p id="estado-censura" class="estado" role="status" aria-live="polite"></p>
-            </div>
+              <div>
+                <dt>Tipo de vía</dt>
+                <dd id="vista-tipo-via">Se determina por cuadra</dd>
+              </div>
+              <div>
+                <dt>Franja horaria</dt>
+                <dd id="vista-franja">Se determina por la hora</dd>
+              </div>
+            </dl>
+          </section>
 
-            <div class="campo campo-ancho">
-              <button id="boton-guardar-reporte" type="submit">Guardar reporte</button>
-              <p id="estado-captura" class="estado" role="status" aria-live="polite"></p>
-            </div>
-          </form>
-        </div>
+          <button id="boton-guardar-reporte" class="boton boton--enviar" type="submit">
+            Enviar reporte
+          </button>
+          <p id="estado-captura" class="estado" role="status" aria-live="polite"></p>
+        </form>
       </section>
 
-      <section id="vista-tablero" aria-labelledby="titulo-tablero" hidden>
-        <div id="controles-tablero" class="panel seccion">
-          <h2 id="titulo-tablero">Tablero operativo</h2>
-          <p class="ayuda">Filtra los reportes y consulta las cuadras con mayor criticidad.</p>
+      <section id="editor-censura" class="vista vista--censura" aria-labelledby="titulo-censura" hidden>
+        <div class="encabezado-vista">
+          <div>
+            <p class="sobretitulo">PROTEGE LA PRIVACIDAD</p>
+            <h1 id="titulo-censura">Censura de foto</h1>
+          </div>
+          <button id="boton-cancelar-censura" class="boton-texto" type="button">
+            Volver al reporte
+          </button>
+        </div>
+        <p id="instrucciones-censura" class="ayuda">
+          Arrastra sobre cada rostro, placa o dato personal. Las áreas seleccionadas se pixelan.
+        </p>
+        <div class="visor-censura">
+          <canvas
+            id="canvas-censura"
+            aria-label="Foto para censurar; arrastra para marcar cada área"
+          ></canvas>
+          <div id="marco-seleccion-censura" class="marco-seleccion-censura" aria-hidden="true"></div>
+        </div>
+        <p id="contador-censura" class="contador-censura" aria-live="polite">0 zonas censuradas</p>
+        <div class="acciones-censura">
+          <button id="boton-deshacer-censura" class="boton boton--secundario" type="button" disabled>
+            Deshacer
+          </button>
+          <button id="boton-elegir-otra-foto" class="boton boton--secundario" type="button">
+            Elegir otra foto
+          </button>
+        </div>
+        <label class="confirmacion-privacidad" for="confirmar-privacidad-foto">
+          <input id="confirmar-privacidad-foto" type="checkbox" />
+          <span>Confirmo que la foto no muestra rostros ni placas</span>
+        </label>
+        <button id="boton-confirmar-foto" class="boton boton--enviar" type="button" disabled>
+          Usar esta foto
+        </button>
+        <p id="estado-censura" class="estado" role="status" aria-live="polite"></p>
+      </section>
 
+      <section id="vista-tablero" class="vista vista--tablero" aria-labelledby="titulo-tablero" hidden>
+        <div class="encabezado-vista encabezado-vista--tablero">
+          <div>
+            <p class="sobretitulo">SANTA MARTA · OBSERVATORIO CIUDADANO</p>
+            <h1 id="titulo-tablero">Tablero operativo</h1>
+          </div>
+          <div class="acciones-tablero">
+            <button id="boton-nuevo-reporte" class="boton" type="button">Nuevo reporte</button>
+            <button id="boton-exportar" class="boton boton--secundario" type="button">
+              Exportar JSON
+            </button>
+            <button id="boton-importar" class="boton boton--secundario" type="button">
+              Importar JSON
+            </button>
+            <button id="boton-imprimir" class="boton boton--secundario" type="button">
+              Imprimir resumen
+            </button>
+            <input id="archivo-importar" class="oculto" type="file" accept="application/json,.json" />
+          </div>
+        </div>
+
+        <section id="controles-tablero" class="panel panel--filtros" aria-label="Filtros de reportes">
           <div class="filtros">
-            <div class="campo">
-              <label for="filtro-cuadra">Cuadra</label>
+            <label class="campo" for="filtro-cuadra">
+              <span class="etiqueta">Cuadra o sector</span>
               <input
                 id="filtro-cuadra"
                 list="opciones-cuadras-filtro"
@@ -807,146 +289,116 @@
                 autocomplete="off"
               />
               <datalist id="opciones-cuadras-filtro"></datalist>
-            </div>
-            <div class="campo">
-              <label for="filtro-franja">Franja horaria</label>
+            </label>
+            <label class="campo" for="filtro-franja">
+              <span class="etiqueta">Franja horaria</span>
               <select id="filtro-franja">
                 <option value="">Todas las franjas</option>
                 <option value="pico">Hora pico</option>
                 <option value="valle">Hora valle</option>
               </select>
-            </div>
-            <div class="campo">
-              <label for="filtro-categoria">Situación</label>
+            </label>
+            <label class="campo" for="filtro-categoria">
+              <span class="etiqueta">Categoría</span>
               <select id="filtro-categoria">
-                <option value="">Todas las situaciones</option>
-                <option value="doble_fila">Doble fila</option>
-                <option value="bloqueo_rampa_cebra_paradero">Bloqueo de rampa, cebra o paradero</option>
-                <option value="invasion_anden">Invasión del andén</option>
+                <option value="">Todas las categorías</option>
+                <option value="doble_fila">Doble fila / vía prohibida</option>
+                <option value="bloqueo_rampa_cebra_paradero">Rampa, cebra o paradero</option>
+                <option value="invasion_anden">Invasión de andén</option>
               </select>
-            </div>
-            <div class="campo">
-              <label for="filtro-actor">Tipo de actor</label>
+            </label>
+            <label class="campo" for="filtro-actor">
+              <span class="etiqueta">Tipo de actor</span>
               <select id="filtro-actor">
                 <option value="">Todos los tipos</option>
                 <option value="vehiculo_particular">Vehículo particular</option>
                 <option value="motocicleta">Motocicleta</option>
-                <option value="vehiculo_carga">Vehículo de carga</option>
+                <option value="vehiculo_carga">Carga descargando</option>
                 <option value="mobiliario_comercial">Mobiliario comercial</option>
               </select>
-            </div>
+            </label>
           </div>
-
-          <label class="opcion-capa" for="mostrar-puntos">
-            <input id="mostrar-puntos" type="checkbox" checked />
-            Mostrar puntos individuales
-          </label>
-
-          <div
-            id="mapa-tablero"
-            class="mapa"
-            role="application"
-            aria-label="Mapa de calor y reportes"
-          ></div>
-          <p id="estado-tablero" class="estado" role="status" aria-live="polite"></p>
-
-          <div class="acciones-datos">
-            <button id="boton-exportar" type="button">Descargar reportes JSON</button>
-            <button id="boton-importar" class="boton-secundario" type="button">Importar reportes JSON</button>
-            <input id="archivo-importar" type="file" accept="application/json,.json" hidden />
-            <button id="boton-imprimir" class="boton-secundario" type="button">Imprimir resumen</button>
-          </div>
-        </div>
-
-        <section id="resumen-operativo" class="panel seccion" aria-labelledby="titulo-resumen">
-          <h2 id="titulo-resumen">Prioridades por cuadra</h2>
-          <ol id="lista-resumen" class="lista-resumen">
-            <li class="ayuda">El resumen aparecerá cuando se carguen los reportes.</li>
-          </ol>
+          <p id="texto-conteo-reportes" class="texto-conteo" role="status" aria-live="polite">
+            Mostrando 0 de 0 reportes
+          </p>
         </section>
-      </section>
 
-      <section id="vista-infracciones" aria-labelledby="titulo-infracciones" hidden>
-        <div class="panel seccion">
-          <h2 id="titulo-infracciones">Infracciones registradas</h2>
-          <p class="ayuda">El mapa de calor muestra las zonas reportadas. Consulta cada infracción en las tarjetas y abre su ubicación desde el botón.</p>
-          <div class="explorador-infracciones">
-            <div>
-              <div
-                id="mapa-infracciones"
-                class="mapa"
-                role="application"
-                aria-label="Mapa de las infracciones registradas"
-              ></div>
-              <p id="estado-infracciones" class="estado" role="status" aria-live="polite"></p>
+        <section class="tarjetas-conteo" aria-label="Conteo por nivel de criticidad">
+          <article class="tarjeta-conteo">
+            <span class="etiqueta">Reportes</span>
+            <strong id="conteo-reportes">0</strong>
+          </article>
+          <article class="tarjeta-conteo tarjeta-conteo--alto">
+            <span class="etiqueta">Nivel alto</span>
+            <strong id="conteo-alto">0</strong>
+          </article>
+          <article class="tarjeta-conteo tarjeta-conteo--medio">
+            <span class="etiqueta">Nivel medio</span>
+            <strong id="conteo-medio">0</strong>
+          </article>
+          <article class="tarjeta-conteo tarjeta-conteo--bajo">
+            <span class="etiqueta">Nivel bajo</span>
+            <strong id="conteo-bajo">0</strong>
+          </article>
+        </section>
+
+        <div class="columnas-tablero">
+          <section id="tablero-mapa" class="panel panel--mapa" aria-labelledby="titulo-mapa-tablero">
+            <div class="fila-titulo">
+              <div>
+                <p class="sobretitulo">UBICACIÓN Y RECURRENCIA</p>
+                <h2 id="titulo-mapa-tablero">Mapa de reincidencia</h2>
+              </div>
+              <div class="selector-capa" role="group" aria-label="Tipo de visualización del mapa">
+                <button id="modo-mapa-calor" type="button" aria-pressed="true">Mapa de calor</button>
+                <button id="modo-mapa-puntos" type="button" aria-pressed="false">Puntos</button>
+              </div>
             </div>
-            <div id="lista-infracciones" class="lista-infracciones" aria-live="polite">
-              <p class="ayuda">Las infracciones aparecerán cuando se carguen los reportes.</p>
+            <div
+              id="mapa-tablero"
+              class="mapa mapa--tablero"
+              role="application"
+              aria-label="Mapa de reincidencia de reportes"
+            ></div>
+            <p id="estado-tablero" class="estado" role="status" aria-live="polite"></p>
+            <div class="leyenda-criticidad" aria-label="Leyenda: menor a mayor criticidad">
+              <span>Menor</span>
+              <span class="muestra-color muestra-color--menor" aria-hidden="true"></span>
+              <span class="muestra-color muestra-color--media" aria-hidden="true"></span>
+              <span class="muestra-color muestra-color--mayor" aria-hidden="true"></span>
+              <span>Mayor criticidad</span>
             </div>
+            <input id="mostrar-puntos" class="oculto" type="checkbox" checked />
+          </section>
+
+          <div class="columna-resumen">
+            <section id="resumen-operativo" class="panel" aria-labelledby="titulo-resumen">
+              <div class="fila-titulo">
+                <div>
+                  <p class="sobretitulo">PRIORIZACIÓN</p>
+                  <h2 id="titulo-resumen">Resumen operativo</h2>
+                </div>
+                <span class="texto-secundario">Top 5</span>
+              </div>
+              <ol id="lista-resumen" class="lista-resumen">
+                <li class="ayuda">El resumen aparecerá cuando se carguen los reportes.</li>
+              </ol>
+            </section>
+            <section class="panel panel--categorias" aria-labelledby="titulo-categorias">
+              <p class="sobretitulo">DISTRIBUCIÓN</p>
+              <h2 id="titulo-categorias">Reportes por categoría</h2>
+              <div id="barras-categorias" class="barras-categorias" aria-live="polite">
+                <p class="ayuda">Las categorías aparecerán cuando se carguen los reportes.</p>
+              </div>
+            </section>
           </div>
         </div>
       </section>
 
-      <section id="vista-estadisticas" aria-labelledby="titulo-estadisticas" hidden>
-        <div class="panel seccion">
-          <h2 id="titulo-estadisticas">Estadísticas de reportes</h2>
-          <p class="ayuda">Resumen de todos los reportes cargados, independiente de los filtros del tablero.</p>
-
-          <div class="estadisticas-resumen" aria-live="polite">
-            <article class="estadistica-kpi">
-              <h3>Total de reportes</h3>
-              <p id="estadistica-total">0</p>
-            </article>
-            <article class="estadistica-kpi">
-              <h3>Cuadra con más reportes</h3>
-              <p id="estadistica-lugar">Sin datos</p>
-            </article>
-            <article class="estadistica-kpi">
-              <h3>Actor más reportado</h3>
-              <p id="estadistica-actor">Sin datos</p>
-            </article>
-            <article class="estadistica-kpi">
-              <h3>Situación más reportada</h3>
-              <p id="estadistica-situacion">Sin datos</p>
-            </article>
-          </div>
-
-          <div class="estadisticas-graficas">
-            <section class="grafica-estadistica" aria-labelledby="titulo-grafica-cuadras">
-              <h3 id="titulo-grafica-cuadras">Reportes por cuadra</h3>
-              <p class="ayuda">Eje X: cuadras · Eje Y: número de reportes.</p>
-              <div class="grafica-cartesiana-contenedor" role="region" aria-label="Gráfica cartesiana de reportes por cuadra" tabindex="0">
-                <svg id="grafica-cuadras" class="grafica-cartesiana" role="img"></svg>
-              </div>
-            </section>
-            <section class="grafica-estadistica" aria-labelledby="titulo-grafica-actores">
-              <h3 id="titulo-grafica-actores">Reportes por actor</h3>
-              <p class="ayuda">Eje X: tipo de actor · Eje Y: número de reportes.</p>
-              <div class="grafica-cartesiana-contenedor" role="region" aria-label="Gráfica cartesiana de reportes por actor" tabindex="0">
-                <svg id="grafica-actores" class="grafica-cartesiana" role="img"></svg>
-              </div>
-            </section>
-            <section class="grafica-estadistica" aria-labelledby="titulo-grafica-situaciones">
-              <h3 id="titulo-grafica-situaciones">Reportes por situación</h3>
-              <p class="ayuda">Eje X: situación · Eje Y: número de reportes.</p>
-              <div class="grafica-cartesiana-contenedor" role="region" aria-label="Gráfica cartesiana de reportes por situación" tabindex="0">
-                <svg id="grafica-situaciones" class="grafica-cartesiana" role="img"></svg>
-              </div>
-            </section>
-          </div>
-        </div>
-      </section>
-
-      <aside class="nota-privacidad">
-        <strong>Privacidad:</strong> este prototipo no debe guardar ni mostrar placas, rostros ni datos personales.
+      <aside class="aviso-privacidad">
+        No guardes ni compartas placas, rostros ni datos personales. Las fotos solo se guardan después de censurarlas.
       </aside>
     </main>
-
-    <footer class="pie encabezado">
-      <div class="encabezado-contenido">
-        Prototipo educativo · Santa Marta, Colombia
-      </div>
-    </footer>
 
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -954,58 +406,6 @@
       crossorigin=""
     ></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    <script type="module" src="./captura.js?v=7"></script>
-    <script>
-      const botonTema = document.querySelector("#boton-tema");
-      const temaGuardado = localStorage.getItem("santaMartaTema");
-      const temaInicial =
-        ["claro", "oscuro"].includes(temaGuardado)
-          ? temaGuardado
-          : window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "oscuro"
-            : "claro";
-
-      function aplicarTema(tema) {
-        const esOscuro = tema === "oscuro";
-        document.documentElement.dataset.tema = tema;
-        botonTema.textContent = esOscuro ? "Modo claro" : "Modo oscuro";
-        botonTema.setAttribute("aria-pressed", String(esOscuro));
-        botonTema.setAttribute(
-          "aria-label",
-          esOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro",
-        );
-      }
-
-      aplicarTema(temaInicial);
-      botonTema.addEventListener("click", () => {
-        const temaNuevo = document.documentElement.dataset.tema === "oscuro" ? "claro" : "oscuro";
-        localStorage.setItem("santaMartaTema", temaNuevo);
-        aplicarTema(temaNuevo);
-      });
-    </script>
-    <script>
-      const seccionesAnimadas = document.querySelectorAll(".panel, .nota-privacidad");
-      const reducirMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      if ("IntersectionObserver" in window && !reducirMovimiento) {
-        document.documentElement.classList.add("animaciones-scroll");
-        const observador = new IntersectionObserver(
-          (entradas, observadorActual) => {
-            for (const entrada of entradas) {
-              if (entrada.isIntersecting) {
-                entrada.target.classList.add("visible");
-                observadorActual.unobserve(entrada.target);
-              }
-            }
-          },
-          { threshold: 0.12 },
-        );
-
-        for (const seccion of seccionesAnimadas) {
-          seccion.classList.add("revelar");
-          observador.observe(seccion);
-        }
-      }
-    </script>
+    <script type="module" src="./captura.js"></script>
   </body>
 </html>

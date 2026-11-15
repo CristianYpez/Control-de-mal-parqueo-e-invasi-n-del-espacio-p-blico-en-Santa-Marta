@@ -14,7 +14,13 @@ const lienzoCensura = document.querySelector("#canvas-censura");
 const marcoSeleccionCensura = document.querySelector("#marco-seleccion-censura");
 const botonDeshacerCensura = document.querySelector("#boton-deshacer-censura");
 const botonConfirmarFoto = document.querySelector("#boton-confirmar-foto");
+const confirmacionPrivacidadFoto = document.querySelector("#confirmar-privacidad-foto");
+const contadorCensura = document.querySelector("#contador-censura");
 const botonGuardarReporte = document.querySelector("#boton-guardar-reporte");
+const botonTomarFoto = document.querySelector("#boton-tomar-foto");
+const botonElegirOtraFoto = document.querySelector("#boton-elegir-otra-foto");
+const botonCancelarCensura = document.querySelector("#boton-cancelar-censura");
+const estadoFoto = document.querySelector("#estado-foto");
 const estadoCensura = document.querySelector("#estado-censura");
 const estadoCaptura = document.querySelector("#estado-captura");
 const estadoUbicacion = document.querySelector("#estado-ubicacion");
@@ -24,6 +30,7 @@ const botonVistaCaptura = document.querySelector("#boton-vista-captura");
 const botonVistaTablero = document.querySelector("#boton-vista-tablero");
 const botonVistaInfracciones = document.querySelector("#boton-vista-infracciones");
 const botonVistaEstadisticas = document.querySelector("#boton-vista-estadisticas");
+const botonNuevoReporte = document.querySelector("#boton-nuevo-reporte");
 const vistaCaptura = document.querySelector("#vista-captura");
 const vistaTablero = document.querySelector("#vista-tablero");
 const vistaInfracciones = document.querySelector("#vista-infracciones");
@@ -31,6 +38,29 @@ const vistaEstadisticas = document.querySelector("#vista-estadisticas");
 const estadoTablero = document.querySelector("#estado-tablero");
 const listaResumen = document.querySelector("#lista-resumen");
 const listaInfracciones = document.querySelector("#lista-infracciones");
+const textoConteoReportes = document.querySelector("#texto-conteo-reportes");
+const conteosTablero = {
+  total: document.querySelector("#conteo-reportes"),
+  alto: document.querySelector("#conteo-alto"),
+  medio: document.querySelector("#conteo-medio"),
+  bajo: document.querySelector("#conteo-bajo"),
+};
+const barrasCategorias = document.querySelector("#barras-categorias");
+const insigniaCriticidad = document.querySelector("#insignia-criticidad");
+const datosVistaCriticidad = {
+  puntaje: document.querySelector("#vista-puntaje"),
+  nivel: document.querySelector("#vista-nivel"),
+  categoria: document.querySelector("#vista-categoria"),
+  tipoVia: document.querySelector("#vista-tipo-via"),
+  franja: document.querySelector("#vista-franja"),
+};
+const botonesCategoria = [...document.querySelectorAll("[data-seleccion-categoria]")];
+const botonesActor = [...document.querySelectorAll("[data-seleccion-actor]")];
+const botonesModoMapa = {
+  calor: document.querySelector("#modo-mapa-calor"),
+  puntos: document.querySelector("#modo-mapa-puntos"),
+};
+const controlPuntos = document.querySelector("#mostrar-puntos");
 const elementosEstadisticas = {
   total: document.querySelector("#estadistica-total"),
   cuadra: document.querySelector("#estadistica-lugar"),
@@ -53,14 +83,14 @@ const categoriasPermitidas = new Set([
   "invasion_anden",
 ]);
 const nombresCategorias = {
-  doble_fila: "Vehículo en doble fila",
-  bloqueo_rampa_cebra_paradero: "Bloqueo de rampa, cebra o paradero",
-  invasion_anden: "Invasión del andén",
+  doble_fila: "Doble fila / vía prohibida",
+  bloqueo_rampa_cebra_paradero: "Rampa, cebra o paradero",
+  invasion_anden: "Invasión de andén",
 };
 const nombresActores = {
   vehiculo_particular: "Vehículo particular",
   motocicleta: "Motocicleta",
-  vehiculo_carga: "Vehículo de carga",
+  vehiculo_carga: "Carga descargando",
   mobiliario_comercial: "Mobiliario comercial",
 };
 const ANCHO_MAXIMO_FOTO = 800;
@@ -416,8 +446,6 @@ function publicarReportesActualizados() {
     }),
   );
   actualizarTablero();
-  renderizarInfracciones(reportes);
-  renderizarEstadisticas(reportes);
 }
 
 function cargarOpcionesCuadra() {
@@ -432,40 +460,184 @@ function cargarOpcionesCuadra() {
   }
 }
 
+function actualizarSeleccionGrupo(botones, valor) {
+  for (const boton of botones) {
+    const seleccionado =
+      boton.dataset.seleccionCategoria === valor ||
+      boton.dataset.seleccionActor === valor;
+    boton.setAttribute("aria-pressed", String(seleccionado));
+  }
+}
+
+function obtenerFranjaActual(fechaHora) {
+  const coincidencia = /T(\d{2}):(\d{2})$/.exec(fechaHora);
+  if (!coincidencia || !Array.isArray(criterios?.horas_pico)) {
+    throw new Error("No se pudo interpretar la hora local del reporte.");
+  }
+
+  const minutosActuales = Number(coincidencia[1]) * 60 + Number(coincidencia[2]);
+  const estaEnPico = criterios.horas_pico.some((rango) => {
+    const coincidenciaRango = /^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/.exec(rango);
+    if (!coincidenciaRango) {
+      throw new Error(`El rango de hora pico "${rango}" no tiene el formato HH:mm-HH:mm.`);
+    }
+
+    const [, horaInicio, minutoInicio, horaFin, minutoFin] = coincidenciaRango;
+    const horasInicio = Number(horaInicio);
+    const minutosInicio = Number(minutoInicio);
+    const horasFin = Number(horaFin);
+    const minutosFin = Number(minutoFin);
+    const inicio = horasInicio * 60 + minutosInicio;
+    const fin = horasFin * 60 + minutosFin;
+    if (
+      horasInicio > 23 ||
+      horasFin > 23 ||
+      minutosInicio > 59 ||
+      minutosFin > 59 ||
+      inicio >= fin
+    ) {
+      throw new Error(`El rango de hora pico "${rango}" no es válido.`);
+    }
+    return minutosActuales >= inicio && minutosActuales < fin;
+  });
+  return estaEnPico ? "pico" : "valle";
+}
+
+function actualizarVistaCriticidad() {
+  const categoria = document.querySelector("#reporte-categoria").value;
+  const cuadraSeleccionada = selectorCuadra.value.trim();
+  const via = vias.find((elemento) => elemento.id === cuadraSeleccionada);
+  const fechaActual = new Date();
+  const fechaHoraActual = formatearFechaHoraLocal(fechaActual);
+  let nombreFranja = "";
+  try {
+    nombreFranja = criterios ? obtenerFranjaActual(fechaHoraActual) : "";
+  } catch (error) {
+    mostrarEstado(estadoCaptura, `No se pudo determinar la franja horaria: ${error.message}`);
+    datosVistaCriticidad.puntaje.textContent = "—";
+    datosVistaCriticidad.nivel.textContent = "Error";
+    insigniaCriticidad.removeAttribute("data-nivel");
+    return;
+  }
+
+  datosVistaCriticidad.categoria.textContent =
+    nombresCategorias[categoria] ?? "Elige una categoría";
+  datosVistaCriticidad.tipoVia.textContent =
+    via?.tipo === "arterial"
+      ? "Arterial"
+      : via?.tipo === "secundaria"
+        ? "Secundaria"
+        : "Se determina por cuadra";
+  datosVistaCriticidad.franja.textContent = nombreFranja
+    ? `${nombreFranja === "pico" ? "Hora pico" : "Hora valle"} · ${fechaActual.toLocaleTimeString("es-CO", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    : "Se determina por la hora";
+
+  if (!criterios || !categoria || !via) {
+    datosVistaCriticidad.puntaje.textContent = "—";
+    datosVistaCriticidad.nivel.textContent = "Sin calcular";
+    insigniaCriticidad.removeAttribute("data-nivel");
+    return;
+  }
+
+  try {
+    const criticidad = calcularCriticidad(
+      {
+        categoria,
+        cuadra: cuadraSeleccionada,
+        fecha_hora: fechaHoraActual,
+      },
+      vias,
+      criterios,
+    );
+    datosVistaCriticidad.puntaje.textContent = String(criticidad.puntaje);
+    datosVistaCriticidad.nivel.textContent = criticidad.nivel;
+    insigniaCriticidad.dataset.nivel = criticidad.nivel;
+  } catch (error) {
+    datosVistaCriticidad.puntaje.textContent = "—";
+    datosVistaCriticidad.nivel.textContent = "Error";
+    insigniaCriticidad.removeAttribute("data-nivel");
+    mostrarEstado(estadoCaptura, `No se pudo calcular la criticidad: ${error.message}`);
+  }
+}
+
+function renderizarBarrasCategorias(reportes) {
+  const cantidades = new Map(
+    Object.keys(nombresCategorias).map((categoria) => [categoria, 0]),
+  );
+  for (const reporte of reportes) {
+    cantidades.set(reporte.categoria, (cantidades.get(reporte.categoria) ?? 0) + 1);
+  }
+
+  const total = reportes.length;
+  barrasCategorias.replaceChildren();
+  for (const [categoria, nombre] of Object.entries(nombresCategorias)) {
+    const cantidad = cantidades.get(categoria);
+    const porcentaje = total === 0 ? 0 : Math.round((cantidad / total) * 100);
+    const fila = document.createElement("div");
+    fila.className = "barra-categoria";
+
+    const cabecera = document.createElement("div");
+    cabecera.className = "barra-categoria__cabecera";
+    const etiqueta = document.createElement("span");
+    etiqueta.className = "barra-categoria__nombre";
+    etiqueta.textContent = nombre;
+    const valor = document.createElement("span");
+    valor.className = "barra-categoria__porcentaje";
+    valor.textContent = `${cantidad} · ${porcentaje}%`;
+    cabecera.append(etiqueta, valor);
+
+    const pista = document.createElement("div");
+    pista.className = "barra-categoria__pista";
+    pista.setAttribute("role", "img");
+    pista.setAttribute("aria-label", `${nombre}: ${porcentaje}%`);
+    const barra = document.createElement("div");
+    barra.className = "barra-categoria__valor";
+    barra.style.width = `${porcentaje}%`;
+    pista.append(barra);
+    fila.append(cabecera, pista);
+    barrasCategorias.append(fila);
+  }
+}
+
 function cambiarVista(nombreVista) {
   const mostrarCaptura = nombreVista === "captura";
   const mostrarTablero = nombreVista === "tablero";
-  const mostrarInfracciones = nombreVista === "infracciones";
-  const mostrarEstadisticas = nombreVista === "estadisticas";
-  const entrarEstadisticas = mostrarEstadisticas && vistaEstadisticas.hidden;
+  const mostrarCensura = nombreVista === "censura";
   vistaCaptura.hidden = !mostrarCaptura;
   vistaTablero.hidden = !mostrarTablero;
-  vistaInfracciones.hidden = !mostrarInfracciones;
-  vistaEstadisticas.hidden = !mostrarEstadisticas;
-  if (entrarEstadisticas) {
-    renderizarEstadisticas(obtenerReportesActuales());
-  }
-  botonVistaCaptura.setAttribute("aria-pressed", String(mostrarCaptura));
+  editorCensura.hidden = !mostrarCensura;
+  botonVistaCaptura.setAttribute("aria-pressed", String(mostrarCaptura || mostrarCensura));
   botonVistaTablero.setAttribute("aria-pressed", String(mostrarTablero));
-  botonVistaInfracciones.setAttribute("aria-pressed", String(mostrarInfracciones));
-  botonVistaEstadisticas.setAttribute("aria-pressed", String(mostrarEstadisticas));
 
   if (mostrarCaptura) {
     window.dispatchEvent(new Event("tablero:desactivar"));
     window.dispatchEvent(new Event("captura:activar"));
+  } else if (mostrarCensura) {
+    window.dispatchEvent(new Event("tablero:desactivar"));
   } else if (mostrarTablero) {
     window.dispatchEvent(new Event("tablero:activar"));
-  } else if (mostrarInfracciones) {
-    window.dispatchEvent(new Event("tablero:desactivar"));
-    window.dispatchEvent(new Event("infracciones:activar"));
-  } else if (mostrarEstadisticas) {
-    window.dispatchEvent(new Event("tablero:desactivar"));
   }
 }
 
 function obtenerFiltrosActivos() {
   return Object.fromEntries(
     Object.entries(controlesFiltros).map(([nombre, control]) => [nombre, control.value]),
+  );
+}
+
+function cambiarModoMapa(modo) {
+  const mostrarPuntos = modo === "puntos";
+  botonesModoMapa.calor.setAttribute("aria-pressed", String(!mostrarPuntos));
+  botonesModoMapa.puntos.setAttribute("aria-pressed", String(mostrarPuntos));
+  controlPuntos.checked = mostrarPuntos;
+  controlPuntos.dispatchEvent(new Event("change"));
+  window.dispatchEvent(
+    new CustomEvent("mapa:modo-visualizacion", {
+      detail: { modo },
+    }),
   );
 }
 
@@ -480,10 +652,10 @@ function renderizarResumen(reportes) {
     return;
   }
 
-  for (const prioridad of resumen) {
+  for (const [indice, prioridad] of resumen.entries()) {
     const elemento = document.createElement("li");
     const titulo = document.createElement("strong");
-    titulo.textContent = prioridad.cuadra;
+    titulo.textContent = `${indice + 1}. ${prioridad.cuadra}`;
     elemento.append(titulo);
 
     const puntaje = document.createElement("p");
@@ -636,6 +808,18 @@ function actualizarTablero() {
     obtenerFiltrosActivos(),
     criterios,
   );
+  const reportesCompletos = obtenerReportesActuales();
+  textoConteoReportes.textContent =
+    `Mostrando ${reportesFiltrados.length} de ${reportesCompletos.length} reportes`;
+  conteosTablero.total.textContent = String(reportesFiltrados.length);
+  for (const nivel of ["alto", "medio", "bajo"]) {
+    conteosTablero[nivel].textContent = String(
+      reportesFiltrados.filter(
+        (reporte) => reporte.criticidad.nivel.toLowerCase() === nivel,
+      ).length,
+    );
+  }
+  renderizarBarrasCategorias(reportesFiltrados);
   window.dispatchEvent(
     new CustomEvent("reportes:filtrados", {
       detail: { reportes: reportesFiltrados },
@@ -720,6 +904,8 @@ async function prepararFotoParaCensura(archivo) {
   fotoConfirmada = "";
   historialCensura = [];
   seleccionCensura = null;
+  confirmacionPrivacidadFoto.checked = false;
+  contadorCensura.textContent = "0 zonas censuradas";
   marcoSeleccionCensura.style.display = "none";
   botonDeshacerCensura.disabled = true;
   botonConfirmarFoto.disabled = true;
@@ -727,14 +913,15 @@ async function prepararFotoParaCensura(archivo) {
   lienzoCensura.height = 0;
 
   if (!archivo) {
-    editorCensura.hidden = true;
+    cambiarVista("captura");
     botonGuardarReporte.disabled = false;
     estadoCensura.textContent = "";
     return;
   }
 
-  editorCensura.hidden = false;
+  cambiarVista("censura");
   botonGuardarReporte.disabled = true;
+  estadoFoto.textContent = "Foto pendiente de censura.";
   estadoCensura.textContent = "Cargando la foto para censurar…";
   if (!archivo.type.startsWith("image/")) {
     estadoCensura.textContent = "El archivo seleccionado no es una imagen.";
@@ -762,9 +949,9 @@ async function prepararFotoParaCensura(archivo) {
     contexto.fillRect(0, 0, ancho, alto);
     contexto.drawImage(imagen, 0, 0, ancho, alto);
 
-    botonConfirmarFoto.disabled = false;
+    botonConfirmarFoto.disabled = !confirmacionPrivacidadFoto.checked;
     estadoCensura.textContent =
-      "Arrastra sobre cada rostro, placa o dato personal. Confirma la foto cuando hayas terminado.";
+      "Pixeliza las zonas necesarias y marca la confirmación de privacidad para continuar.";
   } catch (error) {
     if (numeroActual !== numeroCargaFoto) {
       return;
@@ -809,6 +996,7 @@ function manejarInicioSeleccion(evento) {
 
   evento.preventDefault();
   invalidarConfirmacionFoto();
+  confirmacionPrivacidadFoto.checked = false;
   botonConfirmarFoto.disabled = true;
   seleccionCensura = {
     pointerId: evento.pointerId,
@@ -862,7 +1050,7 @@ function manejarFinSeleccion(evento) {
   const alto = Math.min(lienzoCensura.height, Math.ceil(Math.max(seleccionCensura.yInicial, seleccionCensura.yFinal))) - y;
   seleccionCensura = null;
   marcoSeleccionCensura.style.display = "none";
-  botonConfirmarFoto.disabled = false;
+  botonConfirmarFoto.disabled = !confirmacionPrivacidadFoto.checked;
 
   if (ancho < TAMANO_BLOQUE_CENSURA || alto < TAMANO_BLOQUE_CENSURA) {
     estadoCensura.textContent = "El área debe medir al menos 12 × 12 píxeles para censurarla.";
@@ -889,7 +1077,11 @@ function manejarFinSeleccion(evento) {
     contexto.drawImage(lienzoPixelado, 0, 0, anchoReducido, altoReducido, x, y, ancho, alto);
 
     historialCensura.push({ x, y, copia });
+    contadorCensura.textContent =
+      `${historialCensura.length} ${historialCensura.length === 1 ? "zona censurada" : "zonas censuradas"}`;
     botonDeshacerCensura.disabled = false;
+    confirmacionPrivacidadFoto.checked = false;
+    botonConfirmarFoto.disabled = true;
     estadoCensura.textContent = "Área censurada. Puedes marcar otra zona o deshacer.";
   } catch (error) {
     console.error("No se pudo censurar el área seleccionada.", error);
@@ -903,7 +1095,7 @@ function manejarCancelacionSeleccion(evento) {
   }
   seleccionCensura = null;
   marcoSeleccionCensura.style.display = "none";
-  botonConfirmarFoto.disabled = false;
+  botonConfirmarFoto.disabled = !confirmacionPrivacidadFoto.checked;
   estadoCensura.textContent = "Selección cancelada. Puedes volver a marcar el área.";
 }
 
@@ -916,8 +1108,11 @@ function deshacerCensura() {
   try {
     obtenerContextoCensura().putImageData(ultimaCensura.copia, ultimaCensura.x, ultimaCensura.y);
     invalidarConfirmacionFoto();
-    botonConfirmarFoto.disabled = false;
+    confirmacionPrivacidadFoto.checked = false;
+    botonConfirmarFoto.disabled = true;
     botonDeshacerCensura.disabled = historialCensura.length === 0;
+    contadorCensura.textContent =
+      `${historialCensura.length} ${historialCensura.length === 1 ? "zona censurada" : "zonas censuradas"}`;
     estadoCensura.textContent = "Se deshizo la última censura. Confirma la foto antes de guardar.";
   } catch (error) {
     historialCensura.push(ultimaCensura);
@@ -927,8 +1122,14 @@ function deshacerCensura() {
 }
 
 function confirmarFotoCensurada() {
-  if (!entradaFoto.files[0] || !lienzoCensura.width || seleccionCensura) {
-    estadoCensura.textContent = "Carga una foto y termina cualquier selección antes de confirmar.";
+  if (
+    !entradaFoto.files[0] ||
+    !lienzoCensura.width ||
+    seleccionCensura ||
+    !confirmacionPrivacidadFoto.checked
+  ) {
+    estadoCensura.textContent =
+      "Termina la selección de zonas y confirma que la foto no muestra rostros ni placas.";
     return;
   }
 
@@ -938,7 +1139,9 @@ function confirmarFotoCensurada() {
       throw new Error("El navegador no pudo exportar la foto censurada.");
     }
     botonGuardarReporte.disabled = false;
+    estadoFoto.textContent = "Foto censurada lista.";
     estadoCensura.textContent = "Foto confirmada. Se guardará únicamente esta versión censurada.";
+    cambiarVista("captura");
   } catch (error) {
     fotoConfirmada = "";
     botonGuardarReporte.disabled = true;
@@ -953,13 +1156,23 @@ function reiniciarEditorCensura() {
   historialCensura = [];
   seleccionCensura = null;
   marcoSeleccionCensura.style.display = "none";
+  confirmacionPrivacidadFoto.checked = false;
+  contadorCensura.textContent = "0 zonas censuradas";
   lienzoCensura.width = 0;
   lienzoCensura.height = 0;
-  editorCensura.hidden = true;
   botonDeshacerCensura.disabled = true;
   botonConfirmarFoto.disabled = true;
   botonGuardarReporte.disabled = false;
+  estadoFoto.textContent = "No se adjuntó una foto.";
   estadoCensura.textContent = "";
+}
+
+function abrirSelectorFoto() {
+  entradaFoto.value = "";
+  reiniciarEditorCensura();
+  cambiarVista("captura");
+  estadoFoto.textContent = "Selecciona una foto para censurar.";
+  entradaFoto.click();
 }
 
 function mensajeErrorAlmacenamiento(error) {
@@ -1057,7 +1270,10 @@ function manejarUbicacionSeleccionada(evento) {
   }
 
   ubicacionSeleccionada = { lat, lng };
-  mostrarEstado(estadoUbicacion, `Ubicación seleccionada: ${lat.toFixed(5)}, ${lng.toFixed(5)}.`);
+  mostrarEstado(
+    estadoUbicacion,
+    `Punto marcado (${lat.toFixed(5)}, ${lng.toFixed(5)}). Selecciona la cuadra; la detección espera el GeoJSON oficial.`,
+  );
 }
 
 function pedirGeolocalizacion() {
@@ -1094,6 +1310,17 @@ function guardarReporte(evento) {
   if (!formulario.reportValidity()) {
     return;
   }
+  const datos = new FormData(formulario);
+  if (!categoriasPermitidas.has(datos.get("categoria"))) {
+    mostrarEstado(estadoCaptura, "Elige una categoría antes de enviar el reporte.");
+    botonesCategoria[0]?.focus();
+    return;
+  }
+  if (!actoresPermitidos.has(datos.get("actor"))) {
+    mostrarEstado(estadoCaptura, "Elige un tipo de actor antes de enviar el reporte.");
+    botonesActor[0]?.focus();
+    return;
+  }
   const archivoFoto = entradaFoto.files[0];
   if (archivoFoto && !fotoConfirmada) {
     mostrarEstado(estadoCaptura, "Confirma la foto censurada antes de guardar el reporte.");
@@ -1105,7 +1332,6 @@ function guardarReporte(evento) {
     return;
   }
 
-  const datos = new FormData(formulario);
   if (!vias.some((via) => via.id === datos.get("cuadra"))) {
     mostrarEstado(estadoCaptura, "Selecciona una cuadra disponible en las sugerencias.");
     selectorCuadra.focus();
@@ -1133,9 +1359,10 @@ function guardarReporte(evento) {
     publicarReportesActualizados();
     formulario.reset();
     reiniciarEditorCensura();
-    ubicacionSeleccionada = null;
-    window.dispatchEvent(new Event("mapa:limpiar-seleccion"));
-    mostrarEstado(estadoUbicacion, "Toca el mapa o usa tu ubicación.");
+    for (const boton of [...botonesCategoria, ...botonesActor]) {
+      boton.setAttribute("aria-pressed", "false");
+    }
+    actualizarVistaCriticidad();
     mostrarEstado(estadoCaptura, `Reporte ${reporte.id} guardado en este dispositivo.`);
   } catch (error) {
     mostrarEstado(estadoCaptura, `No se pudo guardar el reporte: ${error.message}`);
@@ -1168,18 +1395,53 @@ async function inicializar() {
   cargarOpcionesCuadra();
   datosListos = true;
   publicarReportesActualizados();
-  mostrarEstado(estadoUbicacion, "Toca el mapa o usa tu ubicación dentro del perímetro aproximado (no oficial).");
+  actualizarVistaCriticidad();
+  mostrarEstado(
+    estadoUbicacion,
+    "Marca el punto y selecciona su cuadra; la detección automática espera el GeoJSON oficial.",
+  );
   mostrarEstado(estadoCaptura, "Listo para registrar un reporte.");
 }
 
 formulario.addEventListener("submit", guardarReporte);
 entradaFoto.addEventListener("change", () => prepararFotoParaCensura(entradaFoto.files[0]));
+botonTomarFoto.addEventListener("click", abrirSelectorFoto);
+botonElegirOtraFoto.addEventListener("click", abrirSelectorFoto);
+botonCancelarCensura.addEventListener("click", () => {
+  entradaFoto.value = "";
+  reiniciarEditorCensura();
+  cambiarVista("captura");
+});
+confirmacionPrivacidadFoto.addEventListener("change", () => {
+  if (!confirmacionPrivacidadFoto.checked) {
+    fotoConfirmada = "";
+    botonGuardarReporte.disabled = Boolean(entradaFoto.files[0]);
+  }
+  botonConfirmarFoto.disabled =
+    !confirmacionPrivacidadFoto.checked || !lienzoCensura.width || Boolean(seleccionCensura);
+});
 lienzoCensura.addEventListener("pointerdown", manejarInicioSeleccion);
 lienzoCensura.addEventListener("pointermove", manejarMovimientoSeleccion);
 lienzoCensura.addEventListener("pointerup", manejarFinSeleccion);
 lienzoCensura.addEventListener("pointercancel", manejarCancelacionSeleccion);
 botonDeshacerCensura.addEventListener("click", deshacerCensura);
 botonConfirmarFoto.addEventListener("click", confirmarFotoCensurada);
+document.querySelector("#reporte-categoria").addEventListener("change", actualizarVistaCriticidad);
+document.querySelector("#reporte-actor").addEventListener("change", actualizarVistaCriticidad);
+selectorCuadra.addEventListener("input", actualizarVistaCriticidad);
+for (const boton of botonesCategoria) {
+  boton.addEventListener("click", () => {
+    document.querySelector("#reporte-categoria").value = boton.dataset.seleccionCategoria;
+    actualizarSeleccionGrupo(botonesCategoria, boton.dataset.seleccionCategoria);
+    actualizarVistaCriticidad();
+  });
+}
+for (const boton of botonesActor) {
+  boton.addEventListener("click", () => {
+    document.querySelector("#reporte-actor").value = boton.dataset.seleccionActor;
+    actualizarSeleccionGrupo(botonesActor, boton.dataset.seleccionActor);
+  });
+}
 botonGeolocalizacion.addEventListener("click", pedirGeolocalizacion);
 botonLimpiarUbicacion.addEventListener("click", () => {
   ubicacionSeleccionada = null;
@@ -1188,11 +1450,13 @@ botonLimpiarUbicacion.addEventListener("click", () => {
 });
 botonVistaCaptura.addEventListener("click", () => cambiarVista("captura"));
 botonVistaTablero.addEventListener("click", () => cambiarVista("tablero"));
-botonVistaInfracciones.addEventListener("click", () => cambiarVista("infracciones"));
-botonVistaEstadisticas.addEventListener("click", () => cambiarVista("estadisticas"));
+botonNuevoReporte.addEventListener("click", () => cambiarVista("captura"));
 for (const control of Object.values(controlesFiltros)) {
   control.addEventListener("change", actualizarTablero);
+  control.addEventListener("input", actualizarTablero);
 }
+botonesModoMapa.calor.addEventListener("click", () => cambiarModoMapa("calor"));
+botonesModoMapa.puntos.addEventListener("click", () => cambiarModoMapa("puntos"));
 document.querySelector("#boton-exportar").addEventListener("click", exportarReportes);
 document.querySelector("#boton-importar").addEventListener("click", () => {
   selectorArchivoImportar.click();
