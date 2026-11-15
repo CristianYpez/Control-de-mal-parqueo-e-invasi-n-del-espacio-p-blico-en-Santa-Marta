@@ -26,6 +26,7 @@ let capaCalor;
 let capaPuntos;
 let reportesValidos = [];
 let reportesFueraDelArea = 0;
+let tableroActivo = false;
 
 function puntoEnSegmento(latitud, longitud, inicio, fin) {
   const productoCruzado =
@@ -190,10 +191,12 @@ function dibujarReportes(reportes) {
       .addTo(capaPuntos);
   }
 
-  if (controlPuntos.checked && !mapaTablero.hasLayer(capaPuntos)) {
-    capaPuntos.addTo(mapaTablero);
-  } else if (!controlPuntos.checked && mapaTablero.hasLayer(capaPuntos)) {
-    mapaTablero.removeLayer(capaPuntos);
+  if (tableroActivo) {
+    if (controlPuntos.checked && !mapaTablero.hasLayer(capaPuntos)) {
+      capaPuntos.addTo(mapaTablero);
+    } else if (!controlPuntos.checked && mapaTablero.hasLayer(capaPuntos)) {
+      mapaTablero.removeLayer(capaPuntos);
+    }
   }
 
   if (reportesFueraDelArea > 0) {
@@ -207,11 +210,17 @@ function dibujarReportes(reportes) {
 }
 
 function activarCapas() {
-  mapaTablero.invalidateSize();
-  if (!mapaTablero.hasLayer(capaCalor)) {
-    capaCalor.addTo(mapaTablero);
-  }
-  dibujarReportes(reportesValidos);
+  tableroActivo = true;
+  requestAnimationFrame(() => {
+    mapaTablero.invalidateSize();
+    if (!mapaTablero.hasLayer(capaCalor)) {
+      capaCalor.addTo(mapaTablero);
+    }
+    if (controlPuntos.checked && !mapaTablero.hasLayer(capaPuntos)) {
+      capaPuntos.addTo(mapaTablero);
+    }
+    dibujarReportes(reportesValidos);
+  });
 }
 
 function inicializarMapas() {
@@ -237,8 +246,8 @@ function inicializarMapas() {
       0.82: "#fdae61",
       1: "#d7191c",
     },
-  }).addTo(mapaTablero);
-  capaPuntos = L.layerGroup().addTo(mapaTablero);
+  });
+  capaPuntos = L.layerGroup();
 
   mapaCaptura.on("click", ({ latlng }) => seleccionarUbicacion(latlng.lat, latlng.lng));
   window.addEventListener("mapa:solicitar-ubicacion", ({ detail }) => {
@@ -263,9 +272,6 @@ function inicializarMapas() {
     }
   });
 
-  window.addEventListener("tablero:activar", () => {
-    requestAnimationFrame(() => mapaTablero.invalidateSize());
-  });
 }
 
 try {
