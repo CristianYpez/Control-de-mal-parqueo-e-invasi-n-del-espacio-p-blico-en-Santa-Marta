@@ -36,18 +36,23 @@ const PERIMETRO_APROXIMADO = [
 
 const mapaCapturaElemento = document.querySelector("#mapa-captura");
 const mapaTableroElemento = document.querySelector("#mapa-tablero");
+const mapaInfraccionesElemento = document.querySelector("#mapa-infracciones");
 const estadoTablero = document.querySelector("#estado-tablero");
 const estadoUbicacion = document.querySelector("#estado-ubicacion");
+const estadoInfracciones = document.querySelector("#estado-infracciones");
 const controlPuntos = document.querySelector("#mostrar-puntos");
 
 let mapaCaptura;
 let mapaTablero;
+let mapaInfracciones;
 let marcadorUbicacion;
 let capaCalor;
 let capaPuntos;
+let capaInfracciones;
 let reportesValidos = [];
 let reportesFueraDelArea = 0;
 let tableroActivo = false;
+const marcadoresInfracciones = new Map();
 
 function puntoEnSegmento(latitud, longitud, inicio, fin) {
   const productoCruzado =
@@ -156,6 +161,8 @@ function crearMapa(elemento, opciones = {}) {
 function mostrarEstadoMapa(elemento, mensaje) {
   if (elemento === mapaCapturaElemento) {
     estadoUbicacion.textContent = mensaje;
+  } else if (elemento === mapaInfraccionesElemento) {
+    estadoInfracciones.textContent = mensaje;
   } else {
     estadoTablero.textContent = mensaje;
   }
@@ -168,6 +175,7 @@ function crearContenidoPopup(reporte) {
   contenido.append(titulo);
 
   const detalles = [
+    `Dirección: ${reporte.direccion?.trim() || `Cuadra ${reporte.cuadra}`}`,
     `Cuadra: ${reporte.cuadra}`,
     `Situación: ${reporte.categoria}`,
     `Tipo de actor: ${reporte.actor}`,
@@ -197,6 +205,19 @@ function dibujarReportes(reportes) {
     reportesValidos.push(reporte);
   }
 
+  if (reportesFueraDelArea > 0) {
+    estadoTablero.textContent =
+      `${reportesFueraDelArea} reporte(s) no se muestran: están fuera del perímetro aproximado o no tienen criticidad válida.`;
+  } else if (reportesValidos.length === 0) {
+    estadoTablero.textContent = "No hay reportes para mostrar con estos filtros.";
+  } else {
+    estadoTablero.textContent = `${reportesValidos.length} reporte(s) dentro del perímetro aproximado.`;
+  }
+
+  if (!tableroActivo) {
+    return;
+  }
+
   capaCalor.setLatLngs(
     reportesValidos.map((reporte) => [
       reporte.lat,
@@ -212,27 +233,63 @@ function dibujarReportes(reportes) {
       .addTo(capaPuntos);
   }
 
-  if (tableroActivo) {
-    if (controlPuntos.checked && !mapaTablero.hasLayer(capaPuntos)) {
-      capaPuntos.addTo(mapaTablero);
-    } else if (!controlPuntos.checked && mapaTablero.hasLayer(capaPuntos)) {
-      mapaTablero.removeLayer(capaPuntos);
-    }
+  if (controlPuntos.checked && !mapaTablero.hasLayer(capaPuntos)) {
+    capaPuntos.addTo(mapaTablero);
+  } else if (!controlPuntos.checked && mapaTablero.hasLayer(capaPuntos)) {
+    mapaTablero.removeLayer(capaPuntos);
+  }
+}
+
+function dibujarInfracciones(reportes) {
+  capaInfracciones.clearLayers();
+  marcadoresInfracciones.clear();
+
+  const reportesValidos = reportes.filter(
+    (reporte) =>
+      estaDentroDelPerimetro(reporte.lat, reporte.lng) &&
+      typeof reporte.criticidad?.puntaje === "number",
+  );
+  for (const reporte of reportesValidos) {
+    const marcador = L.marker([reporte.lat, reporte.lng])
+      .bindPopup(crearContenidoPopup(reporte))
+      .addTo(capaInfracciones);
+    marcadoresInfracciones.set(reporte.id, marcador);
   }
 
-  if (reportesFueraDelArea > 0) {
-    estadoTablero.textContent =
-      `${reportesFueraDelArea} reporte(s) no se muestran: están fuera del perímetro aproximado o no tienen criticidad válida.`;
-  } else if (reportesValidos.length === 0) {
-    estadoTablero.textContent = "No hay reportes para mostrar con estos filtros.";
-  } else {
-    estadoTablero.textContent = `${reportesValidos.length} reporte(s) dentro del perímetro aproximado.`;
+  estadoInfracciones.textContent =
+    reportesValidos.length === 0
+      ? "No hay infracciones para mostrar."
+      : `${reportesValidos.length} infracción(es) en el mapa. Selecciona una tarjeta para ver su ubicación.`;
+}
+
+function activarMapaInfracciones() {
+  requestAnimationFrame(() => mapaInfracciones.invalidateSize());
+}
+
+function activarMapaCaptura() {
+  requestAnimationFrame(() => mapaCaptura.invalidateSize());
+}
+
+function verInfraccionEnMapa(id) {
+  const marcador = marcadoresInfracciones.get(id);
+  if (!marcador) {
+    estadoInfracciones.textContent = "No se encontró la ubicación de esa infracción.";
+    return;
   }
+
+  const ubicacion = marcador.getLatLng();
+  mapaInfracciones.setView(ubicacion, Math.max(mapaInfracciones.getZoom(), 16));
+  marcador.openPopup();
+  estadoInfracciones.textContent = `Mostrando la ubicación de ${id}.`;
 }
 
 function activarCapas() {
   tableroActivo = true;
   requestAnimationFrame(() => {
+    if (!tableroActivo) {
+      return;
+    }
+
     mapaTablero.invalidateSize();
     if (!mapaTablero.hasLayer(capaCalor)) {
       capaCalor.addTo(mapaTablero);
@@ -242,6 +299,10 @@ function activarCapas() {
     }
     dibujarReportes(reportesValidos);
   });
+}
+
+function desactivarCapas() {
+  tableroActivo = false;
 }
 
 function inicializarMapas() {
@@ -254,6 +315,7 @@ function inicializarMapas() {
 
   mapaCaptura = crearMapa(mapaCapturaElemento);
   mapaTablero = crearMapa(mapaTableroElemento);
+  mapaInfracciones = crearMapa(mapaInfraccionesElemento);
   capaCalor = L.heatLayer([], {
     radius: 30,
     blur: 20,
@@ -269,6 +331,7 @@ function inicializarMapas() {
     },
   });
   capaPuntos = L.layerGroup();
+  capaInfracciones = L.layerGroup().addTo(mapaInfracciones);
 
   mapaCaptura.on("click", ({ latlng }) => seleccionarUbicacion(latlng.lat, latlng.lng));
   window.addEventListener("mapa:solicitar-ubicacion", ({ detail }) => {
@@ -278,12 +341,20 @@ function inicializarMapas() {
     marcadorUbicacion?.remove();
     marcadorUbicacion = null;
   });
+  window.addEventListener("captura:activar", activarMapaCaptura);
   window.addEventListener("tablero:activar", activarCapas);
+  window.addEventListener("tablero:desactivar", desactivarCapas);
   window.addEventListener("reportes:actualizados", ({ detail }) => {
-    dibujarReportes(detail?.reportes ?? []);
+    const reportes = detail?.reportes ?? [];
+    dibujarReportes(reportes);
+    dibujarInfracciones(reportes);
   });
   window.addEventListener("reportes:filtrados", ({ detail }) => {
     dibujarReportes(detail?.reportes ?? []);
+  });
+  window.addEventListener("infracciones:activar", activarMapaInfracciones);
+  window.addEventListener("infraccion:ver-en-mapa", ({ detail }) => {
+    verInfraccionEnMapa(detail?.id);
   });
   controlPuntos.addEventListener("change", () => {
     if (controlPuntos.checked) {
@@ -301,6 +372,8 @@ try {
   mapaCapturaElemento.textContent = `No se pudo iniciar el mapa: ${error.message}`;
   estadoUbicacion.textContent = `No se pudo iniciar el mapa: ${error.message}`;
   estadoTablero.textContent = `No se pudo iniciar el mapa: ${error.message}`;
+  mapaInfraccionesElemento.textContent = `No se pudo iniciar el mapa: ${error.message}`;
+  estadoInfracciones.textContent = `No se pudo iniciar el mapa: ${error.message}`;
   console.error(error);
 }
 

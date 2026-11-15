@@ -162,7 +162,7 @@
 
       .navegacion {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0.6rem;
         margin-bottom: 1rem;
       }
@@ -223,6 +223,7 @@
       }
 
       select,
+      input:not([type="file"]):not([type="checkbox"]),
       input[type="file"] {
         width: 100%;
         min-height: 44px;
@@ -293,6 +294,55 @@
         padding-left: 1.25rem;
       }
 
+      .explorador-infracciones {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .lista-infracciones {
+        display: grid;
+        max-height: 34rem;
+        align-content: start;
+        gap: 0.75rem;
+        overflow-y: auto;
+        padding: 0.15rem;
+      }
+
+      .tarjeta-infraccion {
+        padding: 1rem;
+        border: 1px solid var(--borde);
+        border-radius: 0.55rem;
+        background: var(--superficie);
+      }
+
+      .tarjeta-infraccion h3 {
+        margin: 0 0 0.65rem;
+        font-size: 1rem;
+      }
+
+      .detalle-infraccion {
+        display: grid;
+        grid-template-columns: minmax(5.5rem, auto) 1fr;
+        gap: 0.35rem 0.6rem;
+        margin: 0 0 0.8rem;
+        font-size: 0.9rem;
+      }
+
+      .detalle-infraccion dt {
+        color: var(--texto-suave);
+        font-weight: 700;
+      }
+
+      .detalle-infraccion dd {
+        min-width: 0;
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+
+      .tarjeta-infraccion button {
+        width: 100%;
+      }
+
       .nota-privacidad {
         margin-top: 1.25rem;
         padding: 0.85rem 1rem;
@@ -342,6 +392,10 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
+        .explorador-infracciones {
+          grid-template-columns: minmax(0, 1.1fr) minmax(17rem, 0.9fr);
+        }
+
         .campo-ancho {
           grid-column: 1 / -1;
         }
@@ -375,6 +429,7 @@
         .encabezado,
         .navegacion,
         #vista-captura,
+        #vista-infracciones,
         #controles-tablero,
         #tablero-mapa,
         .nota-privacidad,
@@ -436,6 +491,9 @@
         <button id="boton-vista-tablero" type="button" aria-controls="vista-tablero" aria-pressed="false">
           Ver tablero
         </button>
+        <button id="boton-vista-infracciones" type="button" aria-controls="vista-infracciones" aria-pressed="false">
+          Infracciones
+        </button>
       </nav>
 
       <section id="vista-captura" aria-labelledby="titulo-captura">
@@ -446,9 +504,16 @@
           <form id="formulario-reporte" class="formulario">
             <div class="campo">
               <label for="reporte-cuadra">Cuadra</label>
-              <select id="reporte-cuadra" name="cuadra" required>
-                <option value="">Selecciona la cuadra</option>
-              </select>
+              <input
+                id="reporte-cuadra"
+                name="cuadra"
+                list="opciones-cuadras"
+                autocomplete="off"
+                placeholder="Busca una cuadra"
+                required
+              />
+              <datalist id="opciones-cuadras"></datalist>
+              <span class="ayuda">Escribe para buscar; se agregan opciones desde el catálogo de vías.</span>
             </div>
 
             <div class="campo">
@@ -470,6 +535,16 @@
                 <option value="vehiculo_carga">Vehículo de carga</option>
                 <option value="mobiliario_comercial">Mobiliario comercial</option>
               </select>
+            </div>
+
+            <div class="campo campo-ancho">
+              <label for="reporte-direccion">Dirección o referencia (opcional)</label>
+              <input
+                id="reporte-direccion"
+                name="direccion"
+                autocomplete="street-address"
+                placeholder="Ej.: Carrera 5 con calle 14"
+              />
             </div>
 
             <div class="campo campo-ancho">
@@ -509,9 +584,13 @@
           <div class="filtros">
             <div class="campo">
               <label for="filtro-cuadra">Cuadra</label>
-              <select id="filtro-cuadra">
-                <option value="">Todas las cuadras</option>
-              </select>
+              <input
+                id="filtro-cuadra"
+                list="opciones-cuadras-filtro"
+                placeholder="Todas las cuadras"
+                autocomplete="off"
+              />
+              <datalist id="opciones-cuadras-filtro"></datalist>
             </div>
             <div class="campo">
               <label for="filtro-franja">Franja horaria</label>
@@ -569,6 +648,27 @@
             <li class="ayuda">El resumen aparecerá cuando se carguen los reportes.</li>
           </ol>
         </section>
+      </section>
+
+      <section id="vista-infracciones" aria-labelledby="titulo-infracciones" hidden>
+        <div class="panel seccion">
+          <h2 id="titulo-infracciones">Infracciones registradas</h2>
+          <p class="ayuda">Explora los reportes. Cada tarjeta muestra su ubicación, actor y situación; usa el botón para abrirla en el mapa.</p>
+          <div class="explorador-infracciones">
+            <div>
+              <div
+                id="mapa-infracciones"
+                class="mapa"
+                role="application"
+                aria-label="Mapa de las infracciones registradas"
+              ></div>
+              <p id="estado-infracciones" class="estado" role="status" aria-live="polite"></p>
+            </div>
+            <div id="lista-infracciones" class="lista-infracciones" aria-live="polite">
+              <p class="ayuda">Las infracciones aparecerán cuando se carguen los reportes.</p>
+            </div>
+          </div>
+        </div>
       </section>
 
       <aside class="nota-privacidad">

@@ -6,6 +6,8 @@ import { estaDentroDelPerimetro } from "./mapa.js";
 const CLAVE_ALMACENAMIENTO = "santaMartaReportesV1";
 const formulario = document.querySelector("#formulario-reporte");
 const selectorCuadra = document.querySelector("#reporte-cuadra");
+const opcionesCuadras = document.querySelector("#opciones-cuadras");
+const opcionesCuadrasFiltro = document.querySelector("#opciones-cuadras-filtro");
 const entradaFoto = document.querySelector("#reporte-foto");
 const estadoCaptura = document.querySelector("#estado-captura");
 const estadoUbicacion = document.querySelector("#estado-ubicacion");
@@ -13,10 +15,13 @@ const botonGeolocalizacion = document.querySelector("#boton-geolocalizacion");
 const botonLimpiarUbicacion = document.querySelector("#boton-limpiar-ubicacion");
 const botonVistaCaptura = document.querySelector("#boton-vista-captura");
 const botonVistaTablero = document.querySelector("#boton-vista-tablero");
+const botonVistaInfracciones = document.querySelector("#boton-vista-infracciones");
 const vistaCaptura = document.querySelector("#vista-captura");
 const vistaTablero = document.querySelector("#vista-tablero");
+const vistaInfracciones = document.querySelector("#vista-infracciones");
 const estadoTablero = document.querySelector("#estado-tablero");
 const listaResumen = document.querySelector("#lista-resumen");
+const listaInfracciones = document.querySelector("#lista-infracciones");
 const selectorArchivoImportar = document.querySelector("#archivo-importar");
 const controlesFiltros = {
   cuadra: document.querySelector("#filtro-cuadra"),
@@ -29,6 +34,17 @@ const categoriasPermitidas = new Set([
   "bloqueo_rampa_cebra_paradero",
   "invasion_anden",
 ]);
+const nombresCategorias = {
+  doble_fila: "Vehículo en doble fila",
+  bloqueo_rampa_cebra_paradero: "Bloqueo de rampa, cebra o paradero",
+  invasion_anden: "Invasión del andén",
+};
+const nombresActores = {
+  vehiculo_particular: "Vehículo particular",
+  motocicleta: "Motocicleta",
+  vehiculo_carga: "Vehículo de carga",
+  mobiliario_comercial: "Mobiliario comercial",
+};
 const actoresPermitidos = new Set([
   "vehiculo_particular",
   "motocicleta",
@@ -87,6 +103,9 @@ function normalizarReporte(reporte) {
   if (typeof reporte.foto !== "string") {
     throw new Error(`El reporte ${reporte.id} debe tener una ruta de foto o una cadena vacía.`);
   }
+  if (reporte.direccion !== undefined && typeof reporte.direccion !== "string") {
+    throw new Error(`La dirección del reporte ${reporte.id} debe ser texto.`);
+  }
   if (!estaDentroDelPerimetro(reporte.lat, reporte.lng)) {
     throw new Error(`El reporte ${reporte.id} está fuera del perímetro urbano aproximado.`);
   }
@@ -99,6 +118,7 @@ function normalizarReporte(reporte) {
     lat: reporte.lat,
     lng: reporte.lng,
     cuadra: reporte.cuadra,
+    direccion: reporte.direccion?.trim() ?? "",
     categoria: reporte.categoria,
     actor: reporte.actor,
     foto: reporte.foto,
@@ -125,31 +145,40 @@ function publicarReportesActualizados() {
     }),
   );
   actualizarTablero();
+  renderizarInfracciones(obtenerReportesActuales());
 }
 
 function cargarOpcionesCuadra() {
   for (const via of vias) {
     const opcionCaptura = document.createElement("option");
     opcionCaptura.value = via.id;
-    opcionCaptura.textContent = via.id;
-    selectorCuadra.append(opcionCaptura);
+    opcionesCuadras.append(opcionCaptura);
 
     const opcionFiltro = document.createElement("option");
     opcionFiltro.value = via.id;
-    opcionFiltro.textContent = via.id;
-    document.querySelector("#filtro-cuadra").append(opcionFiltro);
+    opcionesCuadrasFiltro.append(opcionFiltro);
   }
 }
 
 function cambiarVista(nombreVista) {
   const mostrarCaptura = nombreVista === "captura";
+  const mostrarTablero = nombreVista === "tablero";
+  const mostrarInfracciones = nombreVista === "infracciones";
   vistaCaptura.hidden = !mostrarCaptura;
-  vistaTablero.hidden = mostrarCaptura;
+  vistaTablero.hidden = !mostrarTablero;
+  vistaInfracciones.hidden = !mostrarInfracciones;
   botonVistaCaptura.setAttribute("aria-pressed", String(mostrarCaptura));
-  botonVistaTablero.setAttribute("aria-pressed", String(!mostrarCaptura));
+  botonVistaTablero.setAttribute("aria-pressed", String(mostrarTablero));
+  botonVistaInfracciones.setAttribute("aria-pressed", String(mostrarInfracciones));
 
-  if (!mostrarCaptura) {
+  if (mostrarCaptura) {
+    window.dispatchEvent(new Event("tablero:desactivar"));
+    window.dispatchEvent(new Event("captura:activar"));
+  } else if (mostrarTablero) {
     window.dispatchEvent(new Event("tablero:activar"));
+  } else if (mostrarInfracciones) {
+    window.dispatchEvent(new Event("tablero:desactivar"));
+    window.dispatchEvent(new Event("infracciones:activar"));
   }
 }
 
@@ -193,6 +222,76 @@ function renderizarResumen(reportes) {
       : "Regla aplicada: ninguna; no se cumplieron las condiciones.";
     elemento.append(regla);
     listaResumen.append(elemento);
+  }
+}
+
+function agregarDetalleInfraccion(contenedor, etiqueta, valor) {
+  const nombre = document.createElement("dt");
+  nombre.textContent = etiqueta;
+  const detalle = document.createElement("dd");
+  detalle.textContent = valor;
+  contenedor.append(nombre, detalle);
+}
+
+function renderizarInfracciones(reportes) {
+  listaInfracciones.replaceChildren();
+
+  if (reportes.length === 0) {
+    const mensaje = document.createElement("p");
+    mensaje.className = "ayuda";
+    mensaje.textContent = "Todavía no hay infracciones para mostrar.";
+    listaInfracciones.append(mensaje);
+    return;
+  }
+
+  const reportesRecientes = [...reportes].sort((primero, segundo) =>
+    segundo.fecha_hora.localeCompare(primero.fecha_hora),
+  );
+  for (const reporte of reportesRecientes) {
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "tarjeta-infraccion";
+
+    const titulo = document.createElement("h3");
+    titulo.textContent = `${reporte.id} · ${reporte.criticidad.nivel}`;
+    tarjeta.append(titulo);
+
+    const detalles = document.createElement("dl");
+    detalles.className = "detalle-infraccion";
+    agregarDetalleInfraccion(
+      detalles,
+      "Dirección",
+      reporte.direccion || `Cuadra ${reporte.cuadra}`,
+    );
+    agregarDetalleInfraccion(detalles, "Actor", nombresActores[reporte.actor] ?? reporte.actor);
+    agregarDetalleInfraccion(
+      detalles,
+      "Situación",
+      nombresCategorias[reporte.categoria] ?? reporte.categoria,
+    );
+    agregarDetalleInfraccion(
+      detalles,
+      "Coordenadas",
+      `${reporte.lat.toFixed(5)}, ${reporte.lng.toFixed(5)}`,
+    );
+    agregarDetalleInfraccion(
+      detalles,
+      "Fecha",
+      reporte.fecha_hora.replace("T", " · "),
+    );
+    tarjeta.append(detalles);
+
+    const botonUbicacion = document.createElement("button");
+    botonUbicacion.type = "button";
+    botonUbicacion.textContent = "Ver en el mapa";
+    botonUbicacion.addEventListener("click", () => {
+      window.dispatchEvent(
+        new CustomEvent("infraccion:ver-en-mapa", {
+          detail: { id: reporte.id },
+        }),
+      );
+    });
+    tarjeta.append(botonUbicacion);
+    listaInfracciones.append(tarjeta);
   }
 }
 
@@ -458,6 +557,12 @@ async function guardarReporte(evento) {
   }
 
   const datos = new FormData(formulario);
+  if (!vias.some((via) => via.id === datos.get("cuadra"))) {
+    mostrarEstado(estadoCaptura, "Selecciona una cuadra disponible en las sugerencias.");
+    selectorCuadra.focus();
+    return;
+  }
+
   try {
     const reportesActuales = obtenerReportesActuales();
     const foto = await reducirFoto(entradaFoto.files[0]);
@@ -468,6 +573,7 @@ async function guardarReporte(evento) {
       lat: ubicacionSeleccionada.lat,
       lng: ubicacionSeleccionada.lng,
       cuadra: datos.get("cuadra"),
+      direccion: datos.get("direccion"),
       categoria: datos.get("categoria"),
       actor: datos.get("actor"),
       foto,
@@ -526,6 +632,7 @@ botonLimpiarUbicacion.addEventListener("click", () => {
 });
 botonVistaCaptura.addEventListener("click", () => cambiarVista("captura"));
 botonVistaTablero.addEventListener("click", () => cambiarVista("tablero"));
+botonVistaInfracciones.addEventListener("click", () => cambiarVista("infracciones"));
 for (const control of Object.values(controlesFiltros)) {
   control.addEventListener("change", actualizarTablero);
 }

@@ -5,6 +5,8 @@ Prototipo web ciudadano para registrar y consultar situaciones de mal parqueo e 
 ## Funcionalidades
 
 - **Registro ciudadano:** permite seleccionar una cuadra, describir la situación y el tipo de actor, marcar un punto en el mapa o usar la geolocalización del dispositivo y adjuntar una foto opcional.
+- **Catálogo de cuadras ampliable:** el campo permite buscar entre las vías de `datos/vias.json`; al agregar vías a ese catálogo, aparecen también como sugerencias para el registro y los filtros. La dirección o referencia del reporte se puede especificar aparte.
+- **Tarjetas de infracciones:** una vista dedicada lista los reportes con dirección o cuadra, actor, situación, fecha y coordenadas. El botón de cada tarjeta centra el mapa en el punto y abre sus detalles.
 - **Validación de ubicación:** solo acepta puntos dentro de un perímetro aproximado definido en `mapa.js`, ampliado hacia el sur por la Vía de Minca y la costa hasta incluir Gaira y Pozos Colorados. El contorno es ilustrativo y no representa un límite oficial.
 - **Almacenamiento local:** los reportes nuevos se guardan en `localStorage` del navegador. No hay servidor ni base de datos central; los datos permanecen en el dispositivo y navegador usados.
 - **Mapa y tablero:** presenta los reportes sobre un mapa de calor y permite mostrar u ocultar sus puntos individuales. El mapa base utiliza OpenStreetMap.
