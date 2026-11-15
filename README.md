@@ -5,8 +5,9 @@ Prototipo web ciudadano para registrar y consultar situaciones de mal parqueo e 
 ## Funcionalidades
 
 - **Registro ciudadano:** permite seleccionar una cuadra, describir la situación y el tipo de actor, marcar un punto en el mapa o usar la geolocalización del dispositivo y adjuntar una foto opcional.
+- **Censura fotográfica:** antes de guardar una foto, se muestra en un canvas de hasta 800 px de ancho. Se pueden marcar rectángulos con mouse o tacto, pixelarlos en bloques de al menos 12 px y deshacer cambios. El envío permanece bloqueado hasta confirmar que no quedan rostros, placas ni otros datos personales; solo se guarda la exportación JPEG confirmada.
 - **Catálogo de cuadras ampliable:** el campo permite buscar entre las vías de `datos/vias.json`; al agregar vías a ese catálogo, aparecen también como sugerencias para el registro y los filtros. La dirección o referencia del reporte se puede especificar aparte.
-- **Tarjetas de infracciones:** una vista dedicada lista los reportes con dirección o cuadra, actor, situación, fecha y coordenadas. El botón de cada tarjeta centra el mapa en el punto y abre sus detalles.
+- **Tarjetas y mapa de infracciones:** una vista dedicada muestra un mapa de calor junto a tarjetas con dirección, cuadra, actor, situación, criticidad, origen, fecha, coordenadas y foto disponible. En móvil, las tarjetas se despliegan debajo del mapa y la página conserva el desplazamiento vertical.
 - **Validación de ubicación:** solo acepta puntos dentro de un perímetro aproximado definido en `mapa.js`, ampliado hacia el sur por la Vía de Minca y la costa hasta incluir Gaira y Pozos Colorados. El contorno es ilustrativo y no representa un límite oficial.
 - **Almacenamiento local:** los reportes nuevos se guardan en `localStorage` del navegador. No hay servidor ni base de datos central; los datos permanecen en el dispositivo y navegador usados.
 - **Mapa y tablero:** presenta los reportes sobre un mapa de calor y permite mostrar u ocultar sus puntos individuales. El mapa base utiliza OpenStreetMap.
@@ -14,7 +15,7 @@ Prototipo web ciudadano para registrar y consultar situaciones de mal parqueo e 
 - **Criticidad:** calcula un puntaje sumando los valores de la categoría, el tipo de vía y la franja horaria. Las horas pico, valores y niveles se configuran en `datos/criterios.json`.
 - **Importación y exportación:** importa reportes desde un archivo JSON, omite identificadores duplicados y valida los registros nuevos; también permite descargar los reportes actuales.
 - **Impresión:** el botón de impresión genera una versión del resumen operativo adecuada para imprimir.
-- **Privacidad:** el formulario recomienda no capturar placas, rostros ni otros datos personales. Las fotos y reportes ciudadanos se conservan localmente.
+- **Privacidad:** el formulario recomienda no capturar placas, rostros ni otros datos personales. Si se adjunta una foto, se conserva únicamente su versión censurada y confirmada; las fotos y reportes ciudadanos se almacenan localmente.
 - **Interfaz accesible:** diseño adaptable a móvil y escritorio, controles etiquetados, mensajes de estado y animaciones de aparición al desplazarse, desactivadas cuando el dispositivo solicita reducir el movimiento.
 - **Tema claro y oscuro:** el selector del encabezado alterna la apariencia, guarda la preferencia en el navegador y respeta el tema del sistema en la primera visita. Los mapas mantienen sus colores originales.
 

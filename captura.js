@@ -1,7 +1,7 @@
-import { calcularCriticidad } from "./criticidad.js";
-import { filtrarReportes } from "./filtros.js";
-import { resumirPorCuadra } from "./resumen.js";
-import { estaDentroDelPerimetro } from "./mapa.js";
+import { calcularCriticidad } from "./criticidad.js?v=5";
+import { filtrarReportes } from "./filtros.js?v=5";
+import { resumirPorCuadra } from "./resumen.js?v=5";
+import { estaDentroDelPerimetro } from "./mapa.js?v=5";
 
 const CLAVE_ALMACENAMIENTO = "santaMartaReportesV1";
 const formulario = document.querySelector("#formulario-reporte");
@@ -9,6 +9,13 @@ const selectorCuadra = document.querySelector("#reporte-cuadra");
 const opcionesCuadras = document.querySelector("#opciones-cuadras");
 const opcionesCuadrasFiltro = document.querySelector("#opciones-cuadras-filtro");
 const entradaFoto = document.querySelector("#reporte-foto");
+const editorCensura = document.querySelector("#editor-censura");
+const lienzoCensura = document.querySelector("#canvas-censura");
+const marcoSeleccionCensura = document.querySelector("#marco-seleccion-censura");
+const botonDeshacerCensura = document.querySelector("#boton-deshacer-censura");
+const botonConfirmarFoto = document.querySelector("#boton-confirmar-foto");
+const botonGuardarReporte = document.querySelector("#boton-guardar-reporte");
+const estadoCensura = document.querySelector("#estado-censura");
 const estadoCaptura = document.querySelector("#estado-captura");
 const estadoUbicacion = document.querySelector("#estado-ubicacion");
 const botonGeolocalizacion = document.querySelector("#boton-geolocalizacion");
@@ -45,6 +52,8 @@ const nombresActores = {
   vehiculo_carga: "Vehículo de carga",
   mobiliario_comercial: "Mobiliario comercial",
 };
+const ANCHO_MAXIMO_FOTO = 800;
+const TAMANO_BLOQUE_CENSURA = 12;
 const actoresPermitidos = new Set([
   "vehiculo_particular",
   "motocicleta",
@@ -58,6 +67,10 @@ let reportesIniciales = [];
 let reportesLocales = [];
 let ubicacionSeleccionada = null;
 let datosListos = false;
+let fotoConfirmada = "";
+let historialCensura = [];
+let seleccionCensura = null;
+let numeroCargaFoto = 0;
 
 function mostrarEstado(elemento, mensaje) {
   elemento.textContent = mensaje;
@@ -233,6 +246,44 @@ function agregarDetalleInfraccion(contenedor, etiqueta, valor) {
   contenedor.append(nombre, detalle);
 }
 
+function agregarFotoInfraccion(tarjeta, reporte) {
+  const figura = document.createElement("figure");
+  figura.className = "foto-infraccion";
+  let fuente = "";
+  if (/^data:image\/(?:jpeg|png|webp);base64,/i.test(reporte.foto)) {
+    fuente = reporte.foto;
+  } else if (reporte.foto) {
+    const enlace = document.createElement("a");
+    enlace.href = reporte.foto;
+    if (["http:", "https:"].includes(enlace.protocol) && enlace.origin === window.location.origin) {
+      fuente = enlace.href;
+    }
+  }
+  const pie = document.createElement("figcaption");
+
+  if (!reporte.foto) {
+    pie.textContent = "No se adjuntó una foto.";
+  } else if (!fuente) {
+    pie.textContent = "No se puede mostrar la foto guardada.";
+  } else {
+    const imagen = document.createElement("img");
+    imagen.alt = `Foto censurada del reporte ${reporte.id}`;
+    imagen.loading = "lazy";
+    imagen.referrerPolicy = "no-referrer";
+    imagen.addEventListener("error", () => {
+      figura.replaceChildren();
+      pie.textContent = "No se pudo cargar la foto del reporte.";
+      figura.append(pie);
+    });
+    imagen.src = fuente;
+    figura.append(imagen);
+    pie.textContent = `Foto del reporte ${reporte.id}`;
+  }
+
+  figura.append(pie);
+  tarjeta.append(figura);
+}
+
 function renderizarInfracciones(reportes) {
   listaInfracciones.replaceChildren();
 
@@ -260,13 +311,24 @@ function renderizarInfracciones(reportes) {
     agregarDetalleInfraccion(
       detalles,
       "Dirección",
-      reporte.direccion || `Cuadra ${reporte.cuadra}`,
+      reporte.direccion || "Sin dirección específica",
     );
+    agregarDetalleInfraccion(detalles, "Cuadra", reporte.cuadra);
     agregarDetalleInfraccion(detalles, "Actor", nombresActores[reporte.actor] ?? reporte.actor);
     agregarDetalleInfraccion(
       detalles,
       "Situación",
       nombresCategorias[reporte.categoria] ?? reporte.categoria,
+    );
+    agregarDetalleInfraccion(
+      detalles,
+      "Criticidad",
+      `${reporte.criticidad.nivel} (${reporte.criticidad.puntaje} puntos)`,
+    );
+    agregarDetalleInfraccion(
+      detalles,
+      "Origen",
+      reporte.origen === "ciudadano" ? "Ciudadano" : "Campo",
     );
     agregarDetalleInfraccion(
       detalles,
@@ -279,6 +341,7 @@ function renderizarInfracciones(reportes) {
       reporte.fecha_hora.replace("T", " · "),
     );
     tarjeta.append(detalles);
+    agregarFotoInfraccion(tarjeta, reporte);
 
     const botonUbicacion = document.createElement("button");
     botonUbicacion.type = "button";
@@ -347,15 +410,6 @@ function generarIdUnico(reportes) {
   return id;
 }
 
-function leerArchivoComoDataURL(archivo) {
-  return new Promise((resolver, rechazar) => {
-    const lector = new FileReader();
-    lector.addEventListener("load", () => resolver(lector.result));
-    lector.addEventListener("error", () => rechazar(new Error("No se pudo leer la foto seleccionada.")));
-    lector.readAsDataURL(archivo);
-  });
-}
-
 function cargarImagenDesdeArchivo(archivo) {
   return new Promise((resolver, rechazar) => {
     const direccionTemporal = URL.createObjectURL(archivo);
@@ -380,43 +434,264 @@ function cargarImagenDesdeArchivo(archivo) {
   });
 }
 
-async function reducirFoto(archivo) {
-  if (!archivo) {
-    return "";
-  }
-  if (!archivo.type.startsWith("image/")) {
-    throw new Error("El archivo seleccionado no es una imagen.");
-  }
-
-  const imagen = await cargarImagenDesdeArchivo(archivo);
-  const ancho = Math.min(imagen.naturalWidth, 800);
-  const alto = Math.max(1, Math.round((imagen.naturalHeight * ancho) / imagen.naturalWidth));
-  const lienzo = document.createElement("canvas");
-  lienzo.width = ancho;
-  lienzo.height = alto;
-
-  const contexto = lienzo.getContext("2d");
+function obtenerContextoCensura() {
+  const contexto = lienzoCensura.getContext("2d", { willReadFrequently: true });
   if (!contexto) {
-    throw new Error("El navegador no pudo preparar la reducción de la foto.");
+    throw new Error("El navegador no pudo preparar el editor de censura.");
   }
-  contexto.fillStyle = "#ffffff";
-  contexto.fillRect(0, 0, ancho, alto);
-  contexto.drawImage(imagen, 0, 0, ancho, alto);
+  return contexto;
+}
 
-  const fotoReducida = await new Promise((resolver, rechazar) => {
-    lienzo.toBlob(
-      (blob) => {
-        if (!blob) {
-          rechazar(new Error("No se pudo comprimir la foto."));
-          return;
-        }
-        resolver(blob);
-      },
-      "image/jpeg",
-      0.78,
-    );
-  });
-  return leerArchivoComoDataURL(fotoReducida);
+function invalidarConfirmacionFoto() {
+  fotoConfirmada = "";
+  botonGuardarReporte.disabled = Boolean(entradaFoto.files[0]);
+}
+
+async function prepararFotoParaCensura(archivo) {
+  const numeroActual = ++numeroCargaFoto;
+  fotoConfirmada = "";
+  historialCensura = [];
+  seleccionCensura = null;
+  marcoSeleccionCensura.style.display = "none";
+  botonDeshacerCensura.disabled = true;
+  botonConfirmarFoto.disabled = true;
+  lienzoCensura.width = 0;
+  lienzoCensura.height = 0;
+
+  if (!archivo) {
+    editorCensura.hidden = true;
+    botonGuardarReporte.disabled = false;
+    estadoCensura.textContent = "";
+    return;
+  }
+
+  editorCensura.hidden = false;
+  botonGuardarReporte.disabled = true;
+  estadoCensura.textContent = "Cargando la foto para censurar…";
+  if (!archivo.type.startsWith("image/")) {
+    estadoCensura.textContent = "El archivo seleccionado no es una imagen.";
+    return;
+  }
+
+  try {
+    const imagen = await cargarImagenDesdeArchivo(archivo);
+    if (numeroActual !== numeroCargaFoto) {
+      return;
+    }
+
+    if (!imagen.naturalWidth || !imagen.naturalHeight) {
+      throw new Error("La imagen no tiene dimensiones válidas.");
+    }
+
+    const ancho = Math.min(imagen.naturalWidth, ANCHO_MAXIMO_FOTO);
+    const alto = Math.max(1, Math.round((imagen.naturalHeight * ancho) / imagen.naturalWidth));
+    lienzoCensura.width = ancho;
+    lienzoCensura.height = alto;
+
+    const contexto = obtenerContextoCensura();
+    contexto.imageSmoothingEnabled = true;
+    contexto.fillStyle = "#ffffff";
+    contexto.fillRect(0, 0, ancho, alto);
+    contexto.drawImage(imagen, 0, 0, ancho, alto);
+
+    botonConfirmarFoto.disabled = false;
+    estadoCensura.textContent =
+      "Arrastra sobre cada rostro, placa o dato personal. Confirma la foto cuando hayas terminado.";
+  } catch (error) {
+    if (numeroActual !== numeroCargaFoto) {
+      return;
+    }
+    console.error("No se pudo preparar la foto para censura.", error);
+    estadoCensura.textContent = `No se pudo preparar la foto: ${error.message}`;
+  }
+}
+
+function obtenerPuntoCensura(evento) {
+  const limites = lienzoCensura.getBoundingClientRect();
+  if (limites.width <= 0 || limites.height <= 0) {
+    return null;
+  }
+
+  const xVisible = Math.max(0, Math.min(limites.width, evento.clientX - limites.left));
+  const yVisible = Math.max(0, Math.min(limites.height, evento.clientY - limites.top));
+  return {
+    x: (xVisible * lienzoCensura.width) / limites.width,
+    y: (yVisible * lienzoCensura.height) / limites.height,
+    xVisible,
+    yVisible,
+  };
+}
+
+function actualizarMarcoSeleccion(xInicial, yInicial, xFinal, yFinal) {
+  marcoSeleccionCensura.style.display = "block";
+  marcoSeleccionCensura.style.left = `${Math.min(xInicial, xFinal)}px`;
+  marcoSeleccionCensura.style.top = `${Math.min(yInicial, yFinal)}px`;
+  marcoSeleccionCensura.style.width = `${Math.abs(xFinal - xInicial)}px`;
+  marcoSeleccionCensura.style.height = `${Math.abs(yFinal - yInicial)}px`;
+}
+
+function manejarInicioSeleccion(evento) {
+  if (!lienzoCensura.width || !evento.isPrimary) {
+    return;
+  }
+  const punto = obtenerPuntoCensura(evento);
+  if (!punto) {
+    return;
+  }
+
+  evento.preventDefault();
+  invalidarConfirmacionFoto();
+  botonConfirmarFoto.disabled = true;
+  seleccionCensura = {
+    pointerId: evento.pointerId,
+    xInicial: punto.x,
+    yInicial: punto.y,
+    xFinal: punto.x,
+    yFinal: punto.y,
+    xVisibleInicial: punto.xVisible,
+    yVisibleInicial: punto.yVisible,
+    xVisibleFinal: punto.xVisible,
+    yVisibleFinal: punto.yVisible,
+  };
+  lienzoCensura.setPointerCapture(evento.pointerId);
+  actualizarMarcoSeleccion(punto.xVisible, punto.yVisible, punto.xVisible, punto.yVisible);
+}
+
+function manejarMovimientoSeleccion(evento) {
+  if (!seleccionCensura || evento.pointerId !== seleccionCensura.pointerId) {
+    return;
+  }
+  const punto = obtenerPuntoCensura(evento);
+  if (!punto) {
+    return;
+  }
+
+  seleccionCensura.xFinal = punto.x;
+  seleccionCensura.yFinal = punto.y;
+  seleccionCensura.xVisibleFinal = punto.xVisible;
+  seleccionCensura.yVisibleFinal = punto.yVisible;
+  actualizarMarcoSeleccion(
+    seleccionCensura.xVisibleInicial,
+    seleccionCensura.yVisibleInicial,
+    punto.xVisible,
+    punto.yVisible,
+  );
+}
+
+function manejarFinSeleccion(evento) {
+  if (!seleccionCensura || evento.pointerId !== seleccionCensura.pointerId) {
+    return;
+  }
+  const punto = obtenerPuntoCensura(evento);
+  if (punto) {
+    seleccionCensura.xFinal = punto.x;
+    seleccionCensura.yFinal = punto.y;
+  }
+
+  const x = Math.max(0, Math.floor(Math.min(seleccionCensura.xInicial, seleccionCensura.xFinal)));
+  const y = Math.max(0, Math.floor(Math.min(seleccionCensura.yInicial, seleccionCensura.yFinal)));
+  const ancho = Math.min(lienzoCensura.width, Math.ceil(Math.max(seleccionCensura.xInicial, seleccionCensura.xFinal))) - x;
+  const alto = Math.min(lienzoCensura.height, Math.ceil(Math.max(seleccionCensura.yInicial, seleccionCensura.yFinal))) - y;
+  seleccionCensura = null;
+  marcoSeleccionCensura.style.display = "none";
+  botonConfirmarFoto.disabled = false;
+
+  if (ancho < TAMANO_BLOQUE_CENSURA || alto < TAMANO_BLOQUE_CENSURA) {
+    estadoCensura.textContent = "El área debe medir al menos 12 × 12 píxeles para censurarla.";
+    return;
+  }
+
+  try {
+    const contexto = obtenerContextoCensura();
+    // Guardamos los píxeles originales del área para permitir deshacer la censura.
+    const copia = contexto.getImageData(x, y, ancho, alto);
+    const anchoReducido = Math.max(1, Math.floor(ancho / TAMANO_BLOQUE_CENSURA));
+    const altoReducido = Math.max(1, Math.floor(alto / TAMANO_BLOQUE_CENSURA));
+    const lienzoPixelado = document.createElement("canvas");
+    lienzoPixelado.width = anchoReducido;
+    lienzoPixelado.height = altoReducido;
+
+    const contextoPixelado = lienzoPixelado.getContext("2d");
+    if (!contextoPixelado) {
+      throw new Error("El navegador no pudo pixelar el área seleccionada.");
+    }
+    contextoPixelado.imageSmoothingEnabled = false;
+    contextoPixelado.drawImage(lienzoCensura, x, y, ancho, alto, 0, 0, anchoReducido, altoReducido);
+    contexto.imageSmoothingEnabled = false;
+    contexto.drawImage(lienzoPixelado, 0, 0, anchoReducido, altoReducido, x, y, ancho, alto);
+
+    historialCensura.push({ x, y, copia });
+    botonDeshacerCensura.disabled = false;
+    estadoCensura.textContent = "Área censurada. Puedes marcar otra zona o deshacer.";
+  } catch (error) {
+    console.error("No se pudo censurar el área seleccionada.", error);
+    estadoCensura.textContent = `No se pudo censurar el área: ${error.message}`;
+  }
+}
+
+function manejarCancelacionSeleccion(evento) {
+  if (!seleccionCensura || evento.pointerId !== seleccionCensura.pointerId) {
+    return;
+  }
+  seleccionCensura = null;
+  marcoSeleccionCensura.style.display = "none";
+  botonConfirmarFoto.disabled = false;
+  estadoCensura.textContent = "Selección cancelada. Puedes volver a marcar el área.";
+}
+
+function deshacerCensura() {
+  const ultimaCensura = historialCensura.pop();
+  if (!ultimaCensura) {
+    return;
+  }
+
+  try {
+    obtenerContextoCensura().putImageData(ultimaCensura.copia, ultimaCensura.x, ultimaCensura.y);
+    invalidarConfirmacionFoto();
+    botonConfirmarFoto.disabled = false;
+    botonDeshacerCensura.disabled = historialCensura.length === 0;
+    estadoCensura.textContent = "Se deshizo la última censura. Confirma la foto antes de guardar.";
+  } catch (error) {
+    historialCensura.push(ultimaCensura);
+    console.error("No se pudo deshacer la censura.", error);
+    estadoCensura.textContent = `No se pudo deshacer la censura: ${error.message}`;
+  }
+}
+
+function confirmarFotoCensurada() {
+  if (!entradaFoto.files[0] || !lienzoCensura.width || seleccionCensura) {
+    estadoCensura.textContent = "Carga una foto y termina cualquier selección antes de confirmar.";
+    return;
+  }
+
+  try {
+    fotoConfirmada = lienzoCensura.toDataURL("image/jpeg", 0.7);
+    if (!fotoConfirmada.startsWith("data:image/jpeg;base64,")) {
+      throw new Error("El navegador no pudo exportar la foto censurada.");
+    }
+    botonGuardarReporte.disabled = false;
+    estadoCensura.textContent = "Foto confirmada. Se guardará únicamente esta versión censurada.";
+  } catch (error) {
+    fotoConfirmada = "";
+    botonGuardarReporte.disabled = true;
+    console.error("No se pudo exportar la foto censurada.", error);
+    estadoCensura.textContent = `No se pudo confirmar la foto: ${error.message}`;
+  }
+}
+
+function reiniciarEditorCensura() {
+  numeroCargaFoto += 1;
+  fotoConfirmada = "";
+  historialCensura = [];
+  seleccionCensura = null;
+  marcoSeleccionCensura.style.display = "none";
+  lienzoCensura.width = 0;
+  lienzoCensura.height = 0;
+  editorCensura.hidden = true;
+  botonDeshacerCensura.disabled = true;
+  botonConfirmarFoto.disabled = true;
+  botonGuardarReporte.disabled = false;
+  estadoCensura.textContent = "";
 }
 
 function mensajeErrorAlmacenamiento(error) {
@@ -544,11 +819,17 @@ function pedirGeolocalizacion() {
   );
 }
 
-async function guardarReporte(evento) {
+function guardarReporte(evento) {
   evento.preventDefault();
   mostrarEstado(estadoCaptura, "");
 
   if (!formulario.reportValidity()) {
+    return;
+  }
+  const archivoFoto = entradaFoto.files[0];
+  if (archivoFoto && !fotoConfirmada) {
+    mostrarEstado(estadoCaptura, "Confirma la foto censurada antes de guardar el reporte.");
+    botonConfirmarFoto.focus();
     return;
   }
   if (!ubicacionSeleccionada) {
@@ -565,7 +846,6 @@ async function guardarReporte(evento) {
 
   try {
     const reportesActuales = obtenerReportesActuales();
-    const foto = await reducirFoto(entradaFoto.files[0]);
     const reporte = normalizarReporte({
       id: generarIdUnico(reportesActuales),
       origen: "ciudadano",
@@ -576,7 +856,7 @@ async function guardarReporte(evento) {
       direccion: datos.get("direccion"),
       categoria: datos.get("categoria"),
       actor: datos.get("actor"),
-      foto,
+      foto: archivoFoto ? fotoConfirmada : "",
     });
 
     const nuevosReportesLocales = [...reportesLocales, reporte];
@@ -584,6 +864,7 @@ async function guardarReporte(evento) {
     reportesLocales = nuevosReportesLocales;
     publicarReportesActualizados();
     formulario.reset();
+    reiniciarEditorCensura();
     ubicacionSeleccionada = null;
     window.dispatchEvent(new Event("mapa:limpiar-seleccion"));
     mostrarEstado(estadoUbicacion, "Toca el mapa o usa tu ubicación.");
@@ -624,6 +905,13 @@ async function inicializar() {
 }
 
 formulario.addEventListener("submit", guardarReporte);
+entradaFoto.addEventListener("change", () => prepararFotoParaCensura(entradaFoto.files[0]));
+lienzoCensura.addEventListener("pointerdown", manejarInicioSeleccion);
+lienzoCensura.addEventListener("pointermove", manejarMovimientoSeleccion);
+lienzoCensura.addEventListener("pointerup", manejarFinSeleccion);
+lienzoCensura.addEventListener("pointercancel", manejarCancelacionSeleccion);
+botonDeshacerCensura.addEventListener("click", deshacerCensura);
+botonConfirmarFoto.addEventListener("click", confirmarFotoCensurada);
 botonGeolocalizacion.addEventListener("click", pedirGeolocalizacion);
 botonLimpiarUbicacion.addEventListener("click", () => {
   ubicacionSeleccionada = null;

@@ -48,6 +48,7 @@ let mapaInfracciones;
 let marcadorUbicacion;
 let capaCalor;
 let capaPuntos;
+let capaCalorInfracciones;
 let capaInfracciones;
 let reportesValidos = [];
 let reportesFueraDelArea = 0;
@@ -168,6 +169,23 @@ function mostrarEstadoMapa(elemento, mensaje) {
   }
 }
 
+function crearCapaCalor() {
+  return L.heatLayer([], {
+    radius: 30,
+    blur: 20,
+    minOpacity: 0.35,
+    max: 1,
+    maxZoom: 17,
+    gradient: {
+      0.2: "#2c7bb6",
+      0.45: "#abd9e9",
+      0.65: "#ffffbf",
+      0.82: "#fdae61",
+      1: "#d7191c",
+    },
+  });
+}
+
 function crearContenidoPopup(reporte) {
   const contenido = document.createElement("div");
   const titulo = document.createElement("strong");
@@ -249,6 +267,13 @@ function dibujarInfracciones(reportes) {
       estaDentroDelPerimetro(reporte.lat, reporte.lng) &&
       typeof reporte.criticidad?.puntaje === "number",
   );
+  capaCalorInfracciones.setLatLngs(
+    reportesValidos.map((reporte) => [
+      reporte.lat,
+      reporte.lng,
+      Math.max(0, Math.min(1, reporte.criticidad.puntaje / 9)),
+    ]),
+  );
   for (const reporte of reportesValidos) {
     const marcador = L.marker([reporte.lat, reporte.lng])
       .bindPopup(crearContenidoPopup(reporte))
@@ -263,7 +288,12 @@ function dibujarInfracciones(reportes) {
 }
 
 function activarMapaInfracciones() {
-  requestAnimationFrame(() => mapaInfracciones.invalidateSize());
+  requestAnimationFrame(() => {
+    mapaInfracciones.invalidateSize();
+    if (!mapaInfracciones.hasLayer(capaCalorInfracciones)) {
+      capaCalorInfracciones.addTo(mapaInfracciones);
+    }
+  });
 }
 
 function activarMapaCaptura() {
@@ -280,6 +310,12 @@ function verInfraccionEnMapa(id) {
   const ubicacion = marcador.getLatLng();
   mapaInfracciones.setView(ubicacion, Math.max(mapaInfracciones.getZoom(), 16));
   marcador.openPopup();
+  if (window.matchMedia("(max-width: 41.999rem)").matches) {
+    mapaInfraccionesElemento.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      block: "start",
+    });
+  }
   estadoInfracciones.textContent = `Mostrando la ubicación de ${id}.`;
 }
 
@@ -316,21 +352,9 @@ function inicializarMapas() {
   mapaCaptura = crearMapa(mapaCapturaElemento);
   mapaTablero = crearMapa(mapaTableroElemento);
   mapaInfracciones = crearMapa(mapaInfraccionesElemento);
-  capaCalor = L.heatLayer([], {
-    radius: 30,
-    blur: 20,
-    minOpacity: 0.35,
-    max: 1,
-    maxZoom: 17,
-    gradient: {
-      0.2: "#2c7bb6",
-      0.45: "#abd9e9",
-      0.65: "#ffffbf",
-      0.82: "#fdae61",
-      1: "#d7191c",
-    },
-  });
+  capaCalor = crearCapaCalor();
   capaPuntos = L.layerGroup();
+  capaCalorInfracciones = crearCapaCalor();
   capaInfracciones = L.layerGroup().addTo(mapaInfracciones);
 
   mapaCaptura.on("click", ({ latlng }) => seleccionarUbicacion(latlng.lat, latlng.lng));
