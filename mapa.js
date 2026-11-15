@@ -1,7 +1,7 @@
-const CENTRO_SANTA_MARTA = [11.195, -74.19];
-const NIVEL_ZOOM_INICIAL = 12;
+const CENTRO_SANTA_MARTA = [11.205, -74.17];
+const NIVEL_ZOOM_INICIAL = 11;
 
-// Perímetro de trabajo ampliado hacia Minca, Gaira y Pozos Colorados; no es oficial.
+// Perímetro aproximado: incluye el corredor de la Troncal del Caribe hacia Bonda.
 const PERIMETRO_APROXIMADO = [
   [11.218, -74.185],
   [11.211, -74.172],
@@ -32,6 +32,20 @@ const PERIMETRO_APROXIMADO = [
   [11.266, -74.219],
   [11.267, -74.188],
   [11.252, -74.172],
+  [11.251, -74.158],
+  [11.246, -74.146],
+  [11.239, -74.137],
+  [11.238, -74.13],
+  [11.238, -74.1248],
+  [11.241, -74.115],
+  [11.241, -74.107],
+  [11.232, -74.101],
+  [11.222, -74.102],
+  [11.214, -74.112],
+  [11.208, -74.126],
+  [11.207, -74.142],
+  [11.21, -74.158],
+  [11.214, -74.171],
 ];
 
 const mapaCapturaElemento = document.querySelector("#mapa-captura");
@@ -101,7 +115,7 @@ function notificarUbicacionRechazada() {
   window.dispatchEvent(
     new CustomEvent("mapa:ubicacion-rechazada", {
       detail: {
-        mensaje: "El punto está fuera del perímetro urbano aproximado de Santa Marta.",
+        mensaje: "El punto está fuera del perímetro aproximado de Santa Marta y el corredor hacia Bonda.",
       },
     }),
   );
@@ -171,16 +185,16 @@ function mostrarEstadoMapa(elemento, mensaje) {
 
 function crearCapaCalor() {
   return L.heatLayer([], {
-    radius: 30,
-    blur: 20,
-    minOpacity: 0.35,
+    radius: 38,
+    blur: 26,
+    minOpacity: 0.65,
     max: 1,
-    maxZoom: 17,
+    maxZoom: 11,
     gradient: {
-      0.2: "#2c7bb6",
-      0.45: "#abd9e9",
-      0.65: "#ffffbf",
-      0.82: "#fdae61",
+      0.1: "#2c7bb6",
+      0.3: "#abd9e9",
+      0.5: "#ffffbf",
+      0.72: "#fdae61",
       1: "#d7191c",
     },
   });
