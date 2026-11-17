@@ -10,11 +10,7 @@ function calcularCriticidad(reporte, vias, criterios) {
   }
 
   const cuadra = vias.find((via) => via.id === reporte.cuadra);
-  if (!cuadra) {
-    throw new Error(`No se encontró la cuadra "${reporte.cuadra}" en vias.json.`);
-  }
-
-  const puntosVia = criterios.via?.[cuadra.tipo];
+  const puntosVia = cuadra ? criterios.via?.[cuadra.tipo] : 0;
   if (typeof puntosVia !== "number") {
     throw new Error(`No hay puntaje configurado para el tipo de vía "${cuadra.tipo}".`);
   }

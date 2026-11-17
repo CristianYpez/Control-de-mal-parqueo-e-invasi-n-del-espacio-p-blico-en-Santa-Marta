@@ -1,7 +1,7 @@
 const CENTRO_SANTA_MARTA = [11.205, -74.17];
 const NIVEL_ZOOM_INICIAL = 11;
 
-// Perímetro aproximado: incluye el corredor de la Troncal del Caribe hacia Bonda.
+// Perímetro aproximado de cobertura, con una extensión ilustrativa hacia El Cisne.
 const PERIMETRO_APROXIMADO = [
   [11.218, -74.185],
   [11.211, -74.172],
@@ -44,7 +44,11 @@ const PERIMETRO_APROXIMADO = [
   [11.214, -74.112],
   [11.208, -74.126],
   [11.207, -74.142],
-  [11.21, -74.158],
+  [11.207, -74.151],
+  [11.207, -74.16],
+  [11.21, -74.165],
+  [11.216, -74.166],
+  [11.219, -74.16],
   [11.214, -74.171],
 ];
 
@@ -110,7 +114,7 @@ function notificarUbicacionRechazada() {
   window.dispatchEvent(
     new CustomEvent("mapa:ubicacion-rechazada", {
       detail: {
-        mensaje: "El punto está fuera del perímetro aproximado de Santa Marta y el corredor hacia Bonda.",
+        mensaje: "El punto está fuera del perímetro aproximado del área de cobertura.",
       },
     }),
   );

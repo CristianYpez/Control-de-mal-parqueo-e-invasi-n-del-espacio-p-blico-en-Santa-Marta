@@ -1,13 +1,14 @@
-import { calcularCriticidad } from "./criticidad.js?v=5";
-import { filtrarReportes } from "./filtros.js?v=5";
-import { resumirPorCuadra } from "./resumen.js?v=5";
-import { estaDentroDelPerimetro } from "./mapa.js?v=5";
+import { calcularCriticidad } from "./criticidad.js?v=6";
+import { filtrarReportes } from "./filtros.js?v=6";
+import { resumirPorCuadra } from "./resumen.js?v=6";
+import { estaDentroDelPerimetro } from "./mapa.js?v=6";
 
 const CLAVE_ALMACENAMIENTO = "santaMartaReportesV1";
+const CLAVE_TEMA = "santaMartaTema";
 const formulario = document.querySelector("#formulario-reporte");
-const selectorCuadra = document.querySelector("#reporte-cuadra");
-const opcionesCuadras = document.querySelector("#opciones-cuadras");
+const entradaDireccion = document.querySelector("#reporte-direccion");
 const opcionesCuadrasFiltro = document.querySelector("#opciones-cuadras-filtro");
+const botonTema = document.querySelector("#boton-tema");
 const entradaFoto = document.querySelector("#reporte-foto");
 const editorCensura = document.querySelector("#editor-censura");
 const lienzoCensura = document.querySelector("#canvas-censura");
@@ -112,6 +113,31 @@ let fotoConfirmada = "";
 let historialCensura = [];
 let seleccionCensura = null;
 let numeroCargaFoto = 0;
+let controladorGeocodificacion = null;
+let numeroGeocodificacion = 0;
+
+function aplicarTema(tema, guardar = false) {
+  const esOscuro = tema === "oscuro";
+  document.documentElement.dataset.tema = esOscuro ? "oscuro" : "claro";
+  botonTema.textContent = esOscuro ? "Claro" : "Oscuro";
+  botonTema.setAttribute("aria-label", `Cambiar a modo ${esOscuro ? "claro" : "oscuro"}`);
+  botonTema.setAttribute("aria-pressed", String(esOscuro));
+  document.querySelector('meta[name="theme-color"]').content = esOscuro ? "#121B20" : "#F5F2EA";
+  if (guardar) {
+    localStorage.setItem(CLAVE_TEMA, esOscuro ? "oscuro" : "claro");
+  }
+}
+
+function inicializarTema() {
+  const temaGuardado = localStorage.getItem(CLAVE_TEMA);
+  const temaPreferido =
+    temaGuardado === "oscuro" || temaGuardado === "claro"
+      ? temaGuardado
+      : window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "oscuro"
+        : "claro";
+  aplicarTema(temaPreferido);
+}
 
 function mostrarEstado(elemento, mensaje) {
   elemento.textContent = mensaje;
@@ -138,7 +164,7 @@ function leerReportesLocales() {
   return reportes;
 }
 
-function normalizarReporte(reporte) {
+function normalizarReporte(reporte, validarPerimetro = true) {
   if (!reporte || typeof reporte !== "object" || Array.isArray(reporte)) {
     throw new Error("El reporte debe ser un objeto JSON.");
   }
@@ -160,7 +186,11 @@ function normalizarReporte(reporte) {
   if (reporte.direccion !== undefined && typeof reporte.direccion !== "string") {
     throw new Error(`La dirección del reporte ${reporte.id} debe ser texto.`);
   }
-  if (!estaDentroDelPerimetro(reporte.lat, reporte.lng)) {
+  if (
+    !Number.isFinite(reporte.lat) ||
+    !Number.isFinite(reporte.lng) ||
+    (validarPerimetro && !estaDentroDelPerimetro(reporte.lat, reporte.lng))
+  ) {
     throw new Error(`El reporte ${reporte.id} está fuera del perímetro urbano aproximado.`);
   }
 
@@ -171,7 +201,7 @@ function normalizarReporte(reporte) {
     fecha_hora: reporte.fecha_hora,
     lat: reporte.lat,
     lng: reporte.lng,
-    cuadra: reporte.cuadra,
+    cuadra: reporte.cuadra?.trim() || reporte.direccion?.trim() || "Sin clasificar",
     direccion: reporte.direccion?.trim() ?? "",
     categoria: reporte.categoria,
     actor: reporte.actor,
@@ -436,6 +466,7 @@ function renderizarEstadisticas(reportes) {
 
 function publicarReportesActualizados() {
   const reportes = obtenerReportesActuales();
+  cargarOpcionesFiltroCuadra(reportes);
   window.dispatchEvent(
     new CustomEvent("reportes:actualizados", {
       detail: {
@@ -448,14 +479,15 @@ function publicarReportesActualizados() {
   actualizarTablero();
 }
 
-function cargarOpcionesCuadra() {
-  for (const via of vias) {
-    const opcionCaptura = document.createElement("option");
-    opcionCaptura.value = via.id;
-    opcionesCuadras.append(opcionCaptura);
-
+function cargarOpcionesFiltroCuadra(reportes) {
+  opcionesCuadrasFiltro.replaceChildren();
+  const ubicaciones = new Set([
+    ...vias.map((via) => via.id),
+    ...reportes.map((reporte) => reporte.cuadra),
+  ]);
+  for (const ubicacion of ubicaciones) {
     const opcionFiltro = document.createElement("option");
-    opcionFiltro.value = via.id;
+    opcionFiltro.value = ubicacion;
     opcionesCuadrasFiltro.append(opcionFiltro);
   }
 }
@@ -505,7 +537,7 @@ function obtenerFranjaActual(fechaHora) {
 
 function actualizarVistaCriticidad() {
   const categoria = document.querySelector("#reporte-categoria").value;
-  const cuadraSeleccionada = selectorCuadra.value.trim();
+  const cuadraSeleccionada = entradaDireccion.value.trim();
   const via = vias.find((elemento) => elemento.id === cuadraSeleccionada);
   const fechaActual = new Date();
   const fechaHoraActual = formatearFechaHoraLocal(fechaActual);
@@ -527,7 +559,7 @@ function actualizarVistaCriticidad() {
       ? "Arterial"
       : via?.tipo === "secundaria"
         ? "Secundaria"
-        : "Se determina por cuadra";
+        : "Sin clasificar desde el mapa";
   datosVistaCriticidad.franja.textContent = nombreFranja
     ? `${nombreFranja === "pico" ? "Hora pico" : "Hora valle"} · ${fechaActual.toLocaleTimeString("es-CO", {
         hour: "2-digit",
@@ -535,7 +567,7 @@ function actualizarVistaCriticidad() {
       })}`
     : "Se determina por la hora";
 
-  if (!criterios || !categoria || !via) {
+  if (!criterios || !categoria || !ubicacionSeleccionada) {
     datosVistaCriticidad.puntaje.textContent = "—";
     datosVistaCriticidad.nivel.textContent = "Sin calcular";
     insigniaCriticidad.removeAttribute("data-nivel");
@@ -1310,10 +1342,72 @@ function manejarUbicacionSeleccionada(evento) {
   }
 
   ubicacionSeleccionada = { lat, lng };
-  mostrarEstado(
-    estadoUbicacion,
-    `Punto marcado (${lat.toFixed(5)}, ${lng.toFixed(5)}). Selecciona la cuadra; la detección espera el GeoJSON oficial.`,
-  );
+  entradaDireccion.value = "";
+  actualizarVistaCriticidad();
+  void buscarDireccion(lat, lng);
+}
+
+async function buscarDireccion(lat, lng) {
+  controladorGeocodificacion?.abort();
+  controladorGeocodificacion = new AbortController();
+  const controlador = controladorGeocodificacion;
+  const solicitud = ++numeroGeocodificacion;
+  mostrarEstado(estadoUbicacion, "Buscando la dirección del punto en el mapa…");
+
+  try {
+    const url = new URL("https://photon.komoot.io/reverse");
+    url.searchParams.set("lat", String(lat));
+    url.searchParams.set("lon", String(lng));
+    const respuesta = await fetch(url, {
+      signal: controlador.signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!respuesta.ok) {
+      throw new Error(`El servicio de direcciones respondió HTTP ${respuesta.status}.`);
+    }
+
+    const resultado = await respuesta.json();
+    const propiedades = resultado.features?.[0]?.properties;
+    if (!propiedades) {
+      throw new Error("No se encontró una dirección para el punto seleccionado.");
+    }
+    const calle = [propiedades.street, propiedades.housenumber].filter(Boolean).join(" ");
+    const localidad =
+      propiedades.suburb ||
+      propiedades.district ||
+      propiedades.locality ||
+      propiedades.city;
+    const direccion = [calle || propiedades.name, localidad, propiedades.state]
+      .filter((parte, indice, partes) => parte && partes.indexOf(parte) === indice)
+      .join(", ");
+    if (!direccion) {
+      throw new Error("El servicio no devolvió una dirección reconocible.");
+    }
+    if (solicitud !== numeroGeocodificacion) {
+      return;
+    }
+
+    entradaDireccion.value = direccion;
+    if (ubicacionSeleccionada) {
+      ubicacionSeleccionada.direccion = direccion;
+    }
+    actualizarVistaCriticidad();
+    mostrarEstado(estadoUbicacion, `Dirección del punto: ${direccion}`);
+  } catch (error) {
+    if (error.name === "AbortError" || solicitud !== numeroGeocodificacion) {
+      return;
+    }
+    mostrarEstado(
+      estadoUbicacion,
+      `No se pudo obtener la dirección automáticamente. Escríbela en el campo. (${error.message})`,
+    );
+  }
+}
+
+function cancelarBusquedaDireccion() {
+  controladorGeocodificacion?.abort();
+  controladorGeocodificacion = null;
+  numeroGeocodificacion += 1;
 }
 
 function pedirGeolocalizacion() {
@@ -1372,9 +1466,10 @@ function guardarReporte(evento) {
     return;
   }
 
-  if (!vias.some((via) => via.id === datos.get("cuadra"))) {
-    mostrarEstado(estadoCaptura, "Selecciona una cuadra disponible en las sugerencias.");
-    selectorCuadra.focus();
+  const direccion = String(datos.get("direccion") ?? "").trim();
+  if (!direccion) {
+    mostrarEstado(estadoCaptura, "Indica la dirección de la infracción.");
+    entradaDireccion.focus();
     return;
   }
 
@@ -1386,8 +1481,8 @@ function guardarReporte(evento) {
       fecha_hora: formatearFechaHoraLocal(new Date()),
       lat: ubicacionSeleccionada.lat,
       lng: ubicacionSeleccionada.lng,
-      cuadra: datos.get("cuadra"),
-      direccion: datos.get("direccion") ?? "",
+      cuadra: direccion,
+      direccion,
       categoria: datos.get("categoria"),
       actor: datos.get("actor"),
       foto: archivoFoto ? fotoConfirmada : "",
@@ -1398,6 +1493,9 @@ function guardarReporte(evento) {
     reportesLocales = nuevosReportesLocales;
     publicarReportesActualizados();
     formulario.reset();
+    ubicacionSeleccionada = null;
+    cancelarBusquedaDireccion();
+    window.dispatchEvent(new Event("mapa:limpiar-seleccion"));
     reiniciarEditorCensura();
     for (const boton of [...botonesCategoria, ...botonesActor]) {
       boton.setAttribute("aria-pressed", "false");
@@ -1423,10 +1521,10 @@ async function inicializar() {
 
   vias = viasCargadas;
   criterios = criteriosCargados;
-  reportesIniciales = reportes.map(normalizarReporte);
+  reportesIniciales = reportes.map((reporte) => normalizarReporte(reporte));
   const idsIniciales = new Set(reportesIniciales.map((reporte) => reporte.id));
   reportesLocales = leerReportesLocales().map((reporte) => {
-    const reporteNormalizado = normalizarReporte(reporte);
+    const reporteNormalizado = normalizarReporte(reporte, false);
     if (idsIniciales.has(reporteNormalizado.id)) {
       throw new Error(`El ID ${reporteNormalizado.id} ya existe en los datos de ejemplo.`);
     }
@@ -1434,13 +1532,12 @@ async function inicializar() {
     return reporteNormalizado;
   });
 
-  cargarOpcionesCuadra();
   datosListos = true;
   publicarReportesActualizados();
   actualizarVistaCriticidad();
   mostrarEstado(
     estadoUbicacion,
-    "Marca el punto y selecciona su cuadra; la detección automática espera el GeoJSON oficial.",
+    "Al elegir un punto, sus coordenadas se consultarán con OpenStreetMap/Photon para obtener la dirección.",
   );
   mostrarEstado(estadoCaptura, "Listo para registrar un reporte.");
 }
@@ -1470,7 +1567,7 @@ botonDeshacerCensura.addEventListener("click", deshacerCensura);
 botonConfirmarFoto.addEventListener("click", confirmarFotoCensurada);
 document.querySelector("#reporte-categoria").addEventListener("change", actualizarVistaCriticidad);
 document.querySelector("#reporte-actor").addEventListener("change", actualizarVistaCriticidad);
-selectorCuadra.addEventListener("input", actualizarVistaCriticidad);
+entradaDireccion.addEventListener("input", actualizarVistaCriticidad);
 for (const boton of botonesCategoria) {
   boton.addEventListener("click", () => {
     document.querySelector("#reporte-categoria").value = boton.dataset.seleccionCategoria;
@@ -1487,6 +1584,8 @@ for (const boton of botonesActor) {
 botonGeolocalizacion.addEventListener("click", pedirGeolocalizacion);
 botonLimpiarUbicacion.addEventListener("click", () => {
   ubicacionSeleccionada = null;
+  cancelarBusquedaDireccion();
+  entradaDireccion.value = "";
   window.dispatchEvent(new Event("mapa:limpiar-seleccion"));
   mostrarEstado(estadoUbicacion, "Toca el mapa o usa tu ubicación.");
 });
@@ -1513,7 +1612,15 @@ window.addEventListener("mapa:ubicacion-seleccionada", manejarUbicacionSeleccion
 // mapa.js valida el perímetro y emite este evento solo para puntos aceptados.
 window.addEventListener("mapa:ubicacion-rechazada", ({ detail }) => {
   ubicacionSeleccionada = null;
+  cancelarBusquedaDireccion();
+  entradaDireccion.value = "";
+  actualizarVistaCriticidad();
   mostrarEstado(estadoUbicacion, detail?.mensaje ?? "La ubicación está fuera del área permitida.");
+});
+
+inicializarTema();
+botonTema.addEventListener("click", () => {
+  aplicarTema(document.documentElement.dataset.tema === "oscuro" ? "claro" : "oscuro", true);
 });
 
 inicializar().catch((error) => {

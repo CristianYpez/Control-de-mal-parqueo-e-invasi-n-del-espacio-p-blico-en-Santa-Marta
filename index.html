@@ -31,6 +31,9 @@
         <span class="marca__ciudad">Santa Marta</span>
       </a>
       <nav class="navegacion-vistas" aria-label="Vistas principales">
+        <button id="boton-tema" class="boton-vista boton-tema" type="button" aria-pressed="false">
+          Oscuro
+        </button>
         <button
           id="boton-vista-captura"
           class="boton-vista"
@@ -77,19 +80,17 @@
               aria-label="Toca el mapa para marcar dónde ocurre la obstrucción"
             ></div>
             <p id="estado-ubicacion" class="estado" aria-live="polite">
-              Toca el mapa para marcar el punto.
+              Al elegir un punto, sus coordenadas se consultarán con OpenStreetMap/Photon para obtener la dirección.
             </p>
-            <label class="campo campo--cuadra" for="reporte-cuadra">
-              <span class="etiqueta">Cuadra o sector</span>
+            <label class="campo campo--direccion" for="reporte-direccion">
+              <span class="etiqueta">Dirección de la infracción</span>
               <input
-                id="reporte-cuadra"
-                name="cuadra"
-                list="opciones-cuadras"
-                autocomplete="off"
-                placeholder="Busca o elige una cuadra"
+                id="reporte-direccion"
+                name="direccion"
+                autocomplete="street-address"
+                placeholder="Se completará al marcar el mapa"
                 required
               />
-              <datalist id="opciones-cuadras"></datalist>
             </label>
             <button id="boton-limpiar-ubicacion" class="oculto" type="button">
               Quitar ubicación
@@ -281,7 +282,7 @@
         <section id="controles-tablero" class="panel panel--filtros" aria-label="Filtros de reportes">
           <div class="filtros">
             <label class="campo" for="filtro-cuadra">
-              <span class="etiqueta">Cuadra o sector</span>
+              <span class="etiqueta">Dirección o sector</span>
               <input
                 id="filtro-cuadra"
                 list="opciones-cuadras-filtro"
@@ -396,7 +397,7 @@
       </section>
 
       <aside class="aviso-privacidad">
-        No guardes ni compartas placas, rostros ni datos personales. Las fotos solo se guardan después de censurarlas.
+        No guardes ni compartas placas, rostros ni datos personales. Al elegir un punto o usar tu ubicación, las coordenadas se consultan con OpenStreetMap/Photon para obtener la dirección. Las fotos solo se guardan después de censurarlas.
       </aside>
     </main>
 
