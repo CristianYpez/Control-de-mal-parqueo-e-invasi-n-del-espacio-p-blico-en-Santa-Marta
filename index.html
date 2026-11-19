@@ -52,6 +52,15 @@
         >
           Ver tablero
         </button>
+        <button
+          id="boton-vista-graficas"
+          class="boton-vista"
+          type="button"
+          aria-controls="vista-graficas"
+          aria-pressed="false"
+        >
+          Ver gráficas
+        </button>
       </nav>
     </header>
 
@@ -394,6 +403,148 @@
             </section>
           </div>
         </div>
+      </section>
+
+      <section id="vista-graficas" class="vista vista--graficas" aria-labelledby="titulo-graficas" hidden>
+        <div class="encabezado-vista encabezado-vista--tablero">
+          <div>
+            <p class="sobretitulo">SANTA MARTA · LECTURA COMPARATIVA</p>
+            <h1 id="titulo-graficas">Gráficas de reportes</h1>
+          </div>
+          <div class="acciones-tablero">
+            <button id="boton-graficas-nuevo-reporte" class="boton" type="button">
+              Nuevo reporte
+            </button>
+            <button id="boton-graficas-ver-tablero" class="boton boton--secundario" type="button">
+              Ver tablero
+            </button>
+          </div>
+        </div>
+        <p class="ayuda ayuda--seccion">
+          Compara la distribución de todos los reportes cargados en cada variable. Las gráficas no
+          dependen de los filtros del tablero.
+        </p>
+
+        <section class="tarjetas-conteo" aria-label="Resumen de las gráficas">
+          <article class="tarjeta-conteo">
+            <span class="etiqueta">Reportes</span>
+            <strong id="graficas-total">0</strong>
+          </article>
+          <article class="tarjeta-conteo">
+            <span class="etiqueta">Cuadra más reportada</span>
+            <strong id="graficas-cuadra" class="texto-resumen-kpi">Sin datos</strong>
+          </article>
+          <article class="tarjeta-conteo">
+            <span class="etiqueta">Categoría más reportada</span>
+            <strong id="graficas-categoria" class="texto-resumen-kpi">Sin datos</strong>
+          </article>
+          <article class="tarjeta-conteo">
+            <span class="etiqueta">Actor más reportado</span>
+            <strong id="graficas-actor" class="texto-resumen-kpi">Sin datos</strong>
+          </article>
+        </section>
+
+        <div class="cuadricula-graficas">
+          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-cuadras">
+            <p class="sobretitulo">UBICACIÓN</p>
+            <h2 id="titulo-grafica-cuadras">Reportes por cuadra</h2>
+            <div
+              id="grafica-cuadras"
+              class="grafica-barras"
+              role="list"
+              aria-label="Distribución de reportes por cuadra"
+            ></div>
+          </section>
+
+          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-categorias">
+            <p class="sobretitulo">SITUACIÓN</p>
+            <h2 id="titulo-grafica-categorias">Reportes por categoría</h2>
+            <div
+              id="grafica-categorias"
+              class="grafica-barras"
+              role="list"
+              aria-label="Distribución de reportes por categoría"
+            ></div>
+          </section>
+
+          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-actores">
+            <p class="sobretitulo">ACTOR</p>
+            <h2 id="titulo-grafica-actores">Reportes por tipo de actor</h2>
+            <div
+              id="grafica-actores"
+              class="grafica-barras"
+              role="list"
+              aria-label="Distribución de reportes por tipo de actor"
+            ></div>
+          </section>
+
+          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-franjas">
+            <p class="sobretitulo">HORARIO</p>
+            <h2 id="titulo-grafica-franjas">Reportes por franja horaria</h2>
+            <div
+              id="grafica-franjas"
+              class="grafica-barras"
+              role="list"
+              aria-label="Distribución de reportes por franja horaria"
+            ></div>
+          </section>
+
+          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-niveles">
+            <p class="sobretitulo">CRITICIDAD</p>
+            <h2 id="titulo-grafica-niveles">Reportes por nivel</h2>
+            <div
+              id="grafica-niveles"
+              class="grafica-barras"
+              role="list"
+              aria-label="Distribución de reportes por nivel de criticidad"
+            ></div>
+          </section>
+
+          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-origenes">
+            <p class="sobretitulo">ORIGEN</p>
+            <h2 id="titulo-grafica-origenes">Reportes por origen</h2>
+            <div
+              id="grafica-origenes"
+              class="grafica-barras"
+              role="list"
+              aria-label="Distribución de reportes por origen"
+            ></div>
+          </section>
+
+          <section class="panel grafica-panel grafica-panel--ancha" aria-labelledby="titulo-grafica-dias">
+            <p class="sobretitulo">CALENDARIO</p>
+            <h2 id="titulo-grafica-dias">Reportes por día de la semana</h2>
+            <div
+              id="grafica-dias"
+              class="grafica-barras"
+              role="list"
+              aria-label="Distribución de reportes por día de la semana"
+            ></div>
+          </section>
+        </div>
+
+        <section class="panel panel--matriz" aria-labelledby="titulo-matriz">
+          <div class="fila-titulo">
+            <div>
+              <p class="sobretitulo">CRUCE DE VARIABLES</p>
+              <h2 id="titulo-matriz">Categoría según tipo de actor</h2>
+            </div>
+            <span class="texto-secundario">Conteo de reportes</span>
+          </div>
+          <p class="ayuda">
+            Cada celda muestra cuántos reportes combinan una categoría con un tipo de actor.
+          </p>
+          <div
+            class="tabla-matriz-contenedor"
+            role="region"
+            aria-label="Matriz de categorías y tipos de actor"
+            tabindex="0"
+          >
+            <table id="tabla-matriz-comparativa" class="tabla-matriz"></table>
+          </div>
+        </section>
+
+        <p id="estado-graficas" class="estado" role="status" aria-live="polite"></p>
       </section>
 
       <aside class="aviso-privacidad">

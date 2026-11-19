@@ -29,16 +29,16 @@ const botonGeolocalizacion = document.querySelector("#boton-geolocalizacion");
 const botonLimpiarUbicacion = document.querySelector("#boton-limpiar-ubicacion");
 const botonVistaCaptura = document.querySelector("#boton-vista-captura");
 const botonVistaTablero = document.querySelector("#boton-vista-tablero");
-const botonVistaInfracciones = document.querySelector("#boton-vista-infracciones");
-const botonVistaEstadisticas = document.querySelector("#boton-vista-estadisticas");
+const botonVistaGraficas = document.querySelector("#boton-vista-graficas");
 const botonNuevoReporte = document.querySelector("#boton-nuevo-reporte");
 const vistaCaptura = document.querySelector("#vista-captura");
 const vistaTablero = document.querySelector("#vista-tablero");
-const vistaInfracciones = document.querySelector("#vista-infracciones");
-const vistaEstadisticas = document.querySelector("#vista-estadisticas");
+const vistaGraficas = document.querySelector("#vista-graficas");
+const botonGraficasNuevoReporte = document.querySelector("#boton-graficas-nuevo-reporte");
+const botonGraficasVerTablero = document.querySelector("#boton-graficas-ver-tablero");
+const estadoGraficas = document.querySelector("#estado-graficas");
 const estadoTablero = document.querySelector("#estado-tablero");
 const listaResumen = document.querySelector("#lista-resumen");
-const listaInfracciones = document.querySelector("#lista-infracciones");
 const textoConteoReportes = document.querySelector("#texto-conteo-reportes");
 const conteosTablero = {
   total: document.querySelector("#conteo-reportes"),
@@ -62,14 +62,19 @@ const botonesModoMapa = {
   puntos: document.querySelector("#modo-mapa-puntos"),
 };
 const controlPuntos = document.querySelector("#mostrar-puntos");
-const elementosEstadisticas = {
-  total: document.querySelector("#estadistica-total"),
-  cuadra: document.querySelector("#estadistica-lugar"),
-  actor: document.querySelector("#estadistica-actor"),
-  situacion: document.querySelector("#estadistica-situacion"),
+const elementosGraficas = {
+  total: document.querySelector("#graficas-total"),
+  cuadra: document.querySelector("#graficas-cuadra"),
+  categoria: document.querySelector("#graficas-categoria"),
+  actor: document.querySelector("#graficas-actor"),
   cuadras: document.querySelector("#grafica-cuadras"),
+  categorias: document.querySelector("#grafica-categorias"),
   actores: document.querySelector("#grafica-actores"),
-  situaciones: document.querySelector("#grafica-situaciones"),
+  franjas: document.querySelector("#grafica-franjas"),
+  niveles: document.querySelector("#grafica-niveles"),
+  origenes: document.querySelector("#grafica-origenes"),
+  dias: document.querySelector("#grafica-dias"),
+  matriz: document.querySelector("#tabla-matriz-comparativa"),
 };
 const selectorArchivoImportar = document.querySelector("#archivo-importar");
 const controlesFiltros = {
@@ -94,6 +99,28 @@ const nombresActores = {
   vehiculo_carga: "Carga descargando",
   mobiliario_comercial: "Mobiliario comercial",
 };
+const nombresFranjas = {
+  pico: "Hora pico",
+  valle: "Hora valle",
+};
+const nombresNiveles = {
+  Alto: "Nivel alto",
+  Medio: "Nivel medio",
+  Bajo: "Nivel bajo",
+};
+const nombresOrigenes = {
+  campo: "Campo",
+  ciudadano: "Ciudadano",
+};
+const nombresDiasSemana = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+];
 const ANCHO_MAXIMO_FOTO = 800;
 const TAMANO_BLOQUE_CENSURA = 12;
 const actoresPermitidos = new Set([
@@ -234,7 +261,7 @@ function contarPor(reportes, campo, etiquetas = {}) {
 }
 
 function mostrarFrecuenciaMaxima(elemento, conteos) {
-  if (conteos.length === 0) {
+  if (conteos.length === 0 || conteos[0].cantidad === 0) {
     elemento.textContent = "Sin datos";
     return;
   }
@@ -248,220 +275,255 @@ function mostrarFrecuenciaMaxima(elemento, conteos) {
   elemento.textContent = `${prefijo}${ganadores.join(", ")} · ${cantidad} ${unidad}`;
 }
 
-function crearElementoSVG(nombre, atributos = {}) {
-  const elemento = document.createElementNS("http://www.w3.org/2000/svg", nombre);
-  for (const [atributo, valor] of Object.entries(atributos)) {
-    elemento.setAttribute(atributo, String(valor));
+function contarConUniverso(reportes, campo, valores, etiquetas = {}, ordenar = true) {
+  const conteos = new Map(valores.map((valor) => [valor, 0]));
+  for (const reporte of reportes) {
+    const valor = reporte[campo] ?? "";
+    conteos.set(valor, (conteos.get(valor) ?? 0) + 1);
   }
-  return elemento;
+
+  const lista = [...conteos.entries()].map(([valor, cantidad]) => ({
+    etiqueta: (etiquetas[valor] ?? valor) || "Sin especificar",
+    cantidad,
+  }));
+  return ordenar
+    ? lista.sort(
+        (a, b) => b.cantidad - a.cantidad || a.etiqueta.localeCompare(b.etiqueta, "es"),
+      )
+    : lista;
 }
 
-function dividirEtiqueta(etiqueta, maximoCaracteres = 14) {
-  const palabras = etiqueta.split(/\s+/);
-  const lineas = [];
-  let linea = "";
-  for (const palabra of palabras) {
-    const siguiente = linea ? `${linea} ${palabra}` : palabra;
-    if (linea && siguiente.length > maximoCaracteres) {
-      lineas.push(linea);
-      linea = palabra;
-    } else {
-      linea = siguiente;
-    }
+function obtenerDiaSemana(fechaHora) {
+  const coincidencia = /^(\d{4})-(\d{2})-(\d{2})T/.exec(fechaHora ?? "");
+  if (!coincidencia) {
+    return "Sin fecha";
   }
-  if (linea) {
-    lineas.push(linea);
+
+  const fecha = new Date(
+    Number(coincidencia[1]),
+    Number(coincidencia[2]) - 1,
+    Number(coincidencia[3]),
+  );
+  if (Number.isNaN(fecha.getTime())) {
+    return "Sin fecha";
   }
-  return lineas;
+  return nombresDiasSemana[fecha.getDay()];
 }
 
-function renderizarGraficaCartesiana(elemento, conteos, titulo, nombreEjeX) {
+function renderizarGraficaBarras(elemento, conteos, total, descripcion) {
   elemento.replaceChildren();
-  const idTitulo = `${elemento.id}-titulo`;
-  const idDescripcion = `${elemento.id}-descripcion`;
-  const tituloSVG = crearElementoSVG("title", { id: idTitulo });
-  tituloSVG.textContent = titulo;
-  const descripcionSVG = crearElementoSVG("desc", { id: idDescripcion });
-  elemento.append(tituloSVG, descripcionSVG);
-  elemento.setAttribute("aria-labelledby", `${idTitulo} ${idDescripcion}`);
+  elemento.setAttribute("aria-label", descripcion);
 
-  if (conteos.length === 0) {
-    const ancho = Math.max(elemento.parentElement.clientWidth, 360);
-    elemento.setAttribute("viewBox", `0 0 ${ancho} 180`);
-    elemento.setAttribute("width", String(ancho));
-    elemento.setAttribute("height", "180");
-    elemento.style.width = `${ancho}px`;
-    descripcionSVG.textContent = "No hay reportes para mostrar.";
-    const vacio = crearElementoSVG("text", {
-      x: ancho / 2,
-      y: 95,
-      "text-anchor": "middle",
-      class: "grafica-cartesiana-etiqueta",
-    });
+  if (total === 0 || conteos.every(({ cantidad }) => cantidad === 0)) {
+    const vacio = document.createElement("p");
+    vacio.className = "ayuda";
     vacio.textContent = "No hay reportes para mostrar.";
     elemento.append(vacio);
     return;
   }
 
-  const margenIzquierdo = 58;
-  const margenDerecho = 22;
-  const margenSuperior = 24;
-  const alturaGrafica = 200;
-  const etiquetas = conteos.map(({ etiqueta }) => dividirEtiqueta(etiqueta));
-  const maximoLineas = Math.max(...etiquetas.map((lineas) => lineas.length));
-  const margenInferior = 26 + maximoLineas * 14;
-  const alto = margenSuperior + alturaGrafica + margenInferior;
-  const anchoEtiqueta = Math.max(...conteos.map(({ etiqueta }) => etiqueta.length));
-  const espacioPuntos = Math.max(108, Math.min(170, anchoEtiqueta * 5 + 28));
-  const anchoMinimo =
-    margenIzquierdo +
-    margenDerecho +
-    Math.max(160, (conteos.length - 1) * espacioPuntos);
-  const ancho = Math.max(elemento.parentElement.clientWidth, anchoMinimo);
-  const anchoTrazado = ancho - margenIzquierdo - margenDerecho;
-  const altoTrazado = alturaGrafica;
-  const yInferior = margenSuperior + altoTrazado;
-  const maximo = Math.max(...conteos.map(({ cantidad }) => cantidad));
-  const paso = Math.max(1, Math.ceil(maximo / 4));
-  const maximoEje = Math.max(paso, Math.ceil(maximo / paso) * paso);
-  const posicionesX = conteos.map((_, indice) =>
-    conteos.length === 1
-      ? margenIzquierdo + anchoTrazado / 2
-      : margenIzquierdo + (indice * anchoTrazado) / (conteos.length - 1),
-  );
-  const posicionesY = conteos.map(
-    ({ cantidad }) => yInferior - (cantidad / maximoEje) * altoTrazado,
-  );
+  for (const { etiqueta, cantidad } of conteos) {
+    const porcentaje = Math.round((cantidad / total) * 100);
+    const fila = document.createElement("div");
+    fila.className = "barra-categoria";
+    fila.setAttribute("role", "listitem");
 
-  elemento.setAttribute("viewBox", `0 0 ${ancho} ${alto}`);
-  elemento.setAttribute("width", String(ancho));
-  elemento.setAttribute("height", String(alto));
-  elemento.style.width = `${ancho}px`;
-  descripcionSVG.textContent =
-    `Eje X: ${nombreEjeX}. Eje Y: número de reportes. ` +
-    conteos.map(({ etiqueta, cantidad }) => `${etiqueta}: ${cantidad}`).join("; ");
+    const cabecera = document.createElement("div");
+    cabecera.className = "barra-categoria__cabecera";
+    const nombre = document.createElement("span");
+    nombre.className = "barra-categoria__nombre";
+    nombre.textContent = etiqueta;
+    const valor = document.createElement("span");
+    valor.className = "barra-categoria__porcentaje";
+    valor.textContent = `${cantidad} · ${porcentaje}%`;
+    cabecera.append(nombre, valor);
 
-  for (let valor = 0; valor <= maximoEje; valor += paso) {
-    const y = yInferior - (valor / maximoEje) * altoTrazado;
-    const lineaCuadricula = crearElementoSVG("line", {
-      x1: margenIzquierdo,
-      y1: y,
-      x2: ancho - margenDerecho,
-      y2: y,
-      class: "grafica-cartesiana-cuadricula",
-    });
-    const etiquetaY = crearElementoSVG("text", {
-      x: margenIzquierdo - 10,
-      y: y + 4,
-      "text-anchor": "end",
-      class: "grafica-cartesiana-etiqueta",
-    });
-    etiquetaY.textContent = new Intl.NumberFormat("es-CO").format(valor);
-    elemento.append(lineaCuadricula, etiquetaY);
+    const pista = document.createElement("div");
+    pista.className = "barra-categoria__pista";
+    pista.setAttribute("role", "img");
+    pista.setAttribute(
+      "aria-label",
+      `${etiqueta}: ${cantidad} de ${total} reportes (${porcentaje}%)`,
+    );
+    const barra = document.createElement("div");
+    barra.className = "barra-categoria__valor";
+    barra.style.width = `${porcentaje}%`;
+    pista.append(barra);
+    fila.append(cabecera, pista);
+    elemento.append(fila);
   }
-
-  const ejeY = crearElementoSVG("line", {
-    x1: margenIzquierdo,
-    y1: margenSuperior,
-    x2: margenIzquierdo,
-    y2: yInferior,
-    class: "grafica-cartesiana-eje",
-  });
-  const ejeX = crearElementoSVG("line", {
-    x1: margenIzquierdo,
-    y1: yInferior,
-    x2: ancho - margenDerecho,
-    y2: yInferior,
-    class: "grafica-cartesiana-eje",
-  });
-  const tituloEjeY = crearElementoSVG("text", {
-    x: 15,
-    y: margenSuperior + altoTrazado / 2,
-    "text-anchor": "middle",
-    class: "grafica-cartesiana-etiqueta",
-    transform: `rotate(-90 15 ${margenSuperior + altoTrazado / 2})`,
-  });
-  tituloEjeY.textContent = "Número de reportes";
-  elemento.append(ejeY, ejeX, tituloEjeY);
-
-  for (let indice = 0; indice < conteos.length; indice += 1) {
-    const marcaX = crearElementoSVG("line", {
-      x1: posicionesX[indice],
-      y1: yInferior,
-      x2: posicionesX[indice],
-      y2: yInferior + 5,
-      class: "grafica-cartesiana-eje",
-    });
-    const etiquetaX = crearElementoSVG("text", {
-      x: posicionesX[indice],
-      y: yInferior + 18,
-      "text-anchor": "middle",
-      class: "grafica-cartesiana-etiqueta",
-    });
-    etiquetas[indice].forEach((linea, numeroLinea) => {
-      const tramo = crearElementoSVG("tspan", {
-        x: posicionesX[indice],
-        dy: numeroLinea === 0 ? 0 : 13,
-      });
-      tramo.textContent = linea;
-      etiquetaX.append(tramo);
-    });
-    elemento.append(marcaX, etiquetaX);
-  }
-
-  if (conteos.length > 1) {
-    const linea = crearElementoSVG("polyline", {
-      points: posicionesX.map((x, indice) => `${x},${posicionesY[indice]}`).join(" "),
-      class: "grafica-cartesiana-linea",
-    });
-    elemento.append(linea);
-    const longitud = linea.getTotalLength();
-    linea.style.strokeDasharray = String(longitud);
-    linea.style.setProperty("--longitud-grafica", String(longitud));
-  }
-
-  conteos.forEach(({ etiqueta, cantidad }, indice) => {
-    const punto = crearElementoSVG("circle", {
-      cx: posicionesX[indice],
-      cy: posicionesY[indice],
-      r: 5,
-      class: "grafica-cartesiana-punto",
-    });
-    punto.style.animationDelay = `${Math.min(indice * 80, 1200)}ms`;
-    const detalle = crearElementoSVG("title");
-    detalle.textContent = `${etiqueta}: ${cantidad} ${cantidad === 1 ? "reporte" : "reportes"}`;
-    punto.append(detalle);
-    elemento.append(punto);
-  });
 }
 
-function renderizarEstadisticas(reportes) {
-  const conteosCuadras = contarPor(reportes, "cuadra");
-  const conteosActores = contarPor(reportes, "actor", nombresActores);
-  const conteosSituaciones = contarPor(reportes, "categoria", nombresCategorias);
+function renderizarMatrizCategoriasActores(reportes) {
+  const tabla = elementosGraficas.matriz;
+  tabla.replaceChildren();
+  const actores = Object.keys(nombresActores);
+  const categorias = Object.keys(nombresCategorias);
+  const conteos = new Map();
+  for (const reporte of reportes) {
+    const clave = `${reporte.categoria}|${reporte.actor}`;
+    conteos.set(clave, (conteos.get(clave) ?? 0) + 1);
+  }
 
-  elementosEstadisticas.total.textContent = String(reportes.length);
-  mostrarFrecuenciaMaxima(elementosEstadisticas.cuadra, conteosCuadras);
-  mostrarFrecuenciaMaxima(elementosEstadisticas.actor, conteosActores);
-  mostrarFrecuenciaMaxima(elementosEstadisticas.situacion, conteosSituaciones);
-  renderizarGraficaCartesiana(
-    elementosEstadisticas.cuadras,
+  const thead = document.createElement("thead");
+  const filaEncabezado = document.createElement("tr");
+  const celdaVacia = document.createElement("th");
+  celdaVacia.scope = "col";
+  celdaVacia.textContent = "Categoría";
+  filaEncabezado.append(celdaVacia);
+  for (const actor of actores) {
+    const celda = document.createElement("th");
+    celda.scope = "col";
+    celda.textContent = nombresActores[actor];
+    filaEncabezado.append(celda);
+  }
+  const celdaTotalEncabezado = document.createElement("th");
+  celdaTotalEncabezado.scope = "col";
+  celdaTotalEncabezado.textContent = "Total";
+  filaEncabezado.append(celdaTotalEncabezado);
+  thead.append(filaEncabezado);
+  tabla.append(thead);
+
+  const tbody = document.createElement("tbody");
+  const totalesActores = new Map(actores.map((actor) => [actor, 0]));
+  let totalGeneral = 0;
+  for (const categoria of categorias) {
+    const fila = document.createElement("tr");
+    const celdaCategoria = document.createElement("th");
+    celdaCategoria.scope = "row";
+    celdaCategoria.textContent = nombresCategorias[categoria];
+    fila.append(celdaCategoria);
+    let totalCategoria = 0;
+    for (const actor of actores) {
+      const cantidad = conteos.get(`${categoria}|${actor}`) ?? 0;
+      totalCategoria += cantidad;
+      totalesActores.set(actor, totalesActores.get(actor) + cantidad);
+      const celda = document.createElement("td");
+      celda.textContent = String(cantidad);
+      fila.append(celda);
+    }
+    totalGeneral += totalCategoria;
+    const celdaTotalCategoria = document.createElement("td");
+    celdaTotalCategoria.className = "tabla-matriz__total";
+    celdaTotalCategoria.textContent = String(totalCategoria);
+    fila.append(celdaTotalCategoria);
+    tbody.append(fila);
+  }
+  tabla.append(tbody);
+
+  const tfoot = document.createElement("tfoot");
+  const filaTotales = document.createElement("tr");
+  const celdaTotales = document.createElement("th");
+  celdaTotales.scope = "row";
+  celdaTotales.textContent = "Total";
+  filaTotales.append(celdaTotales);
+  for (const actor of actores) {
+    const celda = document.createElement("td");
+    celda.textContent = String(totalesActores.get(actor));
+    filaTotales.append(celda);
+  }
+  const celdaTotalGeneral = document.createElement("td");
+  celdaTotalGeneral.textContent = String(totalGeneral);
+  filaTotales.append(celdaTotalGeneral);
+  tfoot.append(filaTotales);
+  tabla.append(tfoot);
+}
+
+function renderizarGraficas(reportes) {
+  const conteosCuadras = contarPor(reportes, "cuadra");
+  const conteosCategorias = contarConUniverso(
+    reportes,
+    "categoria",
+    Object.keys(nombresCategorias),
+    nombresCategorias,
+  );
+  const conteosActores = contarConUniverso(
+    reportes,
+    "actor",
+    Object.keys(nombresActores),
+    nombresActores,
+  );
+  const reportesConFranja = reportes.map((reporte) => ({
+    ...reporte,
+    franja: obtenerFranjaActual(reporte.fecha_hora),
+  }));
+  const conteosFranjas = contarConUniverso(
+    reportesConFranja,
+    "franja",
+    Object.keys(nombresFranjas),
+    nombresFranjas,
+  );
+  const reportesConNivel = reportes.map((reporte) => ({
+    ...reporte,
+    nivel: reporte.criticidad?.nivel ?? "",
+  }));
+  const conteosNiveles = contarConUniverso(
+    reportesConNivel,
+    "nivel",
+    Object.keys(nombresNiveles),
+    nombresNiveles,
+  );
+  const conteosOrigenes = contarConUniverso(
+    reportes,
+    "origen",
+    Object.keys(nombresOrigenes),
+    nombresOrigenes,
+  );
+  const reportesConDia = reportes.map((reporte) => ({
+    ...reporte,
+    dia: obtenerDiaSemana(reporte.fecha_hora),
+  }));
+  const conteosDias = contarConUniverso(reportesConDia, "dia", nombresDiasSemana, {}, false);
+
+  elementosGraficas.total.textContent = String(reportes.length);
+  mostrarFrecuenciaMaxima(elementosGraficas.cuadra, conteosCuadras);
+  mostrarFrecuenciaMaxima(elementosGraficas.categoria, conteosCategorias);
+  mostrarFrecuenciaMaxima(elementosGraficas.actor, conteosActores);
+
+  renderizarGraficaBarras(
+    elementosGraficas.cuadras,
     conteosCuadras,
-    "Gráfica cartesiana de reportes por cuadra",
-    "cuadra",
+    reportes.length,
+    "Reportes por cuadra",
   );
-  renderizarGraficaCartesiana(
-    elementosEstadisticas.actores,
+  renderizarGraficaBarras(
+    elementosGraficas.categorias,
+    conteosCategorias,
+    reportes.length,
+    "Reportes por categoría",
+  );
+  renderizarGraficaBarras(
+    elementosGraficas.actores,
     conteosActores,
-    "Gráfica cartesiana de reportes por actor",
-    "tipo de actor",
+    reportes.length,
+    "Reportes por tipo de actor",
   );
-  renderizarGraficaCartesiana(
-    elementosEstadisticas.situaciones,
-    conteosSituaciones,
-    "Gráfica cartesiana de reportes por situación",
-    "situación",
+  renderizarGraficaBarras(
+    elementosGraficas.franjas,
+    conteosFranjas,
+    reportes.length,
+    "Reportes por franja horaria",
   );
+  renderizarGraficaBarras(
+    elementosGraficas.niveles,
+    conteosNiveles,
+    reportes.length,
+    "Reportes por nivel de criticidad",
+  );
+  renderizarGraficaBarras(
+    elementosGraficas.origenes,
+    conteosOrigenes,
+    reportes.length,
+    "Reportes por origen",
+  );
+  renderizarGraficaBarras(
+    elementosGraficas.dias,
+    conteosDias,
+    reportes.length,
+    "Reportes por día de la semana",
+  );
+  renderizarMatrizCategoriasActores(reportes);
+  mostrarEstado(estadoGraficas, `Gráficas calculadas con ${reportes.length} reporte(s).`);
 }
 
 function publicarReportesActualizados() {
@@ -477,6 +539,7 @@ function publicarReportesActualizados() {
     }),
   );
   actualizarTablero();
+  renderizarGraficas(reportes);
 }
 
 function cargarOpcionesFiltroCuadra(reportes) {
@@ -637,12 +700,15 @@ function renderizarBarrasCategorias(reportes) {
 function cambiarVista(nombreVista) {
   const mostrarCaptura = nombreVista === "captura";
   const mostrarTablero = nombreVista === "tablero";
+  const mostrarGraficas = nombreVista === "graficas";
   const mostrarCensura = nombreVista === "censura";
   vistaCaptura.hidden = !mostrarCaptura;
   vistaTablero.hidden = !mostrarTablero;
+  vistaGraficas.hidden = !mostrarGraficas;
   editorCensura.hidden = !mostrarCensura;
   botonVistaCaptura.setAttribute("aria-pressed", String(mostrarCaptura || mostrarCensura));
   botonVistaTablero.setAttribute("aria-pressed", String(mostrarTablero));
+  botonVistaGraficas.setAttribute("aria-pressed", String(mostrarGraficas));
 
   if (mostrarCaptura) {
     window.dispatchEvent(new Event("tablero:desactivar"));
@@ -651,6 +717,9 @@ function cambiarVista(nombreVista) {
     window.dispatchEvent(new Event("tablero:desactivar"));
   } else if (mostrarTablero) {
     window.dispatchEvent(new Event("tablero:activar"));
+  } else if (mostrarGraficas) {
+    window.dispatchEvent(new Event("tablero:desactivar"));
+    renderizarGraficas(obtenerReportesActuales());
   }
 }
 
@@ -741,14 +810,6 @@ function renderizarResumen(reportes) {
   }
 }
 
-function agregarDetalleInfraccion(contenedor, etiqueta, valor) {
-  const nombre = document.createElement("dt");
-  nombre.textContent = etiqueta;
-  const detalle = document.createElement("dd");
-  detalle.textContent = valor;
-  contenedor.append(nombre, detalle);
-}
-
 function agregarFotoInfraccion(tarjeta, reporte) {
   const figura = document.createElement("figure");
   figura.className = "foto-infraccion";
@@ -794,80 +855,6 @@ function agregarFotoInfraccion(tarjeta, reporte) {
 
   figura.append(pie);
   tarjeta.append(figura);
-}
-
-function renderizarInfracciones(reportes) {
-  listaInfracciones.replaceChildren();
-
-  if (reportes.length === 0) {
-    const mensaje = document.createElement("p");
-    mensaje.className = "ayuda";
-    mensaje.textContent = "Todavía no hay infracciones para mostrar.";
-    listaInfracciones.append(mensaje);
-    return;
-  }
-
-  const reportesRecientes = [...reportes].sort((primero, segundo) =>
-    segundo.fecha_hora.localeCompare(primero.fecha_hora),
-  );
-  for (const reporte of reportesRecientes) {
-    const tarjeta = document.createElement("article");
-    tarjeta.className = "tarjeta-infraccion";
-
-    const titulo = document.createElement("h3");
-    titulo.textContent = `${reporte.id} · ${reporte.criticidad.nivel}`;
-    tarjeta.append(titulo);
-
-    const detalles = document.createElement("dl");
-    detalles.className = "detalle-infraccion";
-    agregarDetalleInfraccion(
-      detalles,
-      "Dirección",
-      reporte.direccion || "Sin dirección específica",
-    );
-    agregarDetalleInfraccion(detalles, "Cuadra", reporte.cuadra);
-    agregarDetalleInfraccion(detalles, "Actor", nombresActores[reporte.actor] ?? reporte.actor);
-    agregarDetalleInfraccion(
-      detalles,
-      "Situación",
-      nombresCategorias[reporte.categoria] ?? reporte.categoria,
-    );
-    agregarDetalleInfraccion(
-      detalles,
-      "Criticidad",
-      `${reporte.criticidad.nivel} (${reporte.criticidad.puntaje} puntos)`,
-    );
-    agregarDetalleInfraccion(
-      detalles,
-      "Origen",
-      reporte.origen === "ciudadano" ? "Ciudadano" : "Campo",
-    );
-    agregarDetalleInfraccion(
-      detalles,
-      "Coordenadas",
-      `${reporte.lat.toFixed(5)}, ${reporte.lng.toFixed(5)}`,
-    );
-    agregarDetalleInfraccion(
-      detalles,
-      "Fecha",
-      reporte.fecha_hora.replace("T", " · "),
-    );
-    tarjeta.append(detalles);
-    agregarFotoInfraccion(tarjeta, reporte);
-
-    const botonUbicacion = document.createElement("button");
-    botonUbicacion.type = "button";
-    botonUbicacion.textContent = "Ver en el mapa";
-    botonUbicacion.addEventListener("click", () => {
-      window.dispatchEvent(
-        new CustomEvent("infraccion:ver-en-mapa", {
-          detail: { id: reporte.id },
-        }),
-      );
-    });
-    tarjeta.append(botonUbicacion);
-    listaInfracciones.append(tarjeta);
-  }
 }
 
 function actualizarTablero() {
@@ -1591,7 +1578,10 @@ botonLimpiarUbicacion.addEventListener("click", () => {
 });
 botonVistaCaptura.addEventListener("click", () => cambiarVista("captura"));
 botonVistaTablero.addEventListener("click", () => cambiarVista("tablero"));
+botonVistaGraficas.addEventListener("click", () => cambiarVista("graficas"));
 botonNuevoReporte.addEventListener("click", () => cambiarVista("captura"));
+botonGraficasNuevoReporte.addEventListener("click", () => cambiarVista("captura"));
+botonGraficasVerTablero.addEventListener("click", () => cambiarVista("tablero"));
 for (const control of Object.values(controlesFiltros)) {
   control.addEventListener("change", actualizarTablero);
   control.addEventListener("input", actualizarTablero);

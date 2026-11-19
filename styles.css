@@ -183,6 +183,8 @@ h2 {
 .navegacion-vistas {
   display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.35rem;
 }
 
@@ -831,6 +833,106 @@ main {
   background: var(--accion);
 }
 
+.ayuda--seccion {
+  margin-bottom: 0.8rem;
+}
+
+.tarjeta-conteo .texto-resumen-kpi {
+  font-family: "Inter", sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.cuadricula-graficas {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.grafica-panel {
+  min-width: 0;
+}
+
+.grafica-panel h2 {
+  margin: 0 0 0.6rem;
+}
+
+.grafica-panel .sobretitulo {
+  margin-bottom: 0.15rem;
+}
+
+.grafica-barras {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.grafica-barras .barra-categoria__valor {
+  transition: width 600ms ease;
+}
+
+.panel--matriz {
+  margin-top: 0.7rem;
+}
+
+.panel--matriz h2 {
+  margin: 0;
+}
+
+.panel--matriz .ayuda {
+  margin: 0.25rem 0 0.65rem;
+}
+
+.tabla-matriz-contenedor {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.tabla-matriz {
+  width: 100%;
+  min-width: 38rem;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.tabla-matriz th,
+.tabla-matriz td {
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid var(--borde);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tabla-matriz thead th,
+.tabla-matriz tbody th {
+  color: var(--texto-secundario);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tabla-matriz thead th:first-child,
+.tabla-matriz tbody th {
+  text-align: left;
+}
+
+.tabla-matriz tbody tr:hover {
+  background: var(--superficie-alterna);
+}
+
+.tabla-matriz__total,
+.tabla-matriz tfoot td,
+.tabla-matriz tfoot th {
+  font-weight: 700;
+}
+
+.tabla-matriz tfoot td,
+.tabla-matriz tfoot th {
+  border-top: 2px solid var(--borde);
+  border-bottom: 0;
+}
+
 .ayuda {
   margin: 0;
   color: var(--texto-secundario);
@@ -897,6 +999,14 @@ main {
 
   .tarjetas-conteo {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .cuadricula-graficas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grafica-panel--ancha {
+    grid-column: 1 / -1;
   }
 
   .columnas-tablero {
@@ -986,6 +1096,7 @@ main {
   .navegacion-vistas,
   #vista-captura,
   #editor-censura,
+  #vista-graficas,
   #controles-tablero,
   .tarjetas-conteo,
   .panel--mapa,
