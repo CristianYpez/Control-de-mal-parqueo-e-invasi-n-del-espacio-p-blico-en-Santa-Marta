@@ -56,17 +56,53 @@ const mapaCapturaElemento = document.querySelector("#mapa-captura");
 const mapaTableroElemento = document.querySelector("#mapa-tablero");
 const estadoTablero = document.querySelector("#estado-tablero");
 const estadoUbicacion = document.querySelector("#estado-ubicacion");
-const controlPuntos = document.querySelector("#mostrar-puntos");
+const resumenPeriodoMapa = document.querySelector("#resumen-periodo-mapa");
+const controlesCapas = [...document.querySelectorAll('input[name="capa-mapa"]')];
+const botonesModoCapas = {
+  una: document.querySelector("#modo-capas-una"),
+  combinar: document.querySelector("#modo-capas-combinar"),
+};
+const controlesTiempo = [...document.querySelectorAll("[data-periodo-mapa]")];
+const controlesCalor = {
+  sensibilidad: document.querySelector("#sensibilidad-calor"),
+  radio: document.querySelector("#radio-calor"),
+  desenfoque: document.querySelector("#desenfoque-calor"),
+  paleta: document.querySelector("#paleta-calor"),
+};
+const valoresCalor = {
+  sensibilidad: document.querySelector("#valor-sensibilidad"),
+  radio: document.querySelector("#valor-radio"),
+  desenfoque: document.querySelector("#valor-desenfoque"),
+};
 
 let mapaCaptura;
 let mapaTablero;
 let marcadorUbicacion;
 let capaCalor;
 let capaPuntos;
+let capaCeldas;
 let reportesValidos = [];
+let reportesDelTablero = [];
+let reportesDelPeriodo = [];
+let reportesEnMapa = [];
 let reportesFueraDelArea = 0;
 let tableroActivo = false;
-let modoVisualizacion = "calor";
+let periodoSeleccionado = "todo";
+let capasSeleccionadas = new Set(["calor"]);
+let paletaSeleccionada = "serena";
+
+const PALETAS_CALOR = {
+  serena: ["#fff9c4", "#ffee58", "#ffb300", "#f4511e", "#7f0000"],
+  termica: ["#2166ac", "#00bcd4", "#4caf50", "#ffeb3b", "#ff9800", "#e53935"],
+};
+
+// Servidor de mapas OpenStreetMap (100% libre, sin requerir API Key ni presentar marcas de agua)
+const URL_OSM = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const ATRIBUCION_OSM = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors';
+
+let capaBaseCaptura;
+let capaBaseTablero;
+let capaCalorCaptura;
 
 function puntoEnSegmento(latitud, longitud, inicio, fin) {
   const productoCruzado =
@@ -151,25 +187,38 @@ function crearMapa(elemento, opciones = {}) {
     ...opciones,
   }).setView(CENTRO_SANTA_MARTA, NIVEL_ZOOM_INICIAL);
 
-  const capaBase = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  const capaBase = L.tileLayer(URL_OSM, {
     maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  });
-  capaBase.on("tileerror", () => {
-    const mensaje = "No se pudo cargar el mapa base. Comprueba tu conexión a internet.";
-    mostrarEstadoMapa(elemento, mensaje);
+    attribution: ATRIBUCION_OSM,
   });
   capaBase.addTo(mapa);
 
   L.polygon(PERIMETRO_APROXIMADO, {
-    color: "#126b5c",
+    color: "#2DD4BF",
     weight: 2,
     dashArray: "6 5",
-    fillColor: "#3d9b84",
-    fillOpacity: 0.06,
+    fillColor: "#2DD4BF",
+    fillOpacity: 0.05,
   }).addTo(mapa);
 
-  return mapa;
+  return { mapa, capaBase };
+}
+
+function actualizarCalorCaptura(reportes) {
+  if (!mapaCaptura || typeof window.L?.heatLayer !== "function") return;
+  const puntos = reportes
+    .filter((r) => estaDentroDelPerimetro(r.lat, r.lng))
+    .map((r) => [r.lat, r.lng, 0.65]);
+  if (!capaCalorCaptura) {
+    capaCalorCaptura = L.heatLayer(puntos, {
+      radius: 34,
+      blur: 24,
+      minOpacity: 0.35,
+      max: 5,
+    }).addTo(mapaCaptura);
+  } else {
+    capaCalorCaptura.setLatLngs(puntos);
+  }
 }
 
 function mostrarEstadoMapa(elemento, mensaje) {
@@ -184,15 +233,15 @@ function crearCapaCalor() {
   return L.heatLayer([], {
     radius: 38,
     blur: 26,
-    minOpacity: 0.65,
-    max: 1,
+    minOpacity: 0.35,
+    max: 6,
     maxZoom: 11,
     gradient: {
-      0.1: "#2c7bb6",
-      0.3: "#abd9e9",
-      0.5: "#ffffbf",
-      0.72: "#fdae61",
-      1: "#d7191c",
+      0.05: "#fff9c4",
+      0.28: "#ffee58",
+      0.52: "#ffb300",
+      0.76: "#f4511e",
+      1: "#7f0000",
     },
   });
 }
@@ -275,37 +324,218 @@ function crearContenidoPopup(reporte) {
   return contenido;
 }
 
-function aplicarModoVisualizacion() {
+function obtenerPesoCriticidad(reporte) {
+  const nivel = reporte.criticidad.nivel.toLowerCase();
+  return nivel === "alto" ? 3 : nivel === "medio" ? 2 : 1;
+}
+
+// Interpola entre los colores de la paleta para una intensidad relativa.
+function colorEn(intensidad) {
+  const colores = PALETAS_CALOR[paletaSeleccionada];
+  const posicion = Math.max(0, Math.min(1, intensidad)) * (colores.length - 1);
+  const indice = Math.min(Math.floor(posicion), colores.length - 2);
+  const fraccion = posicion - indice;
+  const inicio = colores[indice].match(/[a-f\d]{2}/gi).map((parte) => Number.parseInt(parte, 16));
+  const fin = colores[indice + 1].match(/[a-f\d]{2}/gi).map((parte) => Number.parseInt(parte, 16));
+  const canales = inicio.map((canal, posicionCanal) =>
+    Math.round(canal + (fin[posicionCanal] - canal) * fraccion),
+  );
+  return `#${canales.map((canal) => canal.toString(16).padStart(2, "0")).join("")}`;
+}
+
+// Reconstruye las celdas según el peso de criticidad y el conteo sin ponderar.
+function dibujarCeldas() {
+  capaCeldas.clearLayers();
+  if (reportesEnMapa.length === 0) {
+    return;
+  }
+
+  const tamanoCelda = 0.003;
+  const celdas = new Map();
+  for (const reporte of reportesEnMapa) {
+    const fila = Math.floor(reporte.lat / tamanoCelda);
+    const columna = Math.floor(reporte.lng / tamanoCelda);
+    const clave = `${fila}:${columna}`;
+    const celda = celdas.get(clave) ?? {
+      fila,
+      columna,
+      cantidad: 0,
+      peso: 0,
+    };
+    celda.cantidad += 1;
+    celda.peso += obtenerPesoCriticidad(reporte);
+    celdas.set(clave, celda);
+  }
+
+  const pesoMaximo = [...celdas.values()].reduce(
+    (maximo, celda) => Math.max(maximo, celda.peso),
+    0,
+  );
+  for (const celda of celdas.values()) {
+    const limiteSur = celda.fila * tamanoCelda;
+    const limiteOeste = celda.columna * tamanoCelda;
+    L.rectangle(
+      [
+        [limiteSur, limiteOeste],
+        [limiteSur + tamanoCelda, limiteOeste + tamanoCelda],
+      ],
+      {
+        color: colorEn(celda.peso / pesoMaximo),
+        weight: 1,
+        opacity: 0.65,
+        fillColor: colorEn(celda.peso / pesoMaximo),
+        fillOpacity: 0.55,
+      },
+    )
+      .bindTooltip(`${celda.cantidad} reportes`)
+      .addTo(capaCeldas);
+  }
+}
+
+// Muestra solo las capas seleccionadas y refresca los datos de cada una.
+function aplicarCapas() {
+  capaCalor.setLatLngs(
+    capasSeleccionadas.has("calor")
+      ? reportesEnMapa.map((reporte) => [
+          reporte.lat,
+          reporte.lng,
+          obtenerPesoCriticidad(reporte),
+        ])
+      : [],
+  );
+  capaPuntos.clearLayers();
+  for (const reporte of reportesEnMapa) {
+    L.marker([reporte.lat, reporte.lng])
+      .bindPopup(crearContenidoPopup(reporte))
+      .addTo(capaPuntos);
+  }
+  dibujarCeldas();
+
   if (!tableroActivo) {
     return;
   }
 
-  if (modoVisualizacion === "calor") {
-    if (!mapaTablero.hasLayer(capaCalor)) {
-      capaCalor.addTo(mapaTablero);
+  for (const [nombre, capa] of [
+    ["calor", capaCalor],
+    ["puntos", capaPuntos],
+    ["celdas", capaCeldas],
+  ]) {
+    const visible = capasSeleccionadas.has(nombre);
+    if (visible && !mapaTablero.hasLayer(capa)) {
+      capa.addTo(mapaTablero);
+      if (nombre === "calor") {
+        capaCalor.setOptions({
+          ...obtenerAjustesCalor(),
+          gradient: obtenerGradienteCalor(),
+        });
+      }
+    } else if (!visible && nombre !== "calor" && mapaTablero.hasLayer(capa)) {
+      mapaTablero.removeLayer(capa);
     }
-    capaCalor.setLatLngs(
-      reportesValidos.map((reporte) => [
-        reporte.lat,
-        reporte.lng,
-        Math.max(0, Math.min(1, reporte.criticidad.puntaje / 9)),
-      ]),
-    );
-    if (mapaTablero.hasLayer(capaPuntos)) {
-      mapaTablero.removeLayer(capaPuntos);
-    }
-    return;
-  }
-
-  if (mapaTablero.hasLayer(capaCalor)) {
-    mapaTablero.removeLayer(capaCalor);
-  }
-  if (!mapaTablero.hasLayer(capaPuntos)) {
-    capaPuntos.addTo(mapaTablero);
   }
 }
 
-function dibujarReportes(reportes) {
+// Ajusta selección única o múltiple según el modo del panel.
+function setModo(modo) {
+  if (modo === "una") {
+    const seleccionada = controlesCapas.find((control) => control.checked)?.value;
+    capasSeleccionadas = new Set([seleccionada ?? "calor"]);
+  }
+  botonesModoCapas.una.setAttribute("aria-pressed", String(modo === "una"));
+  botonesModoCapas.combinar.setAttribute("aria-pressed", String(modo === "combinar"));
+
+  for (const control of controlesCapas) {
+    control.type = modo === "una" ? "radio" : "checkbox";
+    control.checked = capasSeleccionadas.has(control.value);
+  }
+  aplicarCapas();
+}
+
+// Aplica el rango temporal a los reportes que ya respetan los filtros del tablero.
+function filtrarPorFecha() {
+  const dias = periodoSeleccionado === "todo" ? null : Number(periodoSeleccionado);
+  const fechaLimite = dias === null ? null : Date.now() - dias * 24 * 60 * 60 * 1000;
+  const estaEnPeriodo = (reporte) => {
+    if (fechaLimite === null) {
+      return true;
+    }
+    const fecha = new Date(reporte.fecha_hora).getTime();
+    return Number.isFinite(fecha) && fecha >= fechaLimite;
+  };
+  reportesDelPeriodo = reportesDelTablero.filter(estaEnPeriodo);
+  reportesEnMapa = reportesValidos.filter(estaEnPeriodo);
+
+  resumenPeriodoMapa.textContent =
+    `${reportesDelPeriodo.length} ${reportesDelPeriodo.length === 1 ? "reporte" : "reportes"} en el período seleccionado`;
+  document.querySelector("#conteo-reportes").textContent = String(reportesDelPeriodo.length);
+  for (const nivel of ["alto", "medio", "bajo"]) {
+    document.querySelector(`#conteo-${nivel}`).textContent = String(
+      reportesDelPeriodo.filter((reporte) => reporte.criticidad.nivel.toLowerCase() === nivel).length,
+    );
+  }
+  document.querySelector("#texto-conteo-reportes").textContent =
+    `Mostrando ${reportesDelPeriodo.length} de ${reportesDelTablero.length} reportes`;
+
+  if (reportesEnMapa.length === 0) {
+    estadoTablero.textContent = "No hay reportes con ubicación válida para mostrar en este período.";
+  } else if (reportesFueraDelArea > 0) {
+    estadoTablero.textContent =
+      `${reportesFueraDelArea} reporte(s) no se muestran por estar fuera del perímetro o no tener criticidad válida.`;
+  } else {
+    estadoTablero.textContent =
+      `${reportesEnMapa.length} reporte(s) dentro del perímetro aproximado en este período.`;
+  }
+
+  aplicarCapas();
+}
+
+// Actualiza el degradado del heatmap y de la leyenda al cambiar paleta o tema.
+function actualizarPaleta() {
+  paletaSeleccionada = controlesCalor.paleta.value;
+  const colores = PALETAS_CALOR[paletaSeleccionada];
+  const pasos = colores.map((color, indice) =>
+    `${color} ${(indice / (colores.length - 1)) * 100}%`,
+  );
+  if (mapaTablero.hasLayer(capaCalor)) {
+    capaCalor.setOptions({ gradient: obtenerGradienteCalor() });
+  }
+  document.querySelector(".leyenda-criticidad__degradado").style.setProperty(
+    "--degradado-calor",
+    `linear-gradient(to right, ${pasos.join(", ")})`,
+  );
+  aplicarCapas();
+}
+
+// Aplica los controles de intensidad y mantiene sus valores visibles.
+function actualizarAjustesCalor() {
+  const sensibilidad = Number(controlesCalor.sensibilidad.value);
+  const radio = Number(controlesCalor.radio.value);
+  const desenfoque = Number(controlesCalor.desenfoque.value);
+  valoresCalor.sensibilidad.value = String(sensibilidad);
+  valoresCalor.radio.value = String(radio);
+  valoresCalor.desenfoque.value = String(desenfoque);
+  if (mapaTablero.hasLayer(capaCalor)) {
+    capaCalor.setOptions(obtenerAjustesCalor());
+  }
+}
+
+function obtenerAjustesCalor() {
+  return {
+    max: 12 - Number(controlesCalor.sensibilidad.value),
+    radius: Number(controlesCalor.radio.value),
+    blur: Number(controlesCalor.desenfoque.value),
+  };
+}
+
+function obtenerGradienteCalor() {
+  const colores = PALETAS_CALOR[paletaSeleccionada];
+  return Object.fromEntries(
+    colores.map((color, indice) => [indice / (colores.length - 1), color]),
+  );
+}
+
+function dibujar(reportes) {
+  reportesDelTablero = reportes;
   reportesValidos = [];
   reportesFueraDelArea = 0;
 
@@ -329,18 +559,7 @@ function dibujarReportes(reportes) {
     estadoTablero.textContent = `${reportesValidos.length} reporte(s) dentro del perímetro aproximado.`;
   }
 
-  if (!tableroActivo) {
-    return;
-  }
-
-  capaPuntos.clearLayers();
-  for (const reporte of reportesValidos) {
-    L.marker([reporte.lat, reporte.lng])
-      .bindPopup(crearContenidoPopup(reporte))
-      .addTo(capaPuntos);
-  }
-
-  aplicarModoVisualizacion();
+  filtrarPorFecha();
 }
 
 function activarMapaCaptura() {
@@ -355,8 +574,8 @@ function activarCapas() {
     }
 
     mapaTablero.invalidateSize();
-    aplicarModoVisualizacion();
-    dibujarReportes(reportesValidos);
+    aplicarCapas();
+    dibujar(reportesDelTablero);
   });
 }
 
@@ -372,11 +591,23 @@ function inicializarMapas() {
     throw new Error("Leaflet.heat no cargó. Comprueba la conexión a internet y el CDN.");
   }
 
-  mapaCaptura = crearMapa(mapaCapturaElemento);
-  mapaTablero = crearMapa(mapaTableroElemento);
+  const resCaptura = crearMapa(mapaCapturaElemento);
+  mapaCaptura = resCaptura.mapa;
+  capaBaseCaptura = resCaptura.capaBase;
+
+  const resTablero = crearMapa(mapaTableroElemento);
+  mapaTablero = resTablero.mapa;
+  capaBaseTablero = resTablero.capaBase;
+
   capaCalor = crearCapaCalor();
   capaPuntos = L.layerGroup();
-  controlPuntos.checked = false;
+  capaCeldas = L.layerGroup();
+  if (window.matchMedia("(max-width: 42rem)").matches) {
+    document.querySelector("#panel-capas-mapa").open = false;
+  }
+  setModo("una");
+  actualizarAjustesCalor();
+  actualizarPaleta();
 
   mapaCaptura.on("click", ({ latlng }) => seleccionarUbicacion(latlng.lat, latlng.lng));
   window.addEventListener("mapa:solicitar-ubicacion", ({ detail }) => {
@@ -390,20 +621,42 @@ function inicializarMapas() {
   window.addEventListener("tablero:activar", activarCapas);
   window.addEventListener("tablero:desactivar", desactivarCapas);
   window.addEventListener("reportes:actualizados", ({ detail }) => {
-    dibujarReportes(detail?.reportes ?? []);
+    const reportes = detail?.reportes ?? [];
+    dibujar(reportes);
+    actualizarCalorCaptura(reportes);
   });
   window.addEventListener("reportes:filtrados", ({ detail }) => {
-    dibujarReportes(detail?.reportes ?? []);
+    dibujar(detail?.reportes ?? []);
   });
-  window.addEventListener("mapa:modo-visualizacion", ({ detail }) => {
-    if (detail?.modo !== "calor" && detail?.modo !== "puntos") {
-      estadoTablero.textContent = "No se reconoce el modo de visualización del mapa.";
-      return;
-    }
 
-    modoVisualizacion = detail.modo;
-    aplicarModoVisualizacion();
+  window.addEventListener("mapa:centrar-coordenadas", ({ detail }) => {
+    if (detail?.lat && detail?.lng && mapaTablero) {
+      mapaTablero.setView([detail.lat, detail.lng], 16, { animate: true });
+    }
   });
+  botonesModoCapas.una.addEventListener("click", () => setModo("una"));
+  botonesModoCapas.combinar.addEventListener("click", () => setModo("combinar"));
+  for (const control of controlesCapas) {
+    control.addEventListener("change", () => {
+      capasSeleccionadas = new Set(
+        controlesCapas.filter((capa) => capa.checked).map((capa) => capa.value),
+      );
+      aplicarCapas();
+    });
+  }
+  for (const control of controlesTiempo) {
+    control.addEventListener("click", () => {
+      periodoSeleccionado = control.dataset.periodoMapa;
+      for (const boton of controlesTiempo) {
+        boton.setAttribute("aria-pressed", String(boton === control));
+      }
+      filtrarPorFecha();
+    });
+  }
+  for (const control of Object.values(controlesCalor)) {
+    control.addEventListener("input", control === controlesCalor.paleta ? actualizarPaleta : actualizarAjustesCalor);
+    control.addEventListener("change", control === controlesCalor.paleta ? actualizarPaleta : actualizarAjustesCalor);
+  }
 }
 
 try {

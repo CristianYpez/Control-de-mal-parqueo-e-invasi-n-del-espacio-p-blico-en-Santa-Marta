@@ -27,204 +27,312 @@
   <body>
     <header class="encabezado">
       <a class="marca" href="./index.html" aria-label="Control de mal parqueo, inicio">
-        <span class="marca__nombre">Control de mal parqueo</span>
-        <span class="marca__ciudad">Santa Marta</span>
+        <span class="marca__icono" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="4"/>
+            <path d="M9 17V7h4a3 3 0 0 1 0 6H9"/>
+          </svg>
+        </span>
+        <div class="marca__textos">
+          <span class="marca__nombre">Control de mal parqueo</span>
+          <span class="marca__ciudad">Santa Marta · Civic Tech</span>
+        </div>
       </a>
-      <nav class="navegacion-vistas" aria-label="Vistas principales">
-        <button id="boton-tema" class="boton-vista boton-tema" type="button" aria-pressed="false">
-          Oscuro
-        </button>
+
+      <div class="encabezado__acciones">
+        <nav class="navegacion-vistas" aria-label="Vistas principales">
+          <button
+            id="boton-vista-captura"
+            class="boton-vista"
+            type="button"
+            aria-controls="vista-captura"
+            aria-pressed="true"
+          >
+            Reportar
+          </button>
+          <button
+            id="boton-vista-tablero"
+            class="boton-vista"
+            type="button"
+            aria-controls="vista-tablero"
+            aria-pressed="false"
+          >
+            Tablero
+          </button>
+          <button
+            id="boton-vista-graficas"
+            class="boton-vista"
+            type="button"
+            aria-controls="vista-graficas"
+            aria-pressed="false"
+          >
+            Gráficas
+          </button>
+        </nav>
+
         <button
-          id="boton-vista-captura"
-          class="boton-vista"
+          id="boton-tema"
+          class="boton-toggle-tema"
           type="button"
-          aria-controls="vista-captura"
+          aria-label="Cambiar a modo claro"
           aria-pressed="true"
+          title="Alternar modo claro / oscuro"
         >
-          Reportar obstrucción
+          <svg class="icono-sol" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+          <svg class="icono-luna" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          </svg>
+          <span class="texto-modo-tema">Claro</span>
         </button>
-        <button
-          id="boton-vista-tablero"
-          class="boton-vista"
-          type="button"
-          aria-controls="vista-tablero"
-          aria-pressed="false"
-        >
-          Ver tablero
-        </button>
-        <button
-          id="boton-vista-graficas"
-          class="boton-vista"
-          type="button"
-          aria-controls="vista-graficas"
-          aria-pressed="false"
-        >
-          Ver gráficas
-        </button>
-      </nav>
+      </div>
     </header>
 
     <main id="contenido-principal">
       <section id="vista-captura" class="vista vista--captura" aria-labelledby="titulo-captura">
-        <div class="encabezado-vista">
-          <div>
-            <p class="sobretitulo">REPORTE CIUDADANO</p>
-            <h1 id="titulo-captura">Reportar obstrucción</h1>
+        <form id="formulario-reporte" class="layout-reporte-split" novalidate>
+          <!-- Columna izquierda: Ubicación, mapa y dirección -->
+          <div class="columna-split columna-split--ubicacion">
+            <section class="tarjeta-ubicacion-split" aria-labelledby="titulo-ubicacion">
+              <div class="fila-titulo-split">
+                <h2 id="titulo-ubicacion">Ubicación</h2>
+                <button id="boton-geolocalizacion" class="boton-geolocalizacion-pill" type="button">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <span>Usar mi ubicación</span>
+                </button>
+              </div>
+
+              <div
+                id="mapa-captura"
+                class="mapa-split"
+                role="application"
+                aria-label="Toca el mapa para marcar dónde ocurre la obstrucción"
+              ></div>
+
+              <p id="estado-ubicacion" class="estado-ubicacion-texto" aria-live="polite">
+                Al elegir un punto, sus coordenadas se consultarán para obtener la dirección.
+              </p>
+
+              <label class="campo-direccion-split" for="reporte-direccion">
+                <span class="etiqueta-sub">DIRECCIÓN DE LA INFRACCIÓN</span>
+                <input
+                  id="reporte-direccion"
+                  name="direccion"
+                  autocomplete="street-address"
+                  placeholder="Se completará al marcar el mapa"
+                  required
+                />
+              </label>
+
+              <button id="boton-limpiar-ubicacion" class="oculto" type="button">
+                Quitar ubicación
+              </button>
+            </section>
           </div>
-          <p class="tiempo-estimado">Toma menos de 30 segundos</p>
-        </div>
 
-        <form id="formulario-reporte" class="formulario-captura" novalidate>
-          <section class="bloque-ubicacion" aria-labelledby="titulo-ubicacion">
-            <div class="fila-titulo">
-              <h2 id="titulo-ubicacion">Ubicación</h2>
-              <button id="boton-geolocalizacion" class="boton-texto" type="button">
-                Usar mi ubicación
-              </button>
+          <!-- Columna derecha: Formulario de reporte -->
+          <div class="columna-split columna-split--formulario">
+            <div class="encabezado-reporte-split">
+              <h1 id="titulo-captura">Reportar obstrucción</h1>
+              <span class="tiempo-estimado-badge">Toma menos de 30 segundos</span>
             </div>
-            <div
-              id="mapa-captura"
-              class="mapa mapa--captura"
-              role="application"
-              aria-label="Toca el mapa para marcar dónde ocurre la obstrucción"
-            ></div>
-            <p id="estado-ubicacion" class="estado" aria-live="polite">
-              Al elegir un punto, sus coordenadas se consultarán con OpenStreetMap/Photon para obtener la dirección.
-            </p>
-            <label class="campo campo--direccion" for="reporte-direccion">
-              <span class="etiqueta">Dirección de la infracción</span>
+
+            <!-- Grupo Categoría -->
+            <fieldset class="grupo-seleccion-split">
+              <legend class="etiqueta-seccion">CATEGORÍA</legend>
+              <input id="reporte-categoria" type="hidden" name="categoria" value="" />
+              <div class="opciones-categoria-grid" role="group" aria-label="Elige una categoría">
+                <button
+                  class="boton-opcion-card"
+                  type="button"
+                  data-seleccion-categoria="doble_fila"
+                  aria-pressed="false"
+                >
+                  <svg class="icono-opcion" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="12" rx="2.5"/>
+                    <path d="M7 17v2M17 17v2"/>
+                    <line x1="8" y1="9" x2="10" y2="9"/>
+                    <line x1="14" y1="9" x2="16" y2="9"/>
+                    <line x1="2" y1="21" x2="22" y2="21" stroke-dasharray="2 2"/>
+                  </svg>
+                  <span>Doble fila / vía prohibida</span>
+                </button>
+                <button
+                  class="boton-opcion-card"
+                  type="button"
+                  data-seleccion-categoria="bloqueo_rampa_cebra_paradero"
+                  aria-pressed="false"
+                >
+                  <svg class="icono-opcion" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="5" r="2"/>
+                    <path d="m9 20 3-6 3 6"/>
+                    <path d="m6 8 6 2 6-2"/>
+                    <path d="M12 10v4"/>
+                    <line x1="4" y1="21" x2="20" y2="21"/>
+                  </svg>
+                  <span>Rampa, cebra o paradero</span>
+                </button>
+                <button
+                  class="boton-opcion-card"
+                  type="button"
+                  data-seleccion-categoria="invasion_anden"
+                  aria-pressed="false"
+                >
+                  <svg class="icono-opcion" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 19L19 4"/>
+                    <path d="M8 21l13-13"/>
+                    <rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="3 3"/>
+                  </svg>
+                  <span>Invasión de andén</span>
+                </button>
+              </div>
+            </fieldset>
+
+            <!-- Grupo Tipo de Actor -->
+            <fieldset class="grupo-seleccion-split">
+              <legend class="etiqueta-seccion">TIPO DE ACTOR</legend>
+              <input id="reporte-actor" type="hidden" name="actor" value="" />
+              <div class="opciones-actor-grid" role="group" aria-label="Elige un tipo de actor">
+                <button
+                  class="boton-opcion-card"
+                  type="button"
+                  data-seleccion-actor="vehiculo_particular"
+                  aria-pressed="false"
+                >
+                  <svg class="icono-opcion" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H7"/>
+                    <circle cx="7" cy="17" r="2.5"/>
+                    <circle cx="17" cy="17" r="2.5"/>
+                    <path d="M5 17H3v-4c0-.6.4-1 1-1h1"/>
+                  </svg>
+                  <span>Vehículo particular</span>
+                </button>
+                <button
+                  class="boton-opcion-card"
+                  type="button"
+                  data-seleccion-actor="motocicleta"
+                  aria-pressed="false"
+                >
+                  <svg class="icono-opcion" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="5.5" cy="16.5" r="3"/>
+                    <circle cx="18.5" cy="16.5" r="3"/>
+                    <path d="M5.5 16.5l3.5-7h5l3.5 7"/>
+                    <path d="M12 9.5l2 3.5h4.5"/>
+                    <path d="M9 6h5"/>
+                  </svg>
+                  <span>Motocicleta</span>
+                </button>
+                <button
+                  class="boton-opcion-card"
+                  type="button"
+                  data-seleccion-actor="vehiculo_carga"
+                  aria-pressed="false"
+                >
+                  <svg class="icono-opcion" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="1" y="6" width="13" height="10" rx="1.5"/>
+                    <path d="M14 9h4.5a1 1 0 0 1 .8.4L22 12.5v3.5h-8"/>
+                    <circle cx="5" cy="18" r="2"/>
+                    <circle cx="17" cy="18" r="2"/>
+                  </svg>
+                  <span>Carga descargando</span>
+                </button>
+                <button
+                  class="boton-opcion-card"
+                  type="button"
+                  data-seleccion-actor="mobiliario_comercial"
+                  aria-pressed="false"
+                >
+                  <svg class="icono-opcion" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                  </svg>
+                  <span>Mobiliario comercial</span>
+                </button>
+              </div>
+            </fieldset>
+
+            <!-- Foto -->
+            <section class="seccion-foto-split" aria-labelledby="titulo-foto">
+              <div class="fila-etiqueta-foto">
+                <span id="titulo-foto" class="etiqueta-seccion">Foto <span class="opcional-texto">(opcional)</span></span>
+              </div>
               <input
-                id="reporte-direccion"
-                name="direccion"
-                autocomplete="street-address"
-                placeholder="Se completará al marcar el mapa"
-                required
+                id="reporte-foto"
+                class="oculto"
+                name="foto"
+                type="file"
+                accept="image/*"
               />
-            </label>
-            <button id="boton-limpiar-ubicacion" class="oculto" type="button">
-              Quitar ubicación
-            </button>
-          </section>
-
-          <fieldset class="grupo-seleccion">
-            <legend class="etiqueta">Categoría</legend>
-            <input id="reporte-categoria" type="hidden" name="categoria" value="" />
-            <div class="opciones-categoria" role="group" aria-label="Elige una categoría">
-              <button
-                class="boton-opcion"
-                type="button"
-                data-seleccion-categoria="doble_fila"
-                aria-pressed="false"
-              >
-                Doble fila / vía prohibida
-              </button>
-              <button
-                class="boton-opcion"
-                type="button"
-                data-seleccion-categoria="bloqueo_rampa_cebra_paradero"
-                aria-pressed="false"
-              >
-                Rampa, cebra o paradero
-              </button>
-              <button
-                class="boton-opcion"
-                type="button"
-                data-seleccion-categoria="invasion_anden"
-                aria-pressed="false"
-              >
-                Invasión de andén
-              </button>
-            </div>
-          </fieldset>
-
-          <fieldset class="grupo-seleccion">
-            <legend class="etiqueta">Tipo de actor</legend>
-            <input id="reporte-actor" type="hidden" name="actor" value="" />
-            <div class="opciones-actor" role="group" aria-label="Elige un tipo de actor">
-              <button
-                class="boton-opcion"
-                type="button"
-                data-seleccion-actor="vehiculo_particular"
-                aria-pressed="false"
-              >
-                Vehículo particular
-              </button>
-              <button
-                class="boton-opcion"
-                type="button"
-                data-seleccion-actor="motocicleta"
-                aria-pressed="false"
-              >
-                Motocicleta
-              </button>
-              <button
-                class="boton-opcion"
-                type="button"
-                data-seleccion-actor="vehiculo_carga"
-                aria-pressed="false"
-              >
-                Carga descargando
-              </button>
-              <button
-                class="boton-opcion"
-                type="button"
-                data-seleccion-actor="mobiliario_comercial"
-                aria-pressed="false"
-              >
-                Mobiliario comercial
-              </button>
-            </div>
-          </fieldset>
-
-          <section class="fila-foto" aria-labelledby="titulo-foto">
-            <div>
-              <h2 id="titulo-foto">Foto <span class="texto-secundario">(opcional)</span></h2>
-              <p id="estado-foto" class="ayuda">No incluyas rostros ni placas sin censurar.</p>
-            </div>
-            <input
-              id="reporte-foto"
-              class="oculto"
-              name="foto"
-              type="file"
-              accept="image/*"
-              capture="environment"
-            />
-            <button id="boton-tomar-foto" class="boton boton--secundario" type="button">
-              Tomar foto
-            </button>
-          </section>
-
-          <section class="tarjeta-criticidad" aria-labelledby="titulo-criticidad">
-            <div class="fila-titulo">
-              <div>
-                <p class="sobretitulo">EVALUACIÓN AUTOMÁTICA</p>
-                <h2 id="titulo-criticidad">Se calcula solo</h2>
+              <input
+                id="reporte-foto-camara"
+                class="oculto"
+                name="foto_camara"
+                type="file"
+                accept="image/*"
+                capture="environment"
+              />
+              <div class="acciones-foto-grid">
+                <button id="boton-galeria-foto" class="boton-accion-foto" type="button">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect width="18" height="18" x="3" y="3" rx="2"/>
+                    <circle cx="9" cy="9" r="2"/>
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                  </svg>
+                  <span>Elegir de galería</span>
+                </button>
+                <button id="boton-tomar-foto" class="boton-accion-foto" type="button">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                    <circle cx="12" cy="13" r="3"/>
+                  </svg>
+                  <span>Tomar foto</span>
+                </button>
               </div>
-              <div id="insignia-criticidad" class="insignia-criticidad" aria-live="polite">
-                <span id="vista-puntaje">—</span>
-                <span id="vista-nivel">Sin calcular</span>
-              </div>
-            </div>
-            <dl class="detalle-criticidad">
-              <div>
-                <dt>Categoría</dt>
-                <dd id="vista-categoria">Elige una categoría</dd>
-              </div>
-              <div>
-                <dt>Tipo de vía</dt>
-                <dd id="vista-tipo-via">Se determina por cuadra</dd>
-              </div>
-              <div>
-                <dt>Franja horaria</dt>
-                <dd id="vista-franja">Se determina por la hora</dd>
-              </div>
-            </dl>
-          </section>
+              <p id="estado-foto" class="ayuda-foto">No incluyas rostros ni placas sin censurar.</p>
+            </section>
 
-          <button id="boton-guardar-reporte" class="boton boton--enviar" type="submit">
-            Enviar reporte
-          </button>
-          <p id="estado-captura" class="estado" role="status" aria-live="polite"></p>
+            <!-- Tarjeta Evaluación Automática -->
+            <section class="tarjeta-evaluacion-split" aria-labelledby="titulo-criticidad">
+              <div class="fila-evaluacion-split">
+                <div class="textos-evaluacion">
+                  <p class="sobretitulo">EVALUACIÓN AUTOMÁTICA</p>
+                  <h2 id="titulo-criticidad">Se calcula solo</h2>
+                </div>
+                <button id="boton-guardar-reporte" class="boton-enviar-split" type="submit">
+                  Enviar reporte
+                </button>
+              </div>
+
+              <div class="chips-evaluacion-split">
+                <div class="chip-item">
+                  <span class="chip-label">CATEGORÍA</span>
+                  <span id="vista-categoria" class="chip-valor">Elige una categoría</span>
+                </div>
+                <div class="chip-item">
+                  <span class="chip-label">TIPO DE VÍA</span>
+                  <span id="vista-tipo-via" class="chip-valor">Se determina por cuadra</span>
+                </div>
+                <div class="chip-item">
+                  <span class="chip-label">FRANJA HORARIA</span>
+                  <span id="vista-franja" class="chip-valor">Se determina por la hora</span>
+                </div>
+                <div id="insignia-criticidad" class="chip-item chip-item--criticidad" aria-live="polite">
+                  <span class="chip-label">CRITICIDAD</span>
+                  <span class="chip-valor">
+                    <span id="vista-nivel">Sin calcular</span>
+                    <span id="vista-puntaje" class="chip-puntaje">—</span>
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <p id="estado-captura" class="estado" role="status" aria-live="polite"></p>
+          </div>
         </form>
       </section>
 
@@ -254,7 +362,10 @@
             Deshacer
           </button>
           <button id="boton-elegir-otra-foto" class="boton boton--secundario" type="button">
-            Elegir otra foto
+            🖼️ Elegir de galería
+          </button>
+          <button id="boton-tomar-otra-foto" class="boton boton--secundario" type="button">
+            📷 Tomar foto
           </button>
         </div>
         <label class="confirmacion-privacidad" for="confirmar-privacidad-foto">
@@ -289,7 +400,13 @@
         </div>
 
         <section id="controles-tablero" class="panel panel--filtros" aria-label="Filtros de reportes">
-          <div class="filtros">
+          <div class="encabezado-filtros-movil">
+            <span class="encabezado-filtros-movil__titulo">Filtros de búsqueda</span>
+            <button id="boton-toggle-filtros" class="boton-toggle-filtros" type="button" aria-expanded="true">
+              Ocultar filtros
+            </button>
+          </div>
+          <div id="contenedor-filtros" class="filtros">
             <label class="campo" for="filtro-cuadra">
               <span class="etiqueta">Dirección o sector</span>
               <input
@@ -359,26 +476,80 @@
                 <p class="sobretitulo">UBICACIÓN Y RECURRENCIA</p>
                 <h2 id="titulo-mapa-tablero">Mapa de reincidencia</h2>
               </div>
-              <div class="selector-capa" role="group" aria-label="Tipo de visualización del mapa">
-                <button id="modo-mapa-calor" type="button" aria-pressed="true">Mapa de calor</button>
-                <button id="modo-mapa-puntos" type="button" aria-pressed="false">Puntos</button>
-              </div>
             </div>
-            <div
-              id="mapa-tablero"
-              class="mapa mapa--tablero"
-              role="application"
-              aria-label="Mapa de reincidencia de reportes"
-            ></div>
+            <div class="mapa-con-controles">
+              <div
+                id="mapa-tablero"
+                class="mapa mapa--tablero"
+                role="application"
+                aria-label="Mapa de reincidencia de reportes"
+              ></div>
+              <details id="panel-capas-mapa" class="panel-capas-mapa">
+                <summary class="panel-capas-mapa__resumen">
+                  <span class="panel-capas-mapa__titulo">CAPAS DEL MAPA</span>
+                  <span class="panel-capas-mapa__indicador" aria-hidden="true"></span>
+                </summary>
+                <div class="panel-capas-mapa__contenido">
+                  <div class="selector-modo-capas" role="group" aria-label="Modo de capas">
+                    <button id="modo-capas-una" type="button" aria-pressed="true">Una a la vez</button>
+                    <button id="modo-capas-combinar" type="button" aria-pressed="false">Combinar</button>
+                  </div>
+                  <fieldset class="opciones-capas" aria-label="Capas visibles">
+                    <legend class="oculto">Capas del mapa</legend>
+                    <label class="opcion-capa">
+                      <input type="radio" name="capa-mapa" value="puntos" />
+                      <span><strong>Puntos</strong><small>Cada reporte en su ubicación exacta.</small></span>
+                    </label>
+                    <label class="opcion-capa">
+                      <input type="radio" name="capa-mapa" value="calor" checked />
+                      <span><strong>Calor</strong><small>Densidad y criticidad de reportes.</small></span>
+                    </label>
+                    <label class="opcion-capa">
+                      <input type="radio" name="capa-mapa" value="celdas" />
+                      <span><strong>Celdas</strong><small>Cuadrículas de ~0.1 km² según reportes.</small></span>
+                    </label>
+                  </fieldset>
+                  <div class="ajustes-calor">
+                    <label class="ajuste-mapa" for="sensibilidad-calor">
+                      <span>Sensibilidad <output id="valor-sensibilidad">6</output></span>
+                      <input id="sensibilidad-calor" type="range" min="1" max="10" value="6" />
+                    </label>
+                    <label class="ajuste-mapa" for="radio-calor">
+                      <span>Radio <output id="valor-radio">38</output></span>
+                      <input id="radio-calor" type="range" min="12" max="60" value="38" />
+                    </label>
+                    <label class="ajuste-mapa" for="desenfoque-calor">
+                      <span>Desenfoque <output id="valor-desenfoque">26</output></span>
+                      <input id="desenfoque-calor" type="range" min="5" max="50" value="26" />
+                    </label>
+                    <label class="ajuste-mapa" for="paleta-calor">
+                      <span>Paleta</span>
+                      <select id="paleta-calor">
+                        <option value="serena">Serena</option>
+                        <option value="termica">Térmica</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              </details>
+              <nav class="filtros-tiempo-mapa" aria-label="Filtrar reportes por período">
+                <button type="button" data-periodo-mapa="2" aria-pressed="false">48H</button>
+                <button type="button" data-periodo-mapa="7" aria-pressed="false">7 DÍAS</button>
+                <button type="button" data-periodo-mapa="30" aria-pressed="false">30 DÍAS</button>
+                <button type="button" data-periodo-mapa="90" aria-pressed="false">90 DÍAS</button>
+                <button type="button" data-periodo-mapa="180" aria-pressed="false">180 DÍAS</button>
+                <button type="button" data-periodo-mapa="todo" aria-pressed="true">TODO</button>
+              </nav>
+            </div>
+            <p id="resumen-periodo-mapa" class="resumen-periodo-mapa" role="status" aria-live="polite">
+              0 reportes en el período seleccionado
+            </p>
             <p id="estado-tablero" class="estado" role="status" aria-live="polite"></p>
-            <div class="leyenda-criticidad" aria-label="Leyenda: menor a mayor criticidad">
+            <div class="leyenda-criticidad" aria-label="Menor a mayor criticidad">
               <span>Menor</span>
-              <span class="muestra-color muestra-color--menor" aria-hidden="true"></span>
-              <span class="muestra-color muestra-color--media" aria-hidden="true"></span>
-              <span class="muestra-color muestra-color--mayor" aria-hidden="true"></span>
+              <span class="leyenda-criticidad__degradado" aria-hidden="true"></span>
               <span>Mayor criticidad</span>
             </div>
-            <input id="mostrar-puntos" class="oculto" type="checkbox" checked />
           </section>
 
           <div class="columna-resumen">
@@ -425,23 +596,117 @@
           dependen de los filtros del tablero.
         </p>
 
-        <section class="tarjetas-conteo" aria-label="Resumen de las gráficas">
-          <article class="tarjeta-conteo">
-            <span class="etiqueta">Reportes</span>
-            <strong id="graficas-total">0</strong>
+        <!-- CONSOLIDACIÓN DE KPIS PRINCIPALES (GRID 4 TARJETAS) -->
+        <section class="tarjetas-conteo-consolidadas" aria-label="Resumen ejecutivo de reportes">
+          <article class="tarjeta-kpi">
+            <div class="tarjeta-kpi__icono tarjeta-kpi__icono--azul" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <div class="tarjeta-kpi__cuerpo">
+              <span class="tarjeta-kpi__etiqueta">TOTAL REPORTES</span>
+              <strong id="graficas-total" class="tarjeta-kpi__valor">0</strong>
+              <div class="tarjeta-kpi__sub">
+                <span id="kpi-dash-alta" class="kpi-pill kpi-pill--rojo" title="Porcentaje de criticidad alta">0% Alta</span>
+                <span id="kpi-dash-pico" class="kpi-pill kpi-pill--ambar" title="Porcentaje en franja de hora pico">0% Pico</span>
+              </div>
+            </div>
           </article>
-          <article class="tarjeta-conteo">
-            <span class="etiqueta">Cuadra más reportada</span>
-            <strong id="graficas-cuadra" class="texto-resumen-kpi">Sin datos</strong>
+
+          <article class="tarjeta-kpi">
+            <div class="tarjeta-kpi__icono tarjeta-kpi__icono--naranja" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+            <div class="tarjeta-kpi__cuerpo">
+              <span class="tarjeta-kpi__etiqueta">CUADRA MÁS REPORTADA</span>
+              <strong id="graficas-cuadra" class="tarjeta-kpi__valor tarjeta-kpi__valor--texto" title="Sin datos">Sin datos</strong>
+              <span class="tarjeta-kpi__sub">Sector con mayor recurrencia</span>
+            </div>
           </article>
-          <article class="tarjeta-conteo">
-            <span class="etiqueta">Categoría más reportada</span>
-            <strong id="graficas-categoria" class="texto-resumen-kpi">Sin datos</strong>
+
+          <article class="tarjeta-kpi">
+            <div class="tarjeta-kpi__icono tarjeta-kpi__icono--rojo" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="tarjeta-kpi__cuerpo">
+              <span class="tarjeta-kpi__etiqueta">CATEGORÍA PRINCIPAL</span>
+              <strong id="graficas-categoria" class="tarjeta-kpi__valor tarjeta-kpi__valor--texto" title="Sin datos">Sin datos</strong>
+              <span class="tarjeta-kpi__sub">Infracción predominante</span>
+            </div>
           </article>
-          <article class="tarjeta-conteo">
-            <span class="etiqueta">Actor más reportado</span>
-            <strong id="graficas-actor" class="texto-resumen-kpi">Sin datos</strong>
+
+          <article class="tarjeta-kpi">
+            <div class="tarjeta-kpi__icono tarjeta-kpi__icono--teal" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+                <circle cx="7" cy="17" r="2"/>
+                <path d="M9 17h6"/>
+                <circle cx="17" cy="17" r="2"/>
+              </svg>
+            </div>
+            <div class="tarjeta-kpi__cuerpo">
+              <span class="tarjeta-kpi__etiqueta">ACTOR MÁS FRECUENTE</span>
+              <strong id="graficas-actor" class="tarjeta-kpi__valor tarjeta-kpi__valor--texto" title="Sin datos">Sin datos</strong>
+              <span class="tarjeta-kpi__sub">Infractor más recurrente</span>
+            </div>
           </article>
+        </section>
+
+        <!-- DASHBOARD INTERACTIVO DE GRÁFICAS -->
+        <section class="dashboard-graficas" aria-label="Dashboard visual de reportes">
+          <!-- Cuadrícula de Gráficas Chart.js -->
+          <div class="dashboard-charts-grid">
+            <div class="chart-dash-card">
+              <div class="chart-dash-header">
+                <h3>Categorías de Infracción</h3>
+                <span class="texto-secundario">Distribución (%)</span>
+              </div>
+              <div class="chart-dash-canvas-wrap">
+                <canvas id="chart-categorias-canvas"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-dash-card">
+              <div class="chart-dash-header">
+                <h3>Nivel de Criticidad</h3>
+                <span class="texto-secundario">Prioridad de atención</span>
+              </div>
+              <div class="chart-dash-canvas-wrap">
+                <canvas id="chart-criticidad-canvas"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-dash-card">
+              <div class="chart-dash-header">
+                <h3>Tipos de Actor Infractor</h3>
+                <span class="texto-secundario">Vehículos y mobiliario</span>
+              </div>
+              <div class="chart-dash-canvas-wrap">
+                <canvas id="chart-actores-canvas"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-dash-card">
+              <div class="chart-dash-header">
+                <h3>Reportes por Día de la Semana</h3>
+                <span class="texto-secundario">Tendencia semanal</span>
+              </div>
+              <div class="chart-dash-canvas-wrap">
+                <canvas id="chart-dias-canvas"></canvas>
+              </div>
+            </div>
+          </div>
         </section>
 
         <div class="cuadricula-graficas">
@@ -552,12 +817,57 @@
       </aside>
     </main>
 
+    <nav class="bottom-nav-movil" aria-label="Navegación móvil inferior">
+      <button
+        id="boton-nav-movil-captura"
+        class="bottom-nav-item"
+        type="button"
+        aria-controls="vista-captura"
+        aria-pressed="true"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        <span>Reportar</span>
+      </button>
+      <button
+        id="boton-nav-movil-tablero"
+        class="bottom-nav-item"
+        type="button"
+        aria-controls="vista-tablero"
+        aria-pressed="false"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect width="18" height="18" x="3" y="3" rx="2"/>
+          <path d="M3 9h18M9 21V9"/>
+        </svg>
+        <span>Tablero</span>
+      </button>
+      <button
+        id="boton-nav-movil-graficas"
+        class="bottom-nav-item"
+        type="button"
+        aria-controls="vista-graficas"
+        aria-pressed="false"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>Gráficas</span>
+      </button>
+    </nav>
+
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script type="module" src="./captura.js"></script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 import { calcularCriticidad } from "./criticidad.js?v=6";
 import { filtrarReportes } from "./filtros.js?v=6";
 import { resumirPorCuadra } from "./resumen.js?v=6";
-import { estaDentroDelPerimetro } from "./mapa.js?v=6";
+import { estaDentroDelPerimetro } from "./mapa.js?v=7";
 
 const CLAVE_ALMACENAMIENTO = "santaMartaReportesV1";
 const CLAVE_TEMA = "santaMartaTema";
@@ -10,6 +10,7 @@ const entradaDireccion = document.querySelector("#reporte-direccion");
 const opcionesCuadrasFiltro = document.querySelector("#opciones-cuadras-filtro");
 const botonTema = document.querySelector("#boton-tema");
 const entradaFoto = document.querySelector("#reporte-foto");
+const entradaFotoCamara = document.querySelector("#reporte-foto-camara");
 const editorCensura = document.querySelector("#editor-censura");
 const lienzoCensura = document.querySelector("#canvas-censura");
 const marcoSeleccionCensura = document.querySelector("#marco-seleccion-censura");
@@ -19,8 +20,12 @@ const confirmacionPrivacidadFoto = document.querySelector("#confirmar-privacidad
 const contadorCensura = document.querySelector("#contador-censura");
 const botonGuardarReporte = document.querySelector("#boton-guardar-reporte");
 const botonTomarFoto = document.querySelector("#boton-tomar-foto");
+const botonGaleriaFoto = document.querySelector("#boton-galeria-foto");
 const botonElegirOtraFoto = document.querySelector("#boton-elegir-otra-foto");
+const botonTomarOtraFoto = document.querySelector("#boton-tomar-otra-foto");
 const botonCancelarCensura = document.querySelector("#boton-cancelar-censura");
+const botonToggleFiltros = document.querySelector("#boton-toggle-filtros");
+const contenedorFiltros = document.querySelector("#contenedor-filtros");
 const estadoFoto = document.querySelector("#estado-foto");
 const estadoCensura = document.querySelector("#estado-censura");
 const estadoCaptura = document.querySelector("#estado-captura");
@@ -30,6 +35,9 @@ const botonLimpiarUbicacion = document.querySelector("#boton-limpiar-ubicacion")
 const botonVistaCaptura = document.querySelector("#boton-vista-captura");
 const botonVistaTablero = document.querySelector("#boton-vista-tablero");
 const botonVistaGraficas = document.querySelector("#boton-vista-graficas");
+const botonNavMovilCaptura = document.querySelector("#boton-nav-movil-captura");
+const botonNavMovilTablero = document.querySelector("#boton-nav-movil-tablero");
+const botonNavMovilGraficas = document.querySelector("#boton-nav-movil-graficas");
 const botonNuevoReporte = document.querySelector("#boton-nuevo-reporte");
 const vistaCaptura = document.querySelector("#vista-captura");
 const vistaTablero = document.querySelector("#vista-tablero");
@@ -57,11 +65,6 @@ const datosVistaCriticidad = {
 };
 const botonesCategoria = [...document.querySelectorAll("[data-seleccion-categoria]")];
 const botonesActor = [...document.querySelectorAll("[data-seleccion-actor]")];
-const botonesModoMapa = {
-  calor: document.querySelector("#modo-mapa-calor"),
-  puntos: document.querySelector("#modo-mapa-puntos"),
-};
-const controlPuntos = document.querySelector("#mostrar-puntos");
 const elementosGraficas = {
   total: document.querySelector("#graficas-total"),
   cuadra: document.querySelector("#graficas-cuadra"),
@@ -75,6 +78,25 @@ const elementosGraficas = {
   origenes: document.querySelector("#grafica-origenes"),
   dias: document.querySelector("#grafica-dias"),
   matriz: document.querySelector("#tabla-matriz-comparativa"),
+};
+const elementosDashboard = {
+  total: document.querySelector("#kpi-dash-total"),
+  alta: document.querySelector("#kpi-dash-alta"),
+  altaConteo: document.querySelector("#kpi-dash-alta-conteo"),
+  pico: document.querySelector("#kpi-dash-pico"),
+  picoConteo: document.querySelector("#kpi-dash-pico-conteo"),
+  actor: document.querySelector("#kpi-dash-actor"),
+  actorConteo: document.querySelector("#kpi-dash-actor-conteo"),
+  canvasCategorias: document.querySelector("#chart-categorias-canvas"),
+  canvasCriticidad: document.querySelector("#chart-criticidad-canvas"),
+  canvasActores: document.querySelector("#chart-actores-canvas"),
+  canvasDias: document.querySelector("#chart-dias-canvas"),
+};
+let instanciasGraficas = {
+  categorias: null,
+  criticidad: null,
+  actores: null,
+  dias: null,
 };
 const selectorArchivoImportar = document.querySelector("#archivo-importar");
 const controlesFiltros = {
@@ -146,12 +168,25 @@ let numeroGeocodificacion = 0;
 function aplicarTema(tema, guardar = false) {
   const esOscuro = tema === "oscuro";
   document.documentElement.dataset.tema = esOscuro ? "oscuro" : "claro";
-  botonTema.textContent = esOscuro ? "Claro" : "Oscuro";
+  document.documentElement.setAttribute("data-theme", esOscuro ? "dark" : "light");
+  const textoTema = botonTema.querySelector(".texto-modo-tema");
+  if (textoTema) {
+    textoTema.textContent = esOscuro ? "Claro" : "Oscuro";
+  } else {
+    botonTema.textContent = esOscuro ? "Claro" : "Oscuro";
+  }
   botonTema.setAttribute("aria-label", `Cambiar a modo ${esOscuro ? "claro" : "oscuro"}`);
   botonTema.setAttribute("aria-pressed", String(esOscuro));
-  document.querySelector('meta[name="theme-color"]').content = esOscuro ? "#121B20" : "#F5F2EA";
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) {
+    metaTheme.content = esOscuro ? "#0B1116" : "#F1F5F9";
+  }
+  window.dispatchEvent(new CustomEvent("tema:cambiado", { detail: { tema, esOscuro } }));
   if (guardar) {
     localStorage.setItem(CLAVE_TEMA, esOscuro ? "oscuro" : "claro");
+    if (datosListos && !vistaGraficas.hidden) {
+      renderizarGraficas(obtenerReportesActuales());
+    }
   }
 }
 
@@ -429,6 +464,187 @@ function renderizarMatrizCategoriasActores(reportes) {
   tabla.append(tfoot);
 }
 
+function renderizarDashboardInteractivo(
+  reportes,
+  conteosCategorias,
+  conteosNiveles,
+  conteosActores,
+  conteosDias,
+) {
+  const total = reportes.length;
+  const altaCount = reportes.filter((r) => r.criticidad?.nivel === "Alto").length;
+  const altaPorcentaje = total > 0 ? Math.round((altaCount / total) * 100) : 0;
+
+  const picoCount = reportes.filter((r) => {
+    try {
+      return obtenerFranjaActual(r.fecha_hora) === "pico";
+    } catch {
+      return false;
+    }
+  }).length;
+  const picoPorcentaje = total > 0 ? Math.round((picoCount / total) * 100) : 0;
+
+  const actorGanador = conteosActores[0]?.cantidad > 0 ? conteosActores[0].etiqueta : "Sin datos";
+  const actorCantidad = conteosActores[0]?.cantidad ?? 0;
+
+  if (elementosDashboard.total) elementosDashboard.total.textContent = String(total);
+  if (elementosDashboard.alta) elementosDashboard.alta.textContent = `${altaPorcentaje}%`;
+  if (elementosDashboard.altaConteo) {
+    elementosDashboard.altaConteo.textContent = `${altaCount} caso(s) prioritario(s)`;
+  }
+  if (elementosDashboard.pico) elementosDashboard.pico.textContent = `${picoPorcentaje}%`;
+  if (elementosDashboard.picoConteo) {
+    elementosDashboard.picoConteo.textContent = `${picoCount} en franja congestionada`;
+  }
+  if (elementosDashboard.actor) elementosDashboard.actor.textContent = actorGanador;
+  if (elementosDashboard.actorConteo) {
+    elementosDashboard.actorConteo.textContent = `${actorCantidad} reporte(s)`;
+  }
+
+  if (!window.Chart) {
+    return;
+  }
+
+  const esOscuro = document.documentElement.dataset.tema !== "claro" && document.documentElement.getAttribute("data-theme") !== "light";
+  const estilo = getComputedStyle(document.documentElement);
+  const colorTexto = estilo.getPropertyValue("--text-primary").trim() || (esOscuro ? "#F1F5F9" : "#0F172A");
+  const colorSecundario = estilo.getPropertyValue("--text-secondary").trim() || (esOscuro ? "#94A3B8" : "#475569");
+  const colorRejilla = estilo.getPropertyValue("--border-subtle").trim() || (esOscuro ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)");
+  const colorAcento = estilo.getPropertyValue("--accent-primary").trim() || (esOscuro ? "#2DD4BF" : "#0D9488");
+  const colorSuperficie = estilo.getPropertyValue("--bg-surface").trim() || (esOscuro ? "#121A22" : "#FFFFFF");
+
+  if (elementosDashboard.canvasCategorias) {
+    if (instanciasGraficas.categorias) instanciasGraficas.categorias.destroy();
+    instanciasGraficas.categorias = new window.Chart(elementosDashboard.canvasCategorias, {
+      type: "doughnut",
+      data: {
+        labels: conteosCategorias.map((c) => c.etiqueta),
+        datasets: [
+          {
+            data: conteosCategorias.map((c) => c.cantidad),
+            backgroundColor: [colorAcento, esOscuro ? "#F59E0B" : "#D97706", esOscuro ? "#EF4444" : "#DC2626"],
+            borderWidth: 2,
+            borderColor: colorSuperficie,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: { color: colorTexto, boxWidth: 12, font: { size: 11 } },
+          },
+        },
+      },
+    });
+  }
+
+  if (elementosDashboard.canvasCriticidad) {
+    if (instanciasGraficas.criticidad) instanciasGraficas.criticidad.destroy();
+    const mapaColoresNivel = {
+      "Nivel alto": esOscuro ? "#EF4444" : "#DC2626",
+      "Nivel medio": esOscuro ? "#F59E0B" : "#D97706",
+      "Nivel bajo": esOscuro ? "#10B981" : "#059669",
+    };
+    instanciasGraficas.criticidad = new window.Chart(elementosDashboard.canvasCriticidad, {
+      type: "doughnut",
+      data: {
+        labels: conteosNiveles.map((c) => c.etiqueta),
+        datasets: [
+          {
+            data: conteosNiveles.map((c) => c.cantidad),
+            backgroundColor: conteosNiveles.map(
+              (c) => mapaColoresNivel[c.etiqueta] || colorAcento,
+            ),
+            borderWidth: 2,
+            borderColor: colorSuperficie,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: { color: colorTexto, boxWidth: 12, font: { size: 11 } },
+          },
+        },
+      },
+    });
+  }
+
+  if (elementosDashboard.canvasActores) {
+    if (instanciasGraficas.actores) instanciasGraficas.actores.destroy();
+    instanciasGraficas.actores = new window.Chart(elementosDashboard.canvasActores, {
+      type: "bar",
+      data: {
+        labels: conteosActores.map((c) => c.etiqueta),
+        datasets: [
+          {
+            label: "Reportes",
+            data: conteosActores.map((c) => c.cantidad),
+            backgroundColor: colorAcento,
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            ticks: { color: colorSecundario, font: { size: 10 } },
+            grid: { display: false },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { color: colorSecundario, stepSize: 1 },
+            grid: { color: colorRejilla },
+          },
+        },
+      },
+    });
+  }
+
+  if (elementosDashboard.canvasDias) {
+    if (instanciasGraficas.dias) instanciasGraficas.dias.destroy();
+    instanciasGraficas.dias = new window.Chart(elementosDashboard.canvasDias, {
+      type: "bar",
+      data: {
+        labels: conteosDias.map((c) => c.etiqueta),
+        datasets: [
+          {
+            label: "Reportes",
+            data: conteosDias.map((c) => c.cantidad),
+            backgroundColor: esOscuro ? "#38BDF8" : "#0284C7",
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            ticks: { color: colorSecundario, font: { size: 10 } },
+            grid: { display: false },
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { color: colorSecundario, stepSize: 1 },
+            grid: { color: colorRejilla },
+          },
+        },
+      },
+    });
+  }
+}
+
 function renderizarGraficas(reportes) {
   const conteosCuadras = contarPor(reportes, "cuadra");
   const conteosCategorias = contarConUniverso(
@@ -474,6 +690,14 @@ function renderizarGraficas(reportes) {
     dia: obtenerDiaSemana(reporte.fecha_hora),
   }));
   const conteosDias = contarConUniverso(reportesConDia, "dia", nombresDiasSemana, {}, false);
+
+  renderizarDashboardInteractivo(
+    reportes,
+    conteosCategorias,
+    conteosNiveles,
+    conteosActores,
+    conteosDias,
+  );
 
   elementosGraficas.total.textContent = String(reportes.length);
   mostrarFrecuenciaMaxima(elementosGraficas.cuadra, conteosCuadras);
@@ -709,6 +933,9 @@ function cambiarVista(nombreVista) {
   botonVistaCaptura.setAttribute("aria-pressed", String(mostrarCaptura || mostrarCensura));
   botonVistaTablero.setAttribute("aria-pressed", String(mostrarTablero));
   botonVistaGraficas.setAttribute("aria-pressed", String(mostrarGraficas));
+  if (botonNavMovilCaptura) botonNavMovilCaptura.setAttribute("aria-pressed", String(mostrarCaptura || mostrarCensura));
+  if (botonNavMovilTablero) botonNavMovilTablero.setAttribute("aria-pressed", String(mostrarTablero));
+  if (botonNavMovilGraficas) botonNavMovilGraficas.setAttribute("aria-pressed", String(mostrarGraficas));
 
   if (mostrarCaptura) {
     window.dispatchEvent(new Event("tablero:desactivar"));
@@ -729,19 +956,6 @@ function obtenerFiltrosActivos() {
   );
 }
 
-function cambiarModoMapa(modo) {
-  const mostrarPuntos = modo === "puntos";
-  botonesModoMapa.calor.setAttribute("aria-pressed", String(!mostrarPuntos));
-  botonesModoMapa.puntos.setAttribute("aria-pressed", String(mostrarPuntos));
-  controlPuntos.checked = mostrarPuntos;
-  controlPuntos.dispatchEvent(new Event("change"));
-  window.dispatchEvent(
-    new CustomEvent("mapa:modo-visualizacion", {
-      detail: { modo },
-    }),
-  );
-}
-
 function renderizarResumen(reportes) {
   const resumen = resumirPorCuadra(reportes, criterios);
   listaResumen.replaceChildren();
@@ -755,8 +969,29 @@ function renderizarResumen(reportes) {
 
   for (const [indice, prioridad] of resumen.entries()) {
     const elemento = document.createElement("li");
+    const reportesDeCuadra = reportes.filter((r) => r.cuadra === prioridad.cuadra);
+    const tieneAlto = reportesDeCuadra.some((r) => r.criticidad?.nivel === "alto");
+    const tieneMedio = reportesDeCuadra.some((r) => r.criticidad?.nivel === "medio");
+    const nivelCrit = tieneAlto ? "alto" : tieneMedio ? "medio" : "bajo";
+    elemento.classList.add("tarjeta-resumen-cuadra", `criticidad--${nivelCrit}`);
+
+    const primerReporteCoords = reportesDeCuadra.find((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng));
+    if (primerReporteCoords) {
+      elemento.title = `Clic para ver ${prioridad.cuadra} en el mapa`;
+      elemento.addEventListener("click", (e) => {
+        if (e.target.closest("figure") || e.target.closest("button") || e.target.closest("a") || e.target.closest(".resumen-fotos")) {
+          return;
+        }
+        window.dispatchEvent(
+          new CustomEvent("mapa:centrar-coordenadas", {
+            detail: { lat: primerReporteCoords.lat, lng: primerReporteCoords.lng },
+          }),
+        );
+      });
+    }
+
     const titulo = document.createElement("strong");
-    titulo.textContent = `${indice + 1}. ${prioridad.cuadra}`;
+    titulo.textContent = prioridad.cuadra;
     elemento.append(titulo);
 
     const puntaje = document.createElement("p");
@@ -955,7 +1190,8 @@ function obtenerContextoCensura() {
 
 function invalidarConfirmacionFoto() {
   fotoConfirmada = "";
-  botonGuardarReporte.disabled = Boolean(entradaFoto.files[0]);
+  const archivo = entradaFoto.files[0] || entradaFotoCamara?.files[0];
+  botonGuardarReporte.disabled = Boolean(archivo);
 }
 
 async function prepararFotoParaCensura(archivo) {
@@ -1181,8 +1417,9 @@ function deshacerCensura() {
 }
 
 function confirmarFotoCensurada() {
+  const archivo = entradaFoto.files[0] || entradaFotoCamara?.files[0];
   if (
-    !entradaFoto.files[0] ||
+    !archivo ||
     !lienzoCensura.width ||
     seleccionCensura ||
     !confirmacionPrivacidadFoto.checked
@@ -1226,12 +1463,18 @@ function reiniciarEditorCensura() {
   estadoCensura.textContent = "";
 }
 
-function abrirSelectorFoto() {
+function abrirSelectorFoto(modo = "galeria") {
   entradaFoto.value = "";
+  if (entradaFotoCamara) entradaFotoCamara.value = "";
   reiniciarEditorCensura();
   cambiarVista("captura");
-  estadoFoto.textContent = "Selecciona una foto para censurar.";
-  entradaFoto.click();
+  if (modo === "camara" && entradaFotoCamara) {
+    estadoFoto.textContent = "Abre la cámara para tomar la foto.";
+    entradaFotoCamara.click();
+  } else {
+    estadoFoto.textContent = "Selecciona una foto de la galería para censurar.";
+    entradaFoto.click();
+  }
 }
 
 function mensajeErrorAlmacenamiento(error) {
@@ -1342,51 +1585,82 @@ async function buscarDireccion(lat, lng) {
   mostrarEstado(estadoUbicacion, "Buscando la dirección del punto en el mapa…");
 
   try {
-    const url = new URL("https://photon.komoot.io/reverse");
-    url.searchParams.set("lat", String(lat));
-    url.searchParams.set("lon", String(lng));
-    const respuesta = await fetch(url, {
-      signal: controlador.signal,
-      headers: { Accept: "application/json" },
-    });
-    if (!respuesta.ok) {
-      throw new Error(`El servicio de direcciones respondió HTTP ${respuesta.status}.`);
+    let direccion = "";
+
+    // 1. Intentar con Photon (Komoot)
+    try {
+      const url = new URL("https://photon.komoot.io/reverse");
+      url.searchParams.set("lat", String(lat));
+      url.searchParams.set("lon", String(lng));
+      const respuesta = await fetch(url, {
+        signal: controlador.signal,
+        headers: { Accept: "application/json" },
+      });
+      if (respuesta.ok) {
+        const resultado = await respuesta.json();
+        const propiedades = resultado.features?.[0]?.properties;
+        if (propiedades) {
+          const calle = [propiedades.street, propiedades.housenumber].filter(Boolean).join(" ");
+          const localidad =
+            propiedades.suburb ||
+            propiedades.district ||
+            propiedades.locality ||
+            propiedades.city;
+          direccion = [calle || propiedades.name, localidad, propiedades.state]
+            .filter((parte, indice, partes) => parte && partes.indexOf(parte) === indice)
+            .join(", ");
+        }
+      }
+    } catch {
+      // Intentar con respaldo Nominatim
     }
 
-    const resultado = await respuesta.json();
-    const propiedades = resultado.features?.[0]?.properties;
-    if (!propiedades) {
-      throw new Error("No se encontró una dirección para el punto seleccionado.");
+    // 2. Respaldo con OpenStreetMap Nominatim si Photon no responde
+    if (!direccion && !controlador.signal.aborted) {
+      try {
+        const urlOsm = new URL("https://nominatim.openstreetmap.org/reverse");
+        urlOsm.searchParams.set("format", "jsonv2");
+        urlOsm.searchParams.set("lat", String(lat));
+        urlOsm.searchParams.set("lon", String(lng));
+        const respuestaOsm = await fetch(urlOsm, {
+          signal: controlador.signal,
+          headers: { Accept: "application/json" },
+        });
+        if (respuestaOsm.ok) {
+          const datosOsm = await respuestaOsm.json();
+          if (datosOsm?.display_name) {
+            direccion = datosOsm.display_name.split(",").slice(0, 3).join(",").trim();
+          }
+        }
+      } catch {
+        // Fallback silenciado
+      }
     }
-    const calle = [propiedades.street, propiedades.housenumber].filter(Boolean).join(" ");
-    const localidad =
-      propiedades.suburb ||
-      propiedades.district ||
-      propiedades.locality ||
-      propiedades.city;
-    const direccion = [calle || propiedades.name, localidad, propiedades.state]
-      .filter((parte, indice, partes) => parte && partes.indexOf(parte) === indice)
-      .join(", ");
-    if (!direccion) {
-      throw new Error("El servicio no devolvió una dirección reconocible.");
-    }
+
     if (solicitud !== numeroGeocodificacion) {
       return;
     }
 
-    entradaDireccion.value = direccion;
-    if (ubicacionSeleccionada) {
-      ubicacionSeleccionada.direccion = direccion;
+    if (direccion) {
+      entradaDireccion.value = direccion;
+      if (ubicacionSeleccionada) {
+        ubicacionSeleccionada.direccion = direccion;
+      }
+      actualizarVistaCriticidad();
+      mostrarEstado(estadoUbicacion, `Dirección del punto: ${direccion}`);
+    } else {
+      mostrarEstado(
+        estadoUbicacion,
+        "Punto marcado. Puedes escribir la dirección en el campo si lo deseas.",
+      );
     }
-    actualizarVistaCriticidad();
-    mostrarEstado(estadoUbicacion, `Dirección del punto: ${direccion}`);
   } catch (error) {
     if (error.name === "AbortError" || solicitud !== numeroGeocodificacion) {
       return;
     }
     mostrarEstado(
       estadoUbicacion,
-      `No se pudo obtener la dirección automáticamente. Escríbela en el campo. (${error.message})`,
+      "Punto marcado. Escribe la dirección en el campo.",
     );
   }
 }
@@ -1442,7 +1716,7 @@ function guardarReporte(evento) {
     botonesActor[0]?.focus();
     return;
   }
-  const archivoFoto = entradaFoto.files[0];
+  const archivoFoto = entradaFoto.files[0] || entradaFotoCamara?.files[0];
   if (archivoFoto && !fotoConfirmada) {
     mostrarEstado(estadoCaptura, "Confirma la foto censurada antes de guardar el reporte.");
     botonConfirmarFoto.focus();
@@ -1530,18 +1804,39 @@ async function inicializar() {
 }
 
 formulario.addEventListener("submit", guardarReporte);
-entradaFoto.addEventListener("change", () => prepararFotoParaCensura(entradaFoto.files[0]));
-botonTomarFoto.addEventListener("click", abrirSelectorFoto);
-botonElegirOtraFoto.addEventListener("click", abrirSelectorFoto);
+entradaFoto.addEventListener("change", () => {
+  if (entradaFoto.files[0]) prepararFotoParaCensura(entradaFoto.files[0]);
+});
+if (entradaFotoCamara) {
+  entradaFotoCamara.addEventListener("change", () => {
+    if (entradaFotoCamara.files[0]) prepararFotoParaCensura(entradaFotoCamara.files[0]);
+  });
+}
+if (botonGaleriaFoto) {
+  botonGaleriaFoto.addEventListener("click", () => abrirSelectorFoto("galeria"));
+}
+botonTomarFoto.addEventListener("click", () => abrirSelectorFoto("camara"));
+botonElegirOtraFoto.addEventListener("click", () => abrirSelectorFoto("galeria"));
+if (botonTomarOtraFoto) {
+  botonTomarOtraFoto.addEventListener("click", () => abrirSelectorFoto("camara"));
+}
+if (botonToggleFiltros && contenedorFiltros) {
+  botonToggleFiltros.addEventListener("click", () => {
+    const estaOculto = contenedorFiltros.classList.toggle("filtros--ocultos-movil");
+    botonToggleFiltros.setAttribute("aria-expanded", String(!estaOculto));
+    botonToggleFiltros.textContent = estaOculto ? "Mostrar filtros" : "Ocultar filtros";
+  });
+}
 botonCancelarCensura.addEventListener("click", () => {
   entradaFoto.value = "";
+  if (entradaFotoCamara) entradaFotoCamara.value = "";
   reiniciarEditorCensura();
   cambiarVista("captura");
 });
 confirmacionPrivacidadFoto.addEventListener("change", () => {
   if (!confirmacionPrivacidadFoto.checked) {
     fotoConfirmada = "";
-    botonGuardarReporte.disabled = Boolean(entradaFoto.files[0]);
+    botonGuardarReporte.disabled = Boolean(entradaFoto.files[0] || entradaFotoCamara?.files[0]);
   }
   botonConfirmarFoto.disabled =
     !confirmacionPrivacidadFoto.checked || !lienzoCensura.width || Boolean(seleccionCensura);
@@ -1579,6 +1874,13 @@ botonLimpiarUbicacion.addEventListener("click", () => {
 botonVistaCaptura.addEventListener("click", () => cambiarVista("captura"));
 botonVistaTablero.addEventListener("click", () => cambiarVista("tablero"));
 botonVistaGraficas.addEventListener("click", () => cambiarVista("graficas"));
+if (botonNavMovilCaptura) botonNavMovilCaptura.addEventListener("click", () => cambiarVista("captura"));
+if (botonNavMovilTablero) botonNavMovilTablero.addEventListener("click", () => cambiarVista("tablero"));
+if (botonNavMovilGraficas) botonNavMovilGraficas.addEventListener("click", () => cambiarVista("graficas"));
+window.addEventListener("resize", () => {
+  window.dispatchEvent(new Event("captura:activar"));
+  window.dispatchEvent(new Event("tablero:activar"));
+});
 botonNuevoReporte.addEventListener("click", () => cambiarVista("captura"));
 botonGraficasNuevoReporte.addEventListener("click", () => cambiarVista("captura"));
 botonGraficasVerTablero.addEventListener("click", () => cambiarVista("tablero"));
@@ -1586,8 +1888,6 @@ for (const control of Object.values(controlesFiltros)) {
   control.addEventListener("change", actualizarTablero);
   control.addEventListener("input", actualizarTablero);
 }
-botonesModoMapa.calor.addEventListener("click", () => cambiarModoMapa("calor"));
-botonesModoMapa.puntos.addEventListener("click", () => cambiarModoMapa("puntos"));
 document.querySelector("#boton-exportar").addEventListener("click", exportarReportes);
 document.querySelector("#boton-importar").addEventListener("click", () => {
   selectorArchivoImportar.click();
