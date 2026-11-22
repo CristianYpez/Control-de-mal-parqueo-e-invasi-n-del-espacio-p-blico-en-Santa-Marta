@@ -20,6 +20,61 @@ Prototipo web ciudadano para registrar y consultar situaciones de mal parqueo e 
 - **Interfaz accesible:** diseño adaptable a móvil y escritorio, controles etiquetados, mensajes de estado y animaciones de aparición al desplazarse, desactivadas cuando el dispositivo solicita reducir el movimiento.
 - **Tema claro y oscuro:** el selector del encabezado alterna la apariencia, guarda la preferencia en el navegador y respeta el tema del sistema en la primera visita. Los mapas mantienen sus colores originales.
 
+## Arquitectura de la solución
+
+Toda la aplicación corre en el navegador del usuario (arquitectura 100% cliente / Jamstack sin backend centralizado). Los registros levantados en campo, la clasificación de las cuadras y los pesos del índice viajan con el proyecto en archivos JSON. Los reportes nuevos se guardan en `localStorage`, que pertenece a cada navegador: por eso el tablero muestra los datos precargados más lo registrado en ese mismo equipo, y la exportación e importación cumple el papel de reunir reportes de varios dispositivos. El mapa base se arma con teselas de OpenStreetMap (que requieren conexión), mientras que el mapa de calor y la lógica analítica se ejecutan localmente con los datos propios.
+
+```mermaid
+flowchart TD
+    classDef capaPres fill:#1e293b,stroke:#3b82f6,stroke-width:1.5px,color:#f8fafc;
+    classDef capaExt fill:#0f172a,stroke:#64748b,stroke-width:1.5px,stroke-dasharray: 4 4,color:#cbd5e1;
+    classDef capaLog fill:#1e293b,stroke:#f59e0b,stroke-width:1.5px,color:#f8fafc;
+    classDef capaData fill:#1e293b,stroke:#10b981,stroke-width:1.5px,color:#f8fafc;
+    classDef capaBase fill:#1e293b,stroke:#ef4444,stroke-width:1.5px,color:#f8fafc;
+    classDef userNode fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+
+    User["👤 Ciudadano o supervisor<br><small>celular o computador</small>"]:::userNode
+
+    subgraph PRESENTACION ["PRESENTACIÓN (LO QUE VE EL USUARIO)"]
+        direction LR
+        UI_Cap["📝 Captura rápida<br><small>formulario de menos de 30 s</small>"]:::capaPres
+        UI_Map["🗺️ Mapa de calor<br><small>intensidad por criticidad</small>"]:::capaPres
+        UI_Fil["🔍 Panel de filtros<br><small>sector, franja, categoría, actor</small>"]:::capaPres
+        UI_Res["📊 Resumen operativo<br><small>cinco puntos críticos y recomendación</small>"]:::capaPres
+    end
+
+    subgraph EXTERNO ["SERVICIO EXTERNO"]
+        EXT_OSM["🌐 OpenStreetMap<br><small>teselas del mapa y Leaflet.heat<br>(con conexión)</small>"]:::capaExt
+    end
+
+    subgraph LOGICA ["LÓGICA (MÓDULOS JAVASCRIPT)"]
+        direction LR
+        JS_Cap["📄 captura.js<br><small>ubicación, foto comprimida, guardado</small>"]:::capaLog
+        JS_Map["📄 mapa.js<br><small>Leaflet, capas y perímetro</small>"]:::capaLog
+        JS_Cri["📄 criticidad.js<br><small>puntaje y nivel con reglas explícitas</small>"]:::capaLog
+        JS_Fil["📄 filtros.js<br><small>selección de reportes</small>"]:::capaLog
+        JS_Res["📄 resumen.js<br><small>agrupar por cuadra, ordenar, recomendar</small>"]:::capaLog
+    end
+
+    subgraph DATOS ["DATOS (ALMACENAMIENTO Y CONFIGURACIÓN)"]
+        direction LR
+        DB_Rep["📁 reportes.json<br><small>registros de campo</small>"]:::capaData
+        DB_Via["📁 vias.json<br><small>cuadras y tipo de vía</small>"]:::capaData
+        DB_Cri["📁 criterios.json<br><small>pesos, rangos y horas pico</small>"]:::capaData
+        DB_Loc["💾 localStorage<br><small>reportes nuevos del navegador</small>"]:::capaData
+    end
+
+    subgraph CAMPO ["TRABAJO DE CAMPO"]
+        TC["🚶 Trabajo de campo<br><small>dos recorridos (pico y valle), fotos anonimizadas y clasificación de las cuadras</small>"]:::capaBase
+    end
+
+    User <--> PRESENTACION
+    PRESENTACION <-->|teselas y librerías| EXT_OSM
+    PRESENTACION <-->|eventos y datos para mostrar| LOGICA
+    LOGICA <-->|lee y guarda| DATOS
+    CAMPO -->|alimenta los datos precargados| DATOS
+```
+
 ## Estructura
 
 | Archivo | Propósito |
