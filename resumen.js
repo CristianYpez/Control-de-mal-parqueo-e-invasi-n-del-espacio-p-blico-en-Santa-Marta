@@ -125,7 +125,7 @@ function resumirPorCuadra(reportes, criterios) {
     .map(([cuadra, reportesDeCuadra]) => {
       const reportesAltosEnPico = reportesDeCuadra.filter(
         (reporte) =>
-          reporte.criticidad.nivel === "Alto" &&
+          (reporte.criticidad.nivel?.toLowerCase() === "alto" || reporte.criticidad.nivel === "Alto") &&
           esHoraPico(reporte.fecha_hora, criterios?.horas_pico),
       ).length;
       const puntajeTotal = reportesDeCuadra.reduce(

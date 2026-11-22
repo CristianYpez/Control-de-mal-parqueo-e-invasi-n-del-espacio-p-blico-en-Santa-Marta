@@ -242,16 +242,24 @@ function obtenerFuenteFoto(foto) {
   if (typeof foto !== "string" || !foto) {
     return "";
   }
-  if (/^data:image\/(?:jpeg|png|webp);base64,/i.test(foto)) {
-    return foto;
+  const limpia = foto.trim();
+  if (/^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,/i.test(limpia)) {
+    return limpia;
+  }
+  if (limpia.startsWith("blob:")) {
+    return limpia;
   }
 
-  const enlace = document.createElement("a");
-  enlace.href = foto;
-  return ["http:", "https:"].includes(enlace.protocol) &&
-    enlace.origin === window.location.origin
-    ? enlace.href
-    : "";
+  try {
+    const enlace = document.createElement("a");
+    enlace.href = limpia;
+    if (["http:", "https:", "file:"].includes(enlace.protocol)) {
+      return enlace.href;
+    }
+  } catch (error) {
+    // Si no es URL parseable, retornar limpia
+  }
+  return limpia;
 }
 
 function agregarFotoCensuradaAlPopup(contenido, reporte) {
@@ -260,7 +268,18 @@ function agregarFotoCensuradaAlPopup(contenido, reporte) {
   }
 
   const figura = document.createElement("figure");
+  figura.className = "popup-foto-contenedor";
   figura.style.margin = "8px 0 0";
+  figura.style.position = "relative";
+  figura.style.cursor = "pointer";
+  figura.style.borderRadius = "8px";
+  figura.style.overflow = "hidden";
+  figura.style.border = "1px solid var(--border-subtle, rgba(255,255,255,0.15))";
+  figura.tabIndex = 0;
+  figura.setAttribute("role", "button");
+  figura.setAttribute("aria-label", `Ampliar foto del reporte ${reporte.id}`);
+  figura.title = "Haz clic para ver la foto ampliada con todos los detalles";
+
   const fuente = obtenerFuenteFoto(reporte.foto);
   if (!fuente) {
     const aviso = document.createElement("figcaption");
@@ -277,8 +296,8 @@ function agregarFotoCensuradaAlPopup(contenido, reporte) {
   imagen.style.display = "block";
   imagen.style.width = "100%";
   imagen.style.maxWidth = "240px";
-  imagen.style.maxHeight = "180px";
-  imagen.style.objectFit = "contain";
+  imagen.style.maxHeight = "160px";
+  imagen.style.objectFit = "cover";
   imagen.addEventListener("error", () => {
     figura.replaceChildren();
     const aviso = document.createElement("figcaption");
@@ -287,9 +306,38 @@ function agregarFotoCensuradaAlPopup(contenido, reporte) {
   });
   imagen.src = fuente;
 
-  const pie = document.createElement("figcaption");
-  pie.textContent = `Foto censurada del reporte ${reporte.id}`;
-  figura.append(imagen, pie);
+  const overlay = document.createElement("div");
+  overlay.className = "popup-foto-overlay";
+  overlay.innerHTML = `
+    <span style="display:inline-flex;align-items:center;gap:4px;background:rgba(15,23,42,0.85);color:#F1F5F9;padding:3px 8px;border-radius:999px;font-size:0.7rem;font-weight:600;backdrop-filter:blur(4px);">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+      Ampliar foto
+    </span>
+  `;
+  overlay.style.position = "absolute";
+  overlay.style.bottom = "6px";
+  overlay.style.right = "6px";
+  overlay.style.pointerEvents = "none";
+
+  figura.append(imagen, overlay);
+
+  const accionar = (e) => {
+    e.stopPropagation();
+    window.dispatchEvent(
+      new CustomEvent("foto:abrir-visor", {
+        detail: { reporte },
+      }),
+    );
+  };
+
+  figura.addEventListener("click", accionar);
+  figura.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      accionar(e);
+    }
+  });
+
   contenido.append(figura);
 }
 

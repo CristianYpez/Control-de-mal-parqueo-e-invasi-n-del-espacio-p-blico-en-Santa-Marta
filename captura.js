@@ -1033,13 +1033,141 @@ function obtenerFiltrosActivos() {
   );
 }
 
+function obtenerFuenteFoto(foto) {
+  if (!foto || typeof foto !== "string") {
+    return "";
+  }
+  const limpia = foto.trim();
+  if (/^data:image\/(?:jpeg|png|webp|gif|svg\+xml);base64,/i.test(limpia)) {
+    return limpia;
+  }
+  if (limpia.startsWith("blob:")) {
+    return limpia;
+  }
+  try {
+    const enlace = document.createElement("a");
+    enlace.href = limpia;
+    if (["http:", "https:", "file:"].includes(enlace.protocol)) {
+      return enlace.href;
+    }
+  } catch (error) {
+    // Si la URL no puede ser analizada, continuamos
+  }
+  return limpia;
+}
+
+function abrirVisorFoto(reporte) {
+  if (!reporte) return;
+  const modal = document.getElementById("modal-visor-foto");
+  if (!modal) return;
+
+  const fuente = obtenerFuenteFoto(reporte.foto);
+  const imgElem = document.getElementById("modal-foto-img");
+  if (imgElem) {
+    imgElem.src = fuente || "";
+    imgElem.alt = `Foto de infracción ${reporte.id} censurada`;
+  }
+
+  const idElem = document.getElementById("modal-foto-id");
+  if (idElem) idElem.textContent = `Reporte #${reporte.id}`;
+
+  const critElem = document.getElementById("modal-foto-criticidad");
+  if (critElem) {
+    const nivel = (reporte.criticidad?.nivel || "Sin nivel").toLowerCase();
+    const puntaje = reporte.criticidad?.puntaje !== undefined ? ` · ${reporte.criticidad.puntaje} pts` : "";
+    critElem.textContent = `Nivel ${nivel}${puntaje}`;
+    critElem.className = `badge-modal-crit badge-modal-crit--${nivel}`;
+  }
+
+  const tituloElem = document.getElementById("modal-foto-titulo");
+  if (tituloElem) {
+    tituloElem.textContent = reporte.direccion || `Cuadra ${reporte.cuadra}`;
+  }
+
+  const subtituloElem = document.getElementById("modal-foto-subtitulo");
+  if (subtituloElem) {
+    subtituloElem.textContent = `Sector: ${reporte.cuadra} · Santa Marta`;
+  }
+
+  const cuadraElem = document.getElementById("modal-foto-cuadra");
+  if (cuadraElem) cuadraElem.textContent = reporte.cuadra || "No especificada";
+
+  const dirElem = document.getElementById("modal-foto-direccion");
+  if (dirElem) dirElem.textContent = reporte.direccion || "No registrada";
+
+  const catElem = document.getElementById("modal-foto-categoria");
+  if (catElem) {
+    const nombresCat = {
+      doble_fila: "Doble fila / vía prohibida",
+      bloqueo_rampa_cebra_paradero: "Rampa, cebra o paradero",
+      invasion_anden: "Invasión de andén",
+    };
+    catElem.textContent = nombresCat[reporte.categoria] || reporte.categoria || "-";
+  }
+
+  const actorElem = document.getElementById("modal-foto-actor");
+  if (actorElem) {
+    const nombresActor = {
+      vehiculo_particular: "Vehículo particular",
+      motocicleta: "Motocicleta",
+      carga_descargando: "Carga descargando",
+      mobiliario_comercial: "Mobiliario comercial",
+    };
+    actorElem.textContent = nombresActor[reporte.actor] || reporte.actor || "-";
+  }
+
+  const fechaElem = document.getElementById("modal-foto-fecha");
+  if (fechaElem) {
+    fechaElem.textContent = reporte.fecha_hora ? reporte.fecha_hora.replace("T", " · ") : "-";
+  }
+
+  const origenElem = document.getElementById("modal-foto-origen");
+  if (origenElem) {
+    origenElem.textContent = reporte.origen === "campo" ? "Operativo en campo" : "Reporte ciudadano";
+  }
+
+  const btnVerMapa = document.getElementById("btn-modal-ver-en-mapa");
+  if (btnVerMapa) {
+    btnVerMapa.onclick = () => {
+      cerrarVisorFoto();
+      if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
+        window.dispatchEvent(
+          new CustomEvent("mapa:centrar-coordenadas", {
+            detail: { lat: reporte.lat, lng: reporte.lng },
+          }),
+        );
+      }
+    };
+  }
+
+  if (typeof modal.showModal === "function") {
+    modal.showModal();
+  } else {
+    modal.setAttribute("open", "");
+  }
+}
+
+function cerrarVisorFoto() {
+  const modal = document.getElementById("modal-visor-foto");
+  if (!modal) return;
+  if (typeof modal.close === "function") {
+    modal.close();
+  } else {
+    modal.removeAttribute("open");
+  }
+}
+
 function renderizarResumen(reportes) {
   const resumen = resumirPorCuadra(reportes, criterios);
   listaResumen.replaceChildren();
 
   if (resumen.length === 0) {
     const elementoVacio = document.createElement("li");
-    elementoVacio.textContent = "No hay reportes para mostrar con estos filtros.";
+    elementoVacio.className = "resumen-vacio";
+    elementoVacio.innerHTML = `
+      <div class="resumen-vacio-icono">ℹ️</div>
+      <p>No hay reportes para mostrar con los filtros seleccionados.</p>
+    `;
     listaResumen.append(elementoVacio);
     return;
   }
@@ -1047,16 +1175,24 @@ function renderizarResumen(reportes) {
   for (const [indice, prioridad] of resumen.entries()) {
     const elemento = document.createElement("li");
     const reportesDeCuadra = reportes.filter((r) => r.cuadra === prioridad.cuadra);
-    const tieneAlto = reportesDeCuadra.some((r) => r.criticidad?.nivel === "alto");
-    const tieneMedio = reportesDeCuadra.some((r) => r.criticidad?.nivel === "medio");
+    const tieneAlto = reportesDeCuadra.some((r) => r.criticidad?.nivel?.toLowerCase() === "alto");
+    const tieneMedio = reportesDeCuadra.some((r) => r.criticidad?.nivel?.toLowerCase() === "medio");
     const nivelCrit = tieneAlto ? "alto" : tieneMedio ? "medio" : "bajo";
+
     elemento.classList.add("tarjeta-resumen-cuadra", `criticidad--${nivelCrit}`);
+    elemento.setAttribute("data-cuadra", prioridad.cuadra);
 
     const primerReporteCoords = reportesDeCuadra.find((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng));
     if (primerReporteCoords) {
-      elemento.title = `Clic para ver ${prioridad.cuadra} en el mapa`;
+      elemento.title = `Clic en la tarjeta para centrar ${prioridad.cuadra} en el mapa`;
       elemento.addEventListener("click", (e) => {
-        if (e.target.closest("figure") || e.target.closest("button") || e.target.closest("a") || e.target.closest(".resumen-fotos")) {
+        if (
+          e.target.closest("figure") ||
+          e.target.closest("button") ||
+          e.target.closest("a") ||
+          e.target.closest(".resumen-fotos-grid") ||
+          e.target.closest(".foto-infraccion-thumb-wrap")
+        ) {
           return;
         }
         window.dispatchEvent(
@@ -1067,27 +1203,81 @@ function renderizarResumen(reportes) {
       });
     }
 
+    // Cabecera de la tarjeta: Rank, Cuadra y Badges
+    const cabecera = document.createElement("div");
+    cabecera.className = "resumen-card-header";
+
+    const bloqueTitulo = document.createElement("div");
+    bloqueTitulo.className = "resumen-card-titulo-bloque";
+
+    const badgeRank = document.createElement("span");
+    badgeRank.className = `resumen-rank-badge resumen-rank-badge--${Math.min(indice + 1, 5)}`;
+    badgeRank.textContent = `#${indice + 1}`;
+    bloqueTitulo.append(badgeRank);
+
+    const infoTitulo = document.createElement("div");
+    infoTitulo.className = "resumen-card-nombres";
     const titulo = document.createElement("strong");
+    titulo.className = "resumen-card-titulo";
     titulo.textContent = prioridad.cuadra;
-    elemento.append(titulo);
 
-    const puntaje = document.createElement("p");
-    puntaje.textContent =
-      `Puntaje total: ${prioridad.puntajeTotal} · ${prioridad.cantidadReportes} reporte(s)`;
-    elemento.append(puntaje);
+    const subtitulo = document.createElement("span");
+    subtitulo.className = "resumen-card-subtitulo";
+    subtitulo.textContent = `${prioridad.cantidadReportes} reporte(s) en este sector`;
+    infoTitulo.append(titulo, subtitulo);
+    bloqueTitulo.append(infoTitulo);
 
-    const recomendacion = document.createElement("p");
-    recomendacion.textContent =
-      prioridad.recomendacion ?? "Sin recomendación específica por las reglas configuradas.";
-    elemento.append(recomendacion);
+    cabecera.append(bloqueTitulo);
 
-    const regla = document.createElement("p");
-    regla.className = "ayuda";
-    regla.textContent = prioridad.regla
-      ? `Regla aplicada: ${prioridad.regla}`
-      : "Regla aplicada: ninguna; no se cumplieron las condiciones.";
-    elemento.append(regla);
+    const grupoPills = document.createElement("div");
+    grupoPills.className = "resumen-card-pills";
 
+    const pillNivel = document.createElement("span");
+    pillNivel.className = `resumen-pill-nivel resumen-pill-nivel--${nivelCrit}`;
+    pillNivel.textContent = nivelCrit.toUpperCase();
+
+    const pillPuntaje = document.createElement("span");
+    pillPuntaje.className = "resumen-pill-puntaje";
+    pillPuntaje.innerHTML = `<strong>${prioridad.puntajeTotal}</strong> <small>pts</small>`;
+
+    grupoPills.append(pillNivel, pillPuntaje);
+    cabecera.append(grupoPills);
+    elemento.append(cabecera);
+
+    // Callout de Recomendación Operativa con ícono semántico
+    const callout = document.createElement("div");
+    callout.className = `resumen-recomendacion-callout resumen-recomendacion-callout--${nivelCrit}`;
+    callout.innerHTML = `
+      <div class="resumen-callout-icono" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+      <div class="resumen-callout-texto">
+        <span class="resumen-callout-label">Acción recomendada</span>
+        <p>${prioridad.recomendacion ?? "Monitoreo continuo según evolución de reportes."}</p>
+      </div>
+    `;
+    elemento.append(callout);
+
+    // Metadata inferior: Regla aplicada y hint de mapa
+    const metaFila = document.createElement("div");
+    metaFila.className = "resumen-card-meta";
+    metaFila.innerHTML = `
+      <span class="resumen-meta-etiqueta">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        ${prioridad.regla ? `Regla: ${prioridad.regla}` : "Sin regla configurada"}
+      </span>
+      ${primerReporteCoords ? `<span class="resumen-meta-ubicacion">📍 Ver en mapa</span>` : ""}
+    `;
+    elemento.append(metaFila);
+
+    // Galería de fotos con soporte interactivo para visualización
     const fotosDeCuadra = reportes
       .filter(
         (reporte) =>
@@ -1096,21 +1286,27 @@ function renderizarResumen(reportes) {
           reporte.foto.length > 0,
       )
       .sort((primero, segundo) => segundo.fecha_hora.localeCompare(primero.fecha_hora));
+
     if (fotosDeCuadra.length > 0) {
-      const tituloFotos = document.createElement("p");
-      tituloFotos.className = "ayuda";
-      tituloFotos.textContent = `Fotos censuradas (${fotosDeCuadra.length})`;
-      elemento.append(tituloFotos);
+      const fotosHeader = document.createElement("div");
+      fotosHeader.className = "resumen-fotos-header";
+      fotosHeader.innerHTML = `
+        <span class="resumen-fotos-titulo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          Evidencias fotográficas (${fotosDeCuadra.length})
+        </span>
+        <span class="resumen-fotos-guia">Toca para ampliar foto</span>
+      `;
+      elemento.append(fotosHeader);
 
       const galeria = document.createElement("div");
-      galeria.className = "resumen-fotos";
+      galeria.className = "resumen-fotos-grid";
       galeria.setAttribute("role", "group");
       galeria.setAttribute("aria-label", `Fotos censuradas de ${prioridad.cuadra}`);
-      galeria.style.display = "flex";
-      galeria.style.gap = "0.5rem";
-      galeria.style.maxWidth = "100%";
-      galeria.style.marginTop = "0.4rem";
-      galeria.style.overflowX = "auto";
 
       for (const reporte of fotosDeCuadra) {
         agregarFotoInfraccion(galeria, reporte);
@@ -1123,49 +1319,58 @@ function renderizarResumen(reportes) {
 }
 
 function agregarFotoInfraccion(tarjeta, reporte) {
+  const fuente = obtenerFuenteFoto(reporte.foto);
+  if (!reporte.foto || !fuente) {
+    return;
+  }
+
   const figura = document.createElement("figure");
-  figura.className = "foto-infraccion";
-  figura.style.flex = "0 0 220px";
-  figura.style.maxWidth = "80%";
-  figura.style.margin = "0";
-  let fuente = "";
-  if (/^data:image\/(?:jpeg|png|webp);base64,/i.test(reporte.foto)) {
-    fuente = reporte.foto;
-  } else if (reporte.foto) {
-    const enlace = document.createElement("a");
-    enlace.href = reporte.foto;
-    if (["http:", "https:"].includes(enlace.protocol) && enlace.origin === window.location.origin) {
-      fuente = enlace.href;
+  figura.className = "foto-infraccion-thumb-wrap";
+  figura.tabIndex = 0;
+  figura.setAttribute("role", "button");
+  figura.setAttribute("aria-label", `Ver foto ampliada de infracción ${reporte.id} en ${reporte.cuadra}`);
+
+  const imagen = document.createElement("img");
+  imagen.alt = `Foto de infracción ${reporte.id}`;
+  imagen.loading = "lazy";
+  imagen.referrerPolicy = "no-referrer";
+  imagen.src = fuente;
+  imagen.addEventListener("error", () => {
+    figura.classList.add("foto-error");
+    figura.innerHTML = `<span class="foto-error-msg">⚠️ Error al cargar imagen</span>`;
+  });
+
+  const overlay = document.createElement("div");
+  overlay.className = "foto-infraccion-overlay";
+  overlay.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      <line x1="11" y1="8" x2="11" y2="14"></line>
+      <line x1="8" y1="11" x2="14" y2="11"></line>
+    </svg>
+    <span>Ver foto</span>
+  `;
+
+  const tagId = document.createElement("span");
+  tagId.className = "foto-infraccion-tag";
+  tagId.textContent = `#${reporte.id}`;
+
+  figura.append(imagen, overlay, tagId);
+
+  const accionarModal = (e) => {
+    e.stopPropagation();
+    abrirVisorFoto(reporte);
+  };
+
+  figura.addEventListener("click", accionarModal);
+  figura.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      accionarModal(e);
     }
-  }
-  const pie = document.createElement("figcaption");
+  });
 
-  if (!reporte.foto) {
-    pie.textContent = "No se adjuntó una foto.";
-  } else if (!fuente) {
-    pie.textContent = "No se puede mostrar la foto guardada.";
-  } else {
-    const imagen = document.createElement("img");
-    imagen.alt = `Foto censurada del reporte ${reporte.id}`;
-    imagen.loading = "lazy";
-    imagen.referrerPolicy = "no-referrer";
-    imagen.style.display = "block";
-    imagen.style.width = "100%";
-    imagen.style.height = "140px";
-    imagen.style.maxWidth = "100%";
-    imagen.style.objectFit = "contain";
-    imagen.style.borderRadius = "8px";
-    imagen.addEventListener("error", () => {
-      figura.replaceChildren();
-      pie.textContent = "No se pudo cargar la foto del reporte.";
-      figura.append(pie);
-    });
-    imagen.src = fuente;
-    figura.append(imagen);
-    pie.textContent = `Foto del reporte ${reporte.id}`;
-  }
-
-  figura.append(pie);
   tarjeta.append(figura);
 }
 
@@ -2000,6 +2205,26 @@ window.addEventListener("mapa:ubicacion-rechazada", ({ detail }) => {
   entradaDireccion.value = "";
   actualizarVistaCriticidad();
   mostrarEstado(estadoUbicacion, detail?.mensaje ?? "La ubicación está fuera del área permitida.");
+});
+
+// Soporte para Visor Modal de Fotos de Infracción
+const modalVisor = document.getElementById("modal-visor-foto");
+if (modalVisor) {
+  const btnCerrar = document.getElementById("btn-cerrar-modal-foto");
+  if (btnCerrar) {
+    btnCerrar.addEventListener("click", cerrarVisorFoto);
+  }
+  modalVisor.addEventListener("click", (e) => {
+    // Si se hace clic en el backdrop fuera de la tarjeta
+    if (e.target === modalVisor) {
+      cerrarVisorFoto();
+    }
+  });
+}
+window.addEventListener("foto:abrir-visor", (e) => {
+  if (e.detail?.reporte) {
+    abrirVisorFoto(e.detail.reporte);
+  }
 });
 
 inicializarTema();
