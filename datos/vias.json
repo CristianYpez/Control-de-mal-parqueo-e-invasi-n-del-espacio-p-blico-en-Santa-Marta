@@ -1,22 +1,32 @@
 [
   {
     "id": "CR5-C14-C15",
-    "tipo": "arterial"
+    "nombre": "Carrera 5 entre calles 14 y 15",
+    "tipo": "arterial",
+    "tramo": [[11.244613, -74.210338], [11.244047, -74.210456]]
   },
   {
     "id": "CR5-C15-C16",
-    "tipo": "arterial"
+    "nombre": "Carrera 5 entre calles 15 y 16",
+    "tipo": "arterial",
+    "tramo": [[11.244047, -74.210456], [11.243671, -74.210517]]
   },
   {
     "id": "CR4-C14-C15",
-    "tipo": "secundaria"
+    "nombre": "Carrera 4 entre calles 14 y 15",
+    "tipo": "secundaria",
+    "tramo": [[11.244811, -74.211334], [11.244239, -74.211434]]
   },
   {
     "id": "CR3-C14-C15",
-    "tipo": "secundaria"
+    "nombre": "Carrera 3 entre calles 14 y 15",
+    "tipo": "secundaria",
+    "tramo": [[11.244979, -74.212446], [11.24442, -74.212458]]
   },
   {
     "id": "CR6-C14-C15",
-    "tipo": "arterial"
+    "nombre": "Carrera 6 entre calles 14 y 15",
+    "tipo": "arterial",
+    "tramo": [[11.244449, -74.209392], [11.243895, -74.209507]]
   }
 ]
