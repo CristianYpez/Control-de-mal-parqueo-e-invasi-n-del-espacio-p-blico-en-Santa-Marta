@@ -25,36 +25,62 @@ function persona(nombre, correo) {
   return encontrado?.nombre || nombre || "Alguien";
 }
 
-// ---------- IA de GitHub (gratis dentro de Actions) ----------
+// ---------- IA opcional ----------
+// Sirve cualquier servicio compatible con OpenAI (Gemini, Groq, OpenAI, etc.).
+// Se configura con tres secretos del repo: IA_URL, IA_KEY e IA_MODELO.
+// Sin ellos, el aviso usa las frases fijas de PARTES (abajo), que no necesitan IA.
 async function explicarConIA(instruccion, contenido) {
-  const token = process.env.GITHUB_TOKEN;
-  if (!token) return null;
-  for (const modelo of ["openai/gpt-4.1-mini", "openai/gpt-4o-mini"]) {
-    try {
-      const r = await fetch("https://models.github.ai/inference/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: modelo,
-          temperature: 0.2,
-          max_tokens: 400,
-          messages: [
-            { role: "system", content: equipo.contexto + "\n\n" + instruccion },
-            { role: "user", content: contenido },
-          ],
-        }),
-      });
-      if (!r.ok) {
-        console.log(`IA ${modelo}: HTTP ${r.status}`);
-        continue;
-      }
-      const texto = (await r.json()).choices?.[0]?.message?.content?.trim();
-      if (texto) return texto;
-    } catch (error) {
-      console.log(`IA ${modelo}: ${error.message}`);
-    }
+  const { IA_URL, IA_KEY, IA_MODELO } = process.env;
+  if (!IA_URL || !IA_KEY || !IA_MODELO) return null;
+  try {
+    const r = await fetch(IA_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${IA_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: IA_MODELO,
+        temperature: 0.2,
+        max_tokens: 400,
+        messages: [
+          { role: "system", content: equipo.contexto + "\n\n" + instruccion },
+          { role: "user", content: contenido },
+        ],
+      }),
+    });
+    const texto = await r.text();
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${texto.slice(0, 120)}`);
+    return JSON.parse(texto).choices?.[0]?.message?.content?.trim() || null;
+  } catch (error) {
+    console.log(`La IA no respondió, se usa el aviso sin IA. ${error.message}`);
+    return null;
   }
-  return null;
+}
+
+// ---------- Aviso sin IA: qué es cada archivo, en palabras simples ----------
+const PARTES = [
+  [/^datos\/reportes\.json$/, "los registros de campo", "Analista de campo"],
+  [/^datos\/vias\.json$/, "las cuadras de la zona y su tipo de vía", "Analista de campo"],
+  [/^fotos\//, "las fotos pixeladas", "Analista de campo"],
+  [/^datos\/criterios\.json$/, "los pesos y niveles de la criticidad", "Ingeniero de lógica"],
+  [/^criticidad\.js$/, "el cálculo de la criticidad", "Ingeniero de lógica"],
+  [/^cuadras\.js$/, "cómo se asigna la cuadra a cada reporte", "Ingeniero de lógica"],
+  [/^filtros\.js$/, "los filtros del tablero", "Ingeniero de lógica"],
+  [/^resumen\.js$/, "el resumen operativo (top 5 de cuadras y recomendaciones)", "Ingeniero de lógica"],
+  [/^mapa\.js$/, "el mapa y el mapa de calor", "Integrador del mapa"],
+  [/^captura\.js$/, "el formulario de reporte y el tablero", "Diseñador de interfaz"],
+  [/^index\.html$/, "la estructura de las pantallas", "Diseñador de interfaz"],
+  [/^styles\.css$/, "los colores y el diseño", "Diseñador de interfaz"],
+  [/^README\.md$/, "el README", "Documentador"],
+  [/^documentos\//, "los documentos de entrega", "Documentador"],
+  [/^\.github\//, "los avisos automáticos del equipo", "Apoyo técnico"],
+];
+
+function describirArchivos(archivos) {
+  const partes = new Map();
+  for (const archivo of archivos) {
+    const [, que, rol] = PARTES.find(([patron]) => patron.test(archivo)) ?? [null, archivo, "Sin rol"];
+    if (!partes.has(que)) partes.set(que, rol);
+  }
+  return [...partes.entries()].map(([que, rol]) => `• ${que} (${rol})`).join("\n");
 }
 
 // ---------- Envío ----------
@@ -123,11 +149,13 @@ No inventes nada que no esté en el cambio.`,
     `Mensajes de los commits:\n${mensajes}\n\nArchivos:\n${archivos}\n\nCambios (puede estar recortado):\n${diff.slice(0, 14000)}`,
   );
 
-  let nombres = "";
+  let nombres = [];
   try {
-    nombres = git("diff", "--name-only", antes, evento.after).split("\n").filter(Boolean).join(", ");
+    nombres = git("diff", "--name-only", antes, evento.after).split("\n").filter(Boolean);
   } catch {}
-  const cuerpo = explicacion || `${mensajes}\n\nArchivos tocados: ${nombres || "no se pudo leer"}`;
+  const cuerpo =
+    explicacion ||
+    `Lo que dice el cambio:\n${mensajes}\n\nPartes del proyecto que tocó:\n${describirArchivos(nombres) || "no se pudo leer"}`;
   const plural = commits.length === 1 ? "un cambio" : `${commits.length} cambios`;
   await enviar({
     titulo: `🔔 ${autores.join(" y ")} subió ${plural} al proyecto`,
