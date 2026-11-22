@@ -1,7 +1,7 @@
 import { calcularCriticidad } from "./criticidad.js?v=6";
 import { filtrarReportes } from "./filtros.js?v=6";
 import { resumirPorCuadra } from "./resumen.js?v=6";
-import { estaDentroDelPerimetro } from "./mapa.js?v=7";
+import { estaDentroDelPerimetro } from "./mapa.js?v=8";
 
 const CLAVE_ALMACENAMIENTO = "santaMartaReportesV1";
 const CLAVE_TEMA = "santaMartaTema";

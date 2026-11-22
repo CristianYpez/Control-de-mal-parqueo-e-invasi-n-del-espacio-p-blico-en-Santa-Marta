@@ -1,12 +1,8 @@
 const CENTRO_SANTA_MARTA = [11.205, -74.17];
 const NIVEL_ZOOM_INICIAL = 11;
 
-// Perímetro aproximado de cobertura, con una extensión ilustrativa hacia El Cisne.
+// Perímetro aproximado de cobertura urbana unificado (incluye corredor hacia Bonda y extensión a El Cisne).
 const PERIMETRO_APROXIMADO = [
-  [11.218, -74.185],
-  [11.211, -74.172],
-  [11.202, -74.156],
-  [11.193, -74.149],
   [11.184, -74.145],
   [11.174, -74.139],
   [11.163, -74.132],
@@ -44,12 +40,8 @@ const PERIMETRO_APROXIMADO = [
   [11.214, -74.112],
   [11.208, -74.126],
   [11.207, -74.142],
-  [11.207, -74.151],
-  [11.207, -74.16],
-  [11.21, -74.165],
-  [11.216, -74.166],
-  [11.219, -74.16],
-  [11.214, -74.171],
+  [11.2, -74.143],
+  [11.192, -74.144],
 ];
 
 const mapaCapturaElemento = document.querySelector("#mapa-captura");
