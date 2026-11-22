@@ -1158,10 +1158,12 @@ function cerrarVisorFoto() {
 }
 
 function renderizarResumen(reportes) {
-  const resumen = resumirPorCuadra(reportes, criterios);
   listaResumen.replaceChildren();
 
-  if (resumen.length === 0) {
+  const badgeTotal = document.getElementById("badge-total-resumen");
+
+  if (!reportes || reportes.length === 0) {
+    if (badgeTotal) badgeTotal.textContent = "0 reportes";
     const elementoVacio = document.createElement("li");
     elementoVacio.className = "resumen-vacio";
     elementoVacio.innerHTML = `
@@ -1172,19 +1174,37 @@ function renderizarResumen(reportes) {
     return;
   }
 
-  for (const [indice, prioridad] of resumen.entries()) {
+  // Ordenar todos los reportes del más reciente al más antiguo
+  const reportesOrdenados = [...reportes].sort((a, b) =>
+    (b.fecha_hora || "").localeCompare(a.fecha_hora || "")
+  );
+
+  if (badgeTotal) {
+    badgeTotal.textContent = `${reportesOrdenados.length} reporte(s) · Más recientes`;
+  }
+
+  const nombresCategorias = {
+    doble_fila: "Doble fila / vía prohibida",
+    bloqueo_rampa_cebra_paradero: "Rampa, cebra o paradero",
+    invasion_anden: "Invasión de andén",
+  };
+
+  const nombresActores = {
+    vehiculo_particular: "Vehículo particular",
+    motocicleta: "Motocicleta",
+    carga_descargando: "Carga descargando",
+    mobiliario_comercial: "Mobiliario comercial",
+  };
+
+  for (const reporte of reportesOrdenados) {
     const elemento = document.createElement("li");
-    const reportesDeCuadra = reportes.filter((r) => r.cuadra === prioridad.cuadra);
-    const tieneAlto = reportesDeCuadra.some((r) => r.criticidad?.nivel?.toLowerCase() === "alto");
-    const tieneMedio = reportesDeCuadra.some((r) => r.criticidad?.nivel?.toLowerCase() === "medio");
-    const nivelCrit = tieneAlto ? "alto" : tieneMedio ? "medio" : "bajo";
+    const nivelCrit = (reporte.criticidad?.nivel || "Sin nivel").toLowerCase();
 
-    elemento.classList.add("tarjeta-resumen-cuadra", `criticidad--${nivelCrit}`);
-    elemento.setAttribute("data-cuadra", prioridad.cuadra);
+    elemento.classList.add("tarjeta-resumen-cuadra", "tarjeta-reporte-item", `criticidad--${nivelCrit}`);
+    elemento.setAttribute("data-id", reporte.id);
 
-    const primerReporteCoords = reportesDeCuadra.find((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng));
-    if (primerReporteCoords) {
-      elemento.title = `Clic en la tarjeta para centrar ${prioridad.cuadra} en el mapa`;
+    if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
+      elemento.title = `Clic en la tarjeta para centrar reporte ${reporte.id} en el mapa`;
       elemento.addEventListener("click", (e) => {
         if (
           e.target.closest("figure") ||
@@ -1197,33 +1217,34 @@ function renderizarResumen(reportes) {
         }
         window.dispatchEvent(
           new CustomEvent("mapa:centrar-coordenadas", {
-            detail: { lat: primerReporteCoords.lat, lng: primerReporteCoords.lng },
+            detail: { lat: reporte.lat, lng: reporte.lng },
           }),
         );
       });
     }
 
-    // Cabecera de la tarjeta: Rank, Cuadra y Badges
+    // Cabecera: ID, Dirección/Cuadra y Badges
     const cabecera = document.createElement("div");
     cabecera.className = "resumen-card-header";
 
     const bloqueTitulo = document.createElement("div");
     bloqueTitulo.className = "resumen-card-titulo-bloque";
 
-    const badgeRank = document.createElement("span");
-    badgeRank.className = `resumen-rank-badge resumen-rank-badge--${Math.min(indice + 1, 5)}`;
-    badgeRank.textContent = `#${indice + 1}`;
-    bloqueTitulo.append(badgeRank);
+    const badgeId = document.createElement("span");
+    badgeId.className = "resumen-rank-badge resumen-id-badge";
+    badgeId.textContent = `#${reporte.id}`;
+    bloqueTitulo.append(badgeId);
 
     const infoTitulo = document.createElement("div");
     infoTitulo.className = "resumen-card-nombres";
     const titulo = document.createElement("strong");
     titulo.className = "resumen-card-titulo";
-    titulo.textContent = prioridad.cuadra;
+    titulo.textContent = reporte.direccion?.trim() || `Cuadra ${reporte.cuadra}`;
 
+    const fechaFormateada = reporte.fecha_hora ? reporte.fecha_hora.replace("T", " · ") : "Sin fecha";
     const subtitulo = document.createElement("span");
     subtitulo.className = "resumen-card-subtitulo";
-    subtitulo.textContent = `${prioridad.cantidadReportes} reporte(s) en este sector`;
+    subtitulo.textContent = `Cuadra ${reporte.cuadra} · 🕒 ${fechaFormateada}`;
     infoTitulo.append(titulo, subtitulo);
     bloqueTitulo.append(infoTitulo);
 
@@ -1238,56 +1259,36 @@ function renderizarResumen(reportes) {
 
     const pillPuntaje = document.createElement("span");
     pillPuntaje.className = "resumen-pill-puntaje";
-    pillPuntaje.innerHTML = `<strong>${prioridad.puntajeTotal}</strong> <small>pts</small>`;
+    pillPuntaje.innerHTML = `<strong>${reporte.criticidad?.puntaje ?? 0}</strong> <small>pts</small>`;
 
     grupoPills.append(pillNivel, pillPuntaje);
     cabecera.append(grupoPills);
     elemento.append(cabecera);
 
-    // Callout de Recomendación Operativa con ícono semántico
-    const callout = document.createElement("div");
-    callout.className = `resumen-recomendacion-callout resumen-recomendacion-callout--${nivelCrit}`;
-    callout.innerHTML = `
-      <div class="resumen-callout-icono" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-          <line x1="12" y1="9" x2="12" y2="13"></line>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
-      </div>
-      <div class="resumen-callout-texto">
-        <span class="resumen-callout-label">Acción recomendada</span>
-        <p>${prioridad.recomendacion ?? "Monitoreo continuo según evolución de reportes."}</p>
-      </div>
-    `;
-    elemento.append(callout);
+    // Fila de Chips con Información del Reporte
+    const filaChips = document.createElement("div");
+    filaChips.className = "reporte-chips-fila";
 
-    // Metadata inferior: Regla aplicada y hint de mapa
-    const metaFila = document.createElement("div");
-    metaFila.className = "resumen-card-meta";
-    metaFila.innerHTML = `
-      <span class="resumen-meta-etiqueta">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="9 11 12 14 22 4"></polyline>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-        </svg>
-        ${prioridad.regla ? `Regla: ${prioridad.regla}` : "Sin regla configurada"}
-      </span>
-      ${primerReporteCoords ? `<span class="resumen-meta-ubicacion">📍 Ver en mapa</span>` : ""}
-    `;
-    elemento.append(metaFila);
+    const categoriaTexto = nombresCategorias[reporte.categoria] || reporte.categoria || "No especificada";
+    const chipCat = document.createElement("span");
+    chipCat.className = "reporte-chip";
+    chipCat.innerHTML = `<strong>Infracción:</strong> ${categoriaTexto}`;
 
-    // Galería de fotos con soporte interactivo para visualización
-    const fotosDeCuadra = reportes
-      .filter(
-        (reporte) =>
-          reporte.cuadra === prioridad.cuadra &&
-          typeof reporte.foto === "string" &&
-          reporte.foto.length > 0,
-      )
-      .sort((primero, segundo) => segundo.fecha_hora.localeCompare(primero.fecha_hora));
+    const actorTexto = nombresActores[reporte.actor] || reporte.actor || "No especificado";
+    const chipActor = document.createElement("span");
+    chipActor.className = "reporte-chip";
+    chipActor.innerHTML = `<strong>Actor:</strong> ${actorTexto}`;
 
-    if (fotosDeCuadra.length > 0) {
+    const origenTexto = reporte.origen === "campo" ? "Operativo campo" : "Ciudadano";
+    const chipOrigen = document.createElement("span");
+    chipOrigen.className = "reporte-chip";
+    chipOrigen.innerHTML = `<strong>Origen:</strong> ${origenTexto}`;
+
+    filaChips.append(chipCat, chipActor, chipOrigen);
+    elemento.append(filaChips);
+
+    // Evidencia fotográfica si el reporte incluye foto
+    if (typeof reporte.foto === "string" && reporte.foto.trim().length > 0) {
       const fotosHeader = document.createElement("div");
       fotosHeader.className = "resumen-fotos-header";
       fotosHeader.innerHTML = `
@@ -1297,22 +1298,31 @@ function renderizarResumen(reportes) {
             <circle cx="8.5" cy="8.5" r="1.5"></circle>
             <polyline points="21 15 16 10 5 21"></polyline>
           </svg>
-          Evidencias fotográficas (${fotosDeCuadra.length})
+          Evidencia fotográfica
         </span>
-        <span class="resumen-fotos-guia">Toca para ampliar foto</span>
+        <span class="resumen-fotos-guia">Toca para ampliar</span>
       `;
       elemento.append(fotosHeader);
 
       const galeria = document.createElement("div");
       galeria.className = "resumen-fotos-grid";
       galeria.setAttribute("role", "group");
-      galeria.setAttribute("aria-label", `Fotos censuradas de ${prioridad.cuadra}`);
+      galeria.setAttribute("aria-label", `Foto censurada del reporte ${reporte.id}`);
 
-      for (const reporte of fotosDeCuadra) {
-        agregarFotoInfraccion(galeria, reporte);
-      }
+      agregarFotoInfraccion(galeria, reporte);
       elemento.append(galeria);
     }
+
+    // Pie de tarjeta con coordenadas y botón de ubicación en mapa
+    const metaFila = document.createElement("div");
+    metaFila.className = "resumen-card-meta";
+    metaFila.innerHTML = `
+      <span class="resumen-meta-etiqueta">
+        📍 ${Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng) ? `${reporte.lat.toFixed(4)}, ${reporte.lng.toFixed(4)}` : "Sin coordenadas"}
+      </span>
+      ${Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng) ? `<span class="resumen-meta-ubicacion">Ver en mapa →</span>` : ""}
+    `;
+    elemento.append(metaFila);
 
     listaResumen.append(elemento);
   }
@@ -1352,11 +1362,23 @@ function agregarFotoInfraccion(tarjeta, reporte) {
     <span>Ver foto</span>
   `;
 
+  const zoomPill = document.createElement("span");
+  zoomPill.className = "foto-infraccion-zoom-pill";
+  zoomPill.innerHTML = `
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      <line x1="11" y1="8" x2="11" y2="14"></line>
+      <line x1="8" y1="11" x2="14" y2="11"></line>
+    </svg>
+    <span>Ver</span>
+  `;
+
   const tagId = document.createElement("span");
   tagId.className = "foto-infraccion-tag";
   tagId.textContent = `#${reporte.id}`;
 
-  figura.append(imagen, overlay, tagId);
+  figura.append(imagen, overlay, zoomPill, tagId);
 
   const accionarModal = (e) => {
     e.stopPropagation();

@@ -26,7 +26,7 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
-    <link rel="stylesheet" href="./styles.css?v=12" />
+    <link rel="stylesheet" href="./styles.css?v=16" />
   </head>
   <body>
     <header class="encabezado">
@@ -560,13 +560,13 @@
             <section id="resumen-operativo" class="panel" aria-labelledby="titulo-resumen">
               <div class="fila-titulo">
                 <div>
-                  <p class="sobretitulo">PRIORIZACIÓN</p>
-                  <h2 id="titulo-resumen">Resumen operativo</h2>
+                  <p class="sobretitulo">HISTORIAL DE INCIDENTES</p>
+                  <h2 id="titulo-resumen">Todos los reportes</h2>
                 </div>
-                <span class="texto-secundario">Top 5</span>
+                <span id="badge-total-resumen" class="texto-secundario">Más recientes primero</span>
               </div>
               <ol id="lista-resumen" class="lista-resumen">
-                <li class="ayuda">El resumen aparecerá cuando se carguen los reportes.</li>
+                <li class="ayuda">Los reportes aparecerán cuando se carguen los datos.</li>
               </ol>
             </section>
             <section class="panel panel--categorias" aria-labelledby="titulo-categorias">
@@ -855,6 +855,6 @@
     ></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-    <script type="module" src="./captura.js?v=12"></script>
+    <script type="module" src="./captura.js?v=16"></script>
   </body>
 </html>
