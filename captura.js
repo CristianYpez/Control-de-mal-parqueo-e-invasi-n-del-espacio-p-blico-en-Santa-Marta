@@ -1,10 +1,12 @@
-import { calcularCriticidad } from "./criticidad.js?v=6";
+import { calcularCriticidad } from "./criticidad.js?v=7";
+import { ubicarCuadra, CUADRA_FUERA_DE_ZONA } from "./cuadras.js?v=1";
 import { filtrarReportes } from "./filtros.js?v=6";
 import { resumirPorCuadra } from "./resumen.js?v=6";
 import { estaDentroDelPerimetro } from "./mapa.js?v=8";
 
 const CLAVE_ALMACENAMIENTO = "santaMartaReportesV1";
 const CLAVE_TEMA = "santaMartaTema";
+const CLAVE_DISPOSITIVO = "santaMartaDispositivo";
 const formulario = document.querySelector("#formulario-reporte");
 const entradaDireccion = document.querySelector("#reporte-direccion");
 const opcionesCuadrasFiltro = document.querySelector("#opciones-cuadras-filtro");
@@ -209,46 +211,23 @@ function mostrarEstado(elemento, mensaje) {
   elemento.textContent = mensaje;
 }
 
-const DATOS_FALLBACK = {
-  "./datos/reportes.json": [
-    { "id": "MP-014", "origen": "campo", "fecha_hora": "2026-11-13T11:40", "lat": 11.2418, "lng": -74.2015, "cuadra": "CR5-C14-C15", "categoria": "bloqueo_rampa_cebra_paradero", "actor": "vehiculo_particular", "foto": "", "criticidad": { "puntaje": 9, "nivel": "Alto" } },
-    { "id": "MP-015", "origen": "ciudadano", "fecha_hora": "2026-11-13T07:10", "lat": 11.2426, "lng": -74.2008, "cuadra": "CR5-C14-C15", "categoria": "invasion_anden", "actor": "motocicleta", "foto": "", "criticidad": { "puntaje": 8, "nivel": "Alto" } },
-    { "id": "MP-016", "origen": "campo", "fecha_hora": "2026-11-13T18:20", "lat": 11.2412, "lng": -74.2021, "cuadra": "CR5-C14-C15", "categoria": "doble_fila", "actor": "vehiculo_particular", "foto": "", "criticidad": { "puntaje": 9, "nivel": "Alto" } },
-    { "id": "MP-017", "origen": "ciudadano", "fecha_hora": "2026-11-13T10:00", "lat": 11.2431, "lng": -74.1994, "cuadra": "CR5-C15-C16", "categoria": "doble_fila", "actor": "vehiculo_carga", "foto": "", "criticidad": { "puntaje": 7, "nivel": "Alto" } },
-    { "id": "MP-018", "origen": "campo", "fecha_hora": "2026-11-13T12:15", "lat": 11.2438, "lng": -74.1989, "cuadra": "CR5-C15-C16", "categoria": "invasion_anden", "actor": "vehiculo_carga", "foto": "", "criticidad": { "puntaje": 8, "nivel": "Alto" } },
-    { "id": "MP-019", "origen": "ciudadano", "fecha_hora": "2026-11-13T09:10", "lat": 11.2398, "lng": -74.203, "cuadra": "CR4-C14-C15", "categoria": "invasion_anden", "actor": "mobiliario_comercial", "foto": "", "criticidad": { "puntaje": 4, "nivel": "Bajo" } },
-    { "id": "MP-020", "origen": "campo", "fecha_hora": "2026-11-13T08:30", "lat": 11.2389, "lng": -74.2041, "cuadra": "CR3-C14-C15", "categoria": "doble_fila", "actor": "motocicleta", "foto": "", "criticidad": { "puntaje": 5, "nivel": "Medio" } },
-    { "id": "MP-021", "origen": "ciudadano", "fecha_hora": "2026-11-13T17:00", "lat": 11.2444, "lng": -74.1981, "cuadra": "CR6-C14-C15", "categoria": "bloqueo_rampa_cebra_paradero", "actor": "vehiculo_particular", "foto": "", "criticidad": { "puntaje": 9, "nivel": "Alto" } }
-  ],
-  "./datos/vias.json": [
-    { "id": "CR5-C14-C15", "tipo": "arterial" },
-    { "id": "CR5-C15-C16", "tipo": "arterial" },
-    { "id": "CR4-C14-C15", "tipo": "secundaria" },
-    { "id": "CR3-C14-C15", "tipo": "secundaria" },
-    { "id": "CR6-C14-C15", "tipo": "arterial" }
-  ],
-  "./datos/criterios.json": {
-    "categoria": { "doble_fila": 3, "bloqueo_rampa_cebra_paradero": 3, "invasion_anden": 2 },
-    "via": { "arterial": 3, "secundaria": 1 },
-    "franja": { "pico": 3, "valle": 1 },
-    "horas_pico": ["06:30-08:30", "11:30-14:00", "17:00-19:30"],
-    "niveles": { "Bajo": [0, 4], "Medio": [5, 6], "Alto": [7, 9] }
-  }
-};
-
 async function cargarJSON(ruta) {
+  if (location.protocol === "file:") {
+    throw new Error(
+      "La app se abrió con doble clic y el navegador bloquea los archivos JSON. Ábrela con Live Server o desde GitHub Pages.",
+    );
+  }
+
+  const respuesta = await fetch(ruta, { cache: "no-store" });
+  if (!respuesta.ok) {
+    throw new Error(`No se encontró ${ruta.replace("./", "")} (HTTP ${respuesta.status}).`);
+  }
+  const texto = await respuesta.text();
   try {
-    const respuesta = await fetch(ruta);
-    if (!respuesta.ok) {
-      throw new Error(`HTTP ${respuesta.status}`);
-    }
-    return await respuesta.json();
+    return JSON.parse(texto);
   } catch (error) {
-    if (DATOS_FALLBACK[ruta]) {
-      console.warn(`Usando datos de respaldo para ${ruta}:`, error);
-      return DATOS_FALLBACK[ruta];
-    }
-    throw error;
+    // Se muestra el error tal cual para que se vea qué se dañó al editar el archivo.
+    throw new Error(`${ruta.replace("./", "")} tiene un error de formato: ${error.message}`);
   }
 }
 
@@ -269,8 +248,8 @@ function normalizarReporte(reporte, validarPerimetro = true) {
   if (!reporte || typeof reporte !== "object" || Array.isArray(reporte)) {
     throw new Error("El reporte debe ser un objeto JSON.");
   }
-  if (typeof reporte.id !== "string" || !/^MP-\d+$/.test(reporte.id)) {
-    throw new Error("El reporte tiene un ID inválido; se esperaba el formato MP-###.");
+  if (typeof reporte.id !== "string" || !/^MP-(?:[A-Z0-9]{3}-)?\d+$/.test(reporte.id)) {
+    throw new Error("El reporte tiene un ID inválido; se esperaba MP-### o MP-XXX-###.");
   }
   if (reporte.origen !== "campo" && reporte.origen !== "ciudadano") {
     throw new Error(`El reporte ${reporte.id} tiene un origen inválido.`);
@@ -295,14 +274,22 @@ function normalizarReporte(reporte, validarPerimetro = true) {
     throw new Error(`El reporte ${reporte.id} está fuera del perímetro urbano aproximado.`);
   }
 
-  const criticidad = calcularCriticidad(reporte, vias, criterios);
+  // La cuadra sale de vias.json, nunca de lo que escriba el usuario. Si el reporte no trae
+  // una cuadra conocida (por ejemplo, uno nuevo o uno importado de una versión vieja),
+  // se busca por sus coordenadas.
+  let cuadra = typeof reporte.cuadra === "string" ? reporte.cuadra.trim() : "";
+  if (!vias.some((via) => via.id === cuadra)) {
+    cuadra = ubicarCuadra(reporte.lat, reporte.lng, vias)?.id ?? CUADRA_FUERA_DE_ZONA;
+  }
+
+  const criticidad = calcularCriticidad({ ...reporte, cuadra }, vias, criterios);
   return {
     id: reporte.id,
     origen: reporte.origen,
     fecha_hora: reporte.fecha_hora,
     lat: reporte.lat,
     lng: reporte.lng,
-    cuadra: reporte.cuadra?.trim() || reporte.direccion?.trim() || "Sin clasificar",
+    cuadra,
     direccion: reporte.direccion?.trim() ?? "",
     categoria: reporte.categoria,
     actor: reporte.actor,
@@ -897,8 +884,10 @@ function obtenerFranjaActual(fechaHora) {
 
 function actualizarVistaCriticidad() {
   const categoria = document.querySelector("#reporte-categoria").value;
-  const cuadraSeleccionada = entradaDireccion.value.trim();
-  const via = vias.find((elemento) => elemento.id === cuadraSeleccionada);
+  const via = ubicacionSeleccionada
+    ? ubicarCuadra(ubicacionSeleccionada.lat, ubicacionSeleccionada.lng, vias)
+    : null;
+  const cuadraSeleccionada = via?.id ?? CUADRA_FUERA_DE_ZONA;
   const fechaActual = new Date();
   const fechaHoraActual = formatearFechaHoraLocal(fechaActual);
   let nombreFranja = "";
@@ -914,12 +903,11 @@ function actualizarVistaCriticidad() {
 
   datosVistaCriticidad.categoria.textContent =
     nombresCategorias[categoria] ?? "Elige una categoría";
-  datosVistaCriticidad.tipoVia.textContent =
-    via?.tipo === "arterial"
-      ? "Arterial"
-      : via?.tipo === "secundaria"
-        ? "Secundaria"
-        : "Sin clasificar desde el mapa";
+  datosVistaCriticidad.tipoVia.textContent = !ubicacionSeleccionada
+    ? "Marca el punto en el mapa"
+    : via
+      ? `${via.tipo === "arterial" ? "Arterial" : "Secundaria"} · ${via.id}`
+      : "Fuera de la zona (no suma puntos)";
   datosVistaCriticidad.franja.textContent = nombreFranja
     ? `${nombreFranja === "pico" ? "Hora pico" : "Hora valle"} · ${fechaActual.toLocaleTimeString("es-CO", {
         hour: "2-digit",
@@ -1441,21 +1429,36 @@ function formatearFechaHoraLocal(fecha) {
   ].join("");
 }
 
+// Cada celular tiene un prefijo de 3 letras que se crea la primera vez y se guarda.
+// Así dos celulares nunca generan el mismo ID (MP-K7Q-001 y MP-B2X-001 son distintos)
+// y al importar no se pierde ningún reporte por creerlo repetido.
+function obtenerPrefijoDispositivo() {
+  let prefijo = localStorage.getItem(CLAVE_DISPOSITIVO);
+  if (!/^[A-Z0-9]{3}$/.test(prefijo ?? "")) {
+    const caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const azar = crypto.getRandomValues(new Uint8Array(3));
+    prefijo = [...azar].map((n) => caracteres[n % caracteres.length]).join("");
+    localStorage.setItem(CLAVE_DISPOSITIVO, prefijo);
+  }
+  return prefijo;
+}
+
 function generarIdUnico(reportes) {
+  const prefijo = obtenerPrefijoDispositivo();
   const idsUsados = new Set(reportes.map((reporte) => reporte.id));
   let mayorNumero = 0;
   for (const id of idsUsados) {
-    const coincidencia = /^MP-(\d+)$/.exec(id);
+    const coincidencia = new RegExp(`^MP-${prefijo}-(\\d+)$`).exec(id);
     if (coincidencia) {
       mayorNumero = Math.max(mayorNumero, Number(coincidencia[1]));
     }
   }
 
   let numero = mayorNumero + 1;
-  let id = `MP-${String(numero).padStart(3, "0")}`;
+  let id = `MP-${prefijo}-${String(numero).padStart(3, "0")}`;
   while (idsUsados.has(id)) {
     numero += 1;
-    id = `MP-${String(numero).padStart(3, "0")}`;
+    id = `MP-${prefijo}-${String(numero).padStart(3, "0")}`;
   }
   return id;
 }
@@ -2046,7 +2049,7 @@ function guardarReporte(evento) {
       fecha_hora: formatearFechaHoraLocal(new Date()),
       lat: ubicacionSeleccionada.lat,
       lng: ubicacionSeleccionada.lng,
-      cuadra: direccion,
+      cuadra: "",
       direccion,
       categoria: datos.get("categoria"),
       actor: datos.get("actor"),
@@ -2086,7 +2089,18 @@ async function inicializar() {
 
   vias = viasCargadas;
   criterios = criteriosCargados;
-  reportesIniciales = reportes.map((reporte) => normalizarReporte(reporte));
+
+  // Cada reporte se valida por separado: si uno tiene un error, se avisa cuál
+  // y los demás se siguen mostrando.
+  const problemas = [];
+  reportesIniciales = [];
+  for (const reporte of reportes) {
+    try {
+      reportesIniciales.push(normalizarReporte(reporte));
+    } catch (error) {
+      problemas.push(`${reporte?.id ?? "sin ID"} (reportes.json): ${error.message}`);
+    }
+  }
   const idsIniciales = new Set(reportesIniciales.map((reporte) => reporte.id));
   reportesLocales = [];
   try {
@@ -2098,12 +2112,12 @@ async function inicializar() {
           idsIniciales.add(norm.id);
           reportesLocales.push(norm);
         }
-      } catch (err) {
-        console.warn("Reporte local omitido:", err);
+      } catch (error) {
+        problemas.push(`${item?.id ?? "sin ID"} (guardado en este celular): ${error.message}`);
       }
     }
-  } catch (err) {
-    console.warn("No se pudieron leer reportes locales:", err);
+  } catch (error) {
+    problemas.push(`Reportes guardados en este celular: ${error.message}`);
     reportesLocales = [];
   }
 
@@ -2114,7 +2128,14 @@ async function inicializar() {
     estadoUbicacion,
     "Al elegir un punto, sus coordenadas se consultarán con OpenStreetMap/Photon para obtener la dirección.",
   );
-  mostrarEstado(estadoCaptura, "Listo para registrar un reporte.");
+  if (problemas.length > 0) {
+    const aviso = `${problemas.length} reporte(s) no se cargaron: ${problemas.join(" · ")}`;
+    mostrarEstado(estadoCaptura, aviso);
+    mostrarEstado(estadoTablero, aviso);
+    console.error(aviso);
+  } else {
+    mostrarEstado(estadoCaptura, "Listo para registrar un reporte.");
+  }
 
   try {
     const vistaGuardada = sessionStorage.getItem("santaMartaVistaActiva");
@@ -2255,6 +2276,8 @@ botonTema.addEventListener("click", () => {
 });
 
 inicializar().catch((error) => {
-  mostrarEstado(estadoCaptura, `No se pudo iniciar la captura: ${error.message}`);
+  const aviso = `No se pudieron cargar los datos. ${error.message}`;
+  mostrarEstado(estadoCaptura, aviso);
+  mostrarEstado(estadoTablero, aviso);
   console.error(error);
 });
