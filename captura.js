@@ -335,8 +335,10 @@ function contarPor(reportes, campo, etiquetas = {}) {
 }
 
 function mostrarFrecuenciaMaxima(elemento, conteos) {
+  if (!elemento) return;
   if (conteos.length === 0 || conteos[0].cantidad === 0) {
     elemento.textContent = "Sin datos";
+    elemento.title = "Sin datos";
     return;
   }
 
@@ -346,7 +348,9 @@ function mostrarFrecuenciaMaxima(elemento, conteos) {
     .map((conteo) => conteo.etiqueta);
   const prefijo = ganadores.length > 1 ? "Empate: " : "";
   const unidad = cantidad === 1 ? "reporte" : "reportes";
-  elemento.textContent = `${prefijo}${ganadores.join(", ")} · ${cantidad} ${unidad}`;
+  const texto = `${prefijo}${ganadores.join(", ")} (${cantidad} ${unidad})`;
+  elemento.textContent = texto;
+  elemento.title = texto;
 }
 
 function contarConUniverso(reportes, campo, valores, etiquetas = {}, ordenar = true) {
@@ -530,11 +534,11 @@ function renderizarDashboardInteractivo(
   const actorCantidad = conteosActores[0]?.cantidad ?? 0;
 
   if (elementosDashboard.total) elementosDashboard.total.textContent = String(total);
-  if (elementosDashboard.alta) elementosDashboard.alta.textContent = `${altaPorcentaje}%`;
+  if (elementosDashboard.alta) elementosDashboard.alta.textContent = `${altaPorcentaje}% Alta`;
   if (elementosDashboard.altaConteo) {
     elementosDashboard.altaConteo.textContent = `${altaCount} caso(s) prioritario(s)`;
   }
-  if (elementosDashboard.pico) elementosDashboard.pico.textContent = `${picoPorcentaje}%`;
+  if (elementosDashboard.pico) elementosDashboard.pico.textContent = `${picoPorcentaje}% Pico`;
   if (elementosDashboard.picoConteo) {
     elementosDashboard.picoConteo.textContent = `${picoCount} en franja congestionada`;
   }
