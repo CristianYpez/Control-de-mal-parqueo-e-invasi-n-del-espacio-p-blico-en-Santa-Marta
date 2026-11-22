@@ -63,19 +63,25 @@ function calcularCriticidad(reporte, vias, criterios) {
   }
 
   const puntaje = puntosCategoria + puntosVia + puntosFranja;
-  const nivelesCoincidentes = Object.entries(criterios.niveles ?? {}).filter(
-    ([, rango]) =>
-      Array.isArray(rango) &&
-      rango.length === 2 &&
-      puntaje >= rango[0] &&
-      puntaje <= rango[1],
-  );
 
-  if (nivelesCoincidentes.length !== 1) {
-    throw new Error(`El puntaje ${puntaje} no corresponde a un único nivel configurado.`);
+  // El nivel es el más alto cuyo mínimo alcanza el puntaje. Con los valores de criterios.json:
+  // Bajo empieza en 0, Medio en 5 y Alto en 7. Un puntaje de 8 alcanza los tres mínimos y se queda con Alto.
+  // Así, si se sube un peso y el puntaje pasa del tope (por ejemplo 10), sigue siendo Alto en vez de fallar.
+  const niveles = Object.entries(criterios.niveles ?? {})
+    .filter(([, rango]) => Array.isArray(rango) && typeof rango[0] === "number")
+    .sort(([, rangoA], [, rangoB]) => rangoA[0] - rangoB[0]);
+  if (niveles.length === 0) {
+    throw new Error("criterios.json no tiene niveles configurados.");
   }
 
-  return { puntaje, nivel: nivelesCoincidentes[0][0] };
+  let nivel = niveles[0][0];
+  for (const [nombre, rango] of niveles) {
+    if (puntaje >= rango[0]) {
+      nivel = nombre;
+    }
+  }
+
+  return { puntaje, nivel };
 }
 
 export { calcularCriticidad };
