@@ -13,8 +13,10 @@ Prototipo web ciudadano para registrar y consultar situaciones de mal parqueo e 
 - **Almacenamiento local:** los reportes nuevos se guardan en `localStorage` del navegador. No hay servidor ni base de datos central; los datos permanecen en el dispositivo y navegador usados.
 - **Mapa y tablero:** presenta los reportes sobre un mapa de calor y permite mostrar u ocultar sus puntos individuales. El mapa base utiliza OpenStreetMap.
 - **Filtros y prioridades:** permite filtrar por dirección o sector, franja horaria, situación y tipo de actor. El resumen presenta hasta cinco ubicaciones, ordenadas por puntaje total, con recomendaciones según las reglas definidas. Si la vía no se puede clasificar desde el mapa, no se asignan puntos por tipo de vía.
-- **Criticidad:** calcula un puntaje sumando los valores de la categoría, el tipo de vía cuando está identificado y la franja horaria. Si la vía no se puede clasificar desde el mapa, el componente vial aporta cero puntos. Las horas pico, valores y niveles se configuran en `datos/criterios.json`.
-- **Importación y exportación:** importa reportes desde un archivo JSON, omite identificadores duplicados y valida los registros nuevos; también permite descargar los reportes actuales.
+- **Cuadra automática:** al marcar un punto, `cuadras.js` busca en `datos/vias.json` la cuadra cuyo tramo (esquina inicial y final) queda a menos de 30 m. El usuario nunca escribe la cuadra. Si el punto no cae en ninguna cuadra de la zona, el reporte queda como «Fuera de la zona» y el tipo de vía suma 0.
+- **Criticidad:** suma los puntos de la categoría, del tipo de vía y de la franja horaria, con los valores de `datos/criterios.json`. El nivel es el más alto cuyo mínimo alcanza el puntaje (Bajo desde 0, Medio desde 5, Alto desde 7), así que si se sube un peso y el puntaje pasa de 9, sigue siendo Alto.
+- **Errores visibles:** si un archivo JSON tiene un error de formato, la app muestra cuál archivo y en qué línea. Si un reporte está mal, se avisa su ID y los demás se siguen mostrando.
+- **Importación y exportación:** importa reportes desde un archivo JSON, omite identificadores duplicados y valida los registros nuevos; también permite descargar los reportes actuales. Cada celular firma sus reportes con un prefijo propio (por ejemplo `MP-K7Q-001`), así que dos celulares nunca generan el mismo ID.
 - **Impresión:** el botón de impresión genera una versión del resumen operativo adecuada para imprimir.
 - **Privacidad:** el formulario recomienda no capturar placas, rostros ni otros datos personales. Si se adjunta una foto, se conserva únicamente su versión censurada y confirmada; las fotos y reportes ciudadanos se almacenan localmente.
 - **Interfaz accesible:** diseño adaptable a móvil y escritorio, controles etiquetados, mensajes de estado y animaciones de aparición al desplazarse, desactivadas cuando el dispositivo solicita reducir el movimiento.
@@ -83,10 +85,11 @@ flowchart TD
 | `captura.js` | Carga de datos, registro, validación, almacenamiento, importación/exportación, filtros, resumen y estadísticas. |
 | `mapa.js` | Mapas Leaflet, selección de ubicación, perímetro aproximado y capas de reportes. |
 | `criticidad.js` | Cálculo del puntaje y nivel de criticidad. |
+| `cuadras.js` | Ubica la cuadra de `vias.json` más cercana al punto marcado en el mapa. |
 | `filtros.js` | Filtrado de reportes y clasificación horaria. |
 | `resumen.js` | Agrupación por cuadra y reglas de recomendación operativa. |
 | `datos/reportes.json` | Reportes de ejemplo que se cargan al iniciar. |
-| `datos/vias.json` | Cuadras y tipos de vía usados en el puntaje. |
+| `datos/vias.json` | Cuadras, tipo de vía y tramo de cada cuadra (coordenadas de sus dos esquinas, tomadas de OpenStreetMap). |
 | `datos/criterios.json` | Puntajes, rangos de hora pico y niveles de criticidad. |
 
 ## Cómo ejecutarlo
