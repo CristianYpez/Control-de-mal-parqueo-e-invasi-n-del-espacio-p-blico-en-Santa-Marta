@@ -10,6 +10,10 @@
     <meta name="theme-color" content="#F5F2EA" />
     <title>Control de mal parqueo en Santa Marta</title>
 
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -22,7 +26,7 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=9" />
   </head>
   <body>
     <header class="encabezado">
@@ -35,7 +39,7 @@
         </span>
         <div class="marca__textos">
           <span class="marca__nombre">Control de mal parqueo</span>
-          <span class="marca__ciudad">Santa Marta · Civic Tech</span>
+          <span class="marca__ciudad">Santa Marta </span>
         </div>
       </a>
 
@@ -138,8 +142,8 @@
           <!-- Columna derecha: Formulario de reporte -->
           <div class="columna-split columna-split--formulario">
             <div class="encabezado-reporte-split">
-              <h1 id="titulo-captura">Reportar obstrucción</h1>
-              <span class="tiempo-estimado-badge">Toma menos de 30 segundos</span>
+              <h1 id="titulo-captura">Reportar un mal parqueo en la ciudad</h1>
+              <span class="tiempo-estimado-badge">En menos de  30 segundos</span>
             </div>
 
             <!-- Grupo Categoría -->
@@ -669,18 +673,18 @@
           <div class="dashboard-charts-grid">
             <div class="chart-dash-card">
               <div class="chart-dash-header">
-                <h3>Categorías de Infracción</h3>
-                <span class="texto-secundario">Distribución (%)</span>
+                <h3>Reportes por Franja Horaria</h3>
+                <span class="texto-secundario">Pico vs Valle</span>
               </div>
               <div class="chart-dash-canvas-wrap">
-                <canvas id="chart-categorias-canvas"></canvas>
+                <canvas id="chart-franjas-canvas"></canvas>
               </div>
             </div>
 
             <div class="chart-dash-card">
               <div class="chart-dash-header">
-                <h3>Nivel de Criticidad</h3>
-                <span class="texto-secundario">Prioridad de atención</span>
+                <h3>Reportes por Nivel</h3>
+                <span class="texto-secundario">Criticidad</span>
               </div>
               <div class="chart-dash-canvas-wrap">
                 <canvas id="chart-criticidad-canvas"></canvas>
@@ -689,7 +693,17 @@
 
             <div class="chart-dash-card">
               <div class="chart-dash-header">
-                <h3>Tipos de Actor Infractor</h3>
+                <h3>Reportes por Categoría</h3>
+                <span class="texto-secundario">Tipo de infracción</span>
+              </div>
+              <div class="chart-dash-canvas-wrap">
+                <canvas id="chart-categorias-canvas"></canvas>
+              </div>
+            </div>
+
+            <div class="chart-dash-card">
+              <div class="chart-dash-header">
+                <h3>Reportes por Tipo de Actor</h3>
                 <span class="texto-secundario">Vehículos y mobiliario</span>
               </div>
               <div class="chart-dash-canvas-wrap">
@@ -706,110 +720,20 @@
                 <canvas id="chart-dias-canvas"></canvas>
               </div>
             </div>
-          </div>
-        </section>
 
-        <div class="cuadricula-graficas">
-          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-cuadras">
-            <p class="sobretitulo">UBICACIÓN</p>
-            <h2 id="titulo-grafica-cuadras">Reportes por cuadra</h2>
-            <div
-              id="grafica-cuadras"
-              class="grafica-barras"
-              role="list"
-              aria-label="Distribución de reportes por cuadra"
-            ></div>
-          </section>
-
-          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-categorias">
-            <p class="sobretitulo">SITUACIÓN</p>
-            <h2 id="titulo-grafica-categorias">Reportes por categoría</h2>
-            <div
-              id="grafica-categorias"
-              class="grafica-barras"
-              role="list"
-              aria-label="Distribución de reportes por categoría"
-            ></div>
-          </section>
-
-          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-actores">
-            <p class="sobretitulo">ACTOR</p>
-            <h2 id="titulo-grafica-actores">Reportes por tipo de actor</h2>
-            <div
-              id="grafica-actores"
-              class="grafica-barras"
-              role="list"
-              aria-label="Distribución de reportes por tipo de actor"
-            ></div>
-          </section>
-
-          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-franjas">
-            <p class="sobretitulo">HORARIO</p>
-            <h2 id="titulo-grafica-franjas">Reportes por franja horaria</h2>
-            <div
-              id="grafica-franjas"
-              class="grafica-barras"
-              role="list"
-              aria-label="Distribución de reportes por franja horaria"
-            ></div>
-          </section>
-
-          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-niveles">
-            <p class="sobretitulo">CRITICIDAD</p>
-            <h2 id="titulo-grafica-niveles">Reportes por nivel</h2>
-            <div
-              id="grafica-niveles"
-              class="grafica-barras"
-              role="list"
-              aria-label="Distribución de reportes por nivel de criticidad"
-            ></div>
-          </section>
-
-          <section class="panel grafica-panel" aria-labelledby="titulo-grafica-origenes">
-            <p class="sobretitulo">ORIGEN</p>
-            <h2 id="titulo-grafica-origenes">Reportes por origen</h2>
-            <div
-              id="grafica-origenes"
-              class="grafica-barras"
-              role="list"
-              aria-label="Distribución de reportes por origen"
-            ></div>
-          </section>
-
-          <section class="panel grafica-panel grafica-panel--ancha" aria-labelledby="titulo-grafica-dias">
-            <p class="sobretitulo">CALENDARIO</p>
-            <h2 id="titulo-grafica-dias">Reportes por día de la semana</h2>
-            <div
-              id="grafica-dias"
-              class="grafica-barras"
-              role="list"
-              aria-label="Distribución de reportes por día de la semana"
-            ></div>
-          </section>
-        </div>
-
-        <section class="panel panel--matriz" aria-labelledby="titulo-matriz">
-          <div class="fila-titulo">
-            <div>
-              <p class="sobretitulo">CRUCE DE VARIABLES</p>
-              <h2 id="titulo-matriz">Categoría según tipo de actor</h2>
+            <div class="chart-dash-card">
+              <div class="chart-dash-header">
+                <h3>Reportes por Origen</h3>
+                <span class="texto-secundario">Campo vs Ciudadano</span>
+              </div>
+              <div class="chart-dash-canvas-wrap">
+                <canvas id="chart-origenes-canvas"></canvas>
+              </div>
             </div>
-            <span class="texto-secundario">Conteo de reportes</span>
           </div>
-          <p class="ayuda">
-            Cada celda muestra cuántos reportes combinan una categoría con un tipo de actor.
-          </p>
-          <div
-            class="tabla-matriz-contenedor"
-            role="region"
-            aria-label="Matriz de categorías y tipos de actor"
-            tabindex="0"
-          >
-            <table id="tabla-matriz-comparativa" class="tabla-matriz"></table>
-          </div>
-        </section>
 
-        <p id="estado-graficas" class="estado" role="status" aria-live="polite"></p>
+          <p id="estado-graficas" class="estado" role="status" aria-live="polite"></p>
+        </section>
       </section>
 
       <aside class="aviso-privacidad">
@@ -868,6 +792,6 @@
     ></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-    <script type="module" src="./captura.js?v=8"></script>
+    <script type="module" src="./captura.js?v=10"></script>
   </body>
 </html>

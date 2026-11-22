@@ -87,16 +87,20 @@ const elementosDashboard = {
   picoConteo: document.querySelector("#kpi-dash-pico-conteo"),
   actor: document.querySelector("#kpi-dash-actor"),
   actorConteo: document.querySelector("#kpi-dash-actor-conteo"),
-  canvasCategorias: document.querySelector("#chart-categorias-canvas"),
+  canvasFranjas: document.querySelector("#chart-franjas-canvas"),
   canvasCriticidad: document.querySelector("#chart-criticidad-canvas"),
+  canvasCategorias: document.querySelector("#chart-categorias-canvas"),
   canvasActores: document.querySelector("#chart-actores-canvas"),
   canvasDias: document.querySelector("#chart-dias-canvas"),
+  canvasOrigenes: document.querySelector("#chart-origenes-canvas"),
 };
 let instanciasGraficas = {
-  categorias: null,
+  franjas: null,
   criticidad: null,
+  categorias: null,
   actores: null,
   dias: null,
+  origenes: null,
 };
 const selectorArchivoImportar = document.querySelector("#archivo-importar");
 const controlesFiltros = {
@@ -205,12 +209,47 @@ function mostrarEstado(elemento, mensaje) {
   elemento.textContent = mensaje;
 }
 
-async function cargarJSON(ruta) {
-  const respuesta = await fetch(ruta);
-  if (!respuesta.ok) {
-    throw new Error(`No se pudo cargar ${ruta} (HTTP ${respuesta.status}).`);
+const DATOS_FALLBACK = {
+  "./datos/reportes.json": [
+    { "id": "MP-014", "origen": "campo", "fecha_hora": "2026-11-13T11:40", "lat": 11.2418, "lng": -74.2015, "cuadra": "CR5-C14-C15", "categoria": "bloqueo_rampa_cebra_paradero", "actor": "vehiculo_particular", "foto": "", "criticidad": { "puntaje": 9, "nivel": "Alto" } },
+    { "id": "MP-015", "origen": "ciudadano", "fecha_hora": "2026-11-13T07:10", "lat": 11.2426, "lng": -74.2008, "cuadra": "CR5-C14-C15", "categoria": "invasion_anden", "actor": "motocicleta", "foto": "", "criticidad": { "puntaje": 8, "nivel": "Alto" } },
+    { "id": "MP-016", "origen": "campo", "fecha_hora": "2026-11-13T18:20", "lat": 11.2412, "lng": -74.2021, "cuadra": "CR5-C14-C15", "categoria": "doble_fila", "actor": "vehiculo_particular", "foto": "", "criticidad": { "puntaje": 9, "nivel": "Alto" } },
+    { "id": "MP-017", "origen": "ciudadano", "fecha_hora": "2026-11-13T10:00", "lat": 11.2431, "lng": -74.1994, "cuadra": "CR5-C15-C16", "categoria": "doble_fila", "actor": "vehiculo_carga", "foto": "", "criticidad": { "puntaje": 7, "nivel": "Alto" } },
+    { "id": "MP-018", "origen": "campo", "fecha_hora": "2026-11-13T12:15", "lat": 11.2438, "lng": -74.1989, "cuadra": "CR5-C15-C16", "categoria": "invasion_anden", "actor": "vehiculo_carga", "foto": "", "criticidad": { "puntaje": 8, "nivel": "Alto" } },
+    { "id": "MP-019", "origen": "ciudadano", "fecha_hora": "2026-11-13T09:10", "lat": 11.2398, "lng": -74.203, "cuadra": "CR4-C14-C15", "categoria": "invasion_anden", "actor": "mobiliario_comercial", "foto": "", "criticidad": { "puntaje": 4, "nivel": "Bajo" } },
+    { "id": "MP-020", "origen": "campo", "fecha_hora": "2026-11-13T08:30", "lat": 11.2389, "lng": -74.2041, "cuadra": "CR3-C14-C15", "categoria": "doble_fila", "actor": "motocicleta", "foto": "", "criticidad": { "puntaje": 5, "nivel": "Medio" } },
+    { "id": "MP-021", "origen": "ciudadano", "fecha_hora": "2026-11-13T17:00", "lat": 11.2444, "lng": -74.1981, "cuadra": "CR6-C14-C15", "categoria": "bloqueo_rampa_cebra_paradero", "actor": "vehiculo_particular", "foto": "", "criticidad": { "puntaje": 9, "nivel": "Alto" } }
+  ],
+  "./datos/vias.json": [
+    { "id": "CR5-C14-C15", "tipo": "arterial" },
+    { "id": "CR5-C15-C16", "tipo": "arterial" },
+    { "id": "CR4-C14-C15", "tipo": "secundaria" },
+    { "id": "CR3-C14-C15", "tipo": "secundaria" },
+    { "id": "CR6-C14-C15", "tipo": "arterial" }
+  ],
+  "./datos/criterios.json": {
+    "categoria": { "doble_fila": 3, "bloqueo_rampa_cebra_paradero": 3, "invasion_anden": 2 },
+    "via": { "arterial": 3, "secundaria": 1 },
+    "franja": { "pico": 3, "valle": 1 },
+    "horas_pico": ["06:30-08:30", "11:30-14:00", "17:00-19:30"],
+    "niveles": { "Bajo": [0, 4], "Medio": [5, 6], "Alto": [7, 9] }
   }
-  return respuesta.json();
+};
+
+async function cargarJSON(ruta) {
+  try {
+    const respuesta = await fetch(ruta);
+    if (!respuesta.ok) {
+      throw new Error(`HTTP ${respuesta.status}`);
+    }
+    return await respuesta.json();
+  } catch (error) {
+    if (DATOS_FALLBACK[ruta]) {
+      console.warn(`Usando datos de respaldo para ${ruta}:`, error);
+      return DATOS_FALLBACK[ruta];
+    }
+    throw error;
+  }
 }
 
 function leerReportesLocales() {
@@ -346,6 +385,7 @@ function obtenerDiaSemana(fechaHora) {
 }
 
 function renderizarGraficaBarras(elemento, conteos, total, descripcion) {
+  if (!elemento) return;
   elemento.replaceChildren();
   elemento.setAttribute("aria-label", descripcion);
 
@@ -466,10 +506,12 @@ function renderizarMatrizCategoriasActores(reportes) {
 
 function renderizarDashboardInteractivo(
   reportes,
-  conteosCategorias,
+  conteosFranjas,
   conteosNiveles,
+  conteosCategorias,
   conteosActores,
   conteosDias,
+  conteosOrigenes,
 ) {
   const total = reportes.length;
   const altaCount = reportes.filter((r) => r.criticidad?.nivel === "Alto").length;
@@ -513,16 +555,23 @@ function renderizarDashboardInteractivo(
   const colorAcento = estilo.getPropertyValue("--accent-primary").trim() || (esOscuro ? "#2DD4BF" : "#0D9488");
   const colorSuperficie = estilo.getPropertyValue("--bg-surface").trim() || (esOscuro ? "#121A22" : "#FFFFFF");
 
-  if (elementosDashboard.canvasCategorias) {
-    if (instanciasGraficas.categorias) instanciasGraficas.categorias.destroy();
-    instanciasGraficas.categorias = new window.Chart(elementosDashboard.canvasCategorias, {
+  // 1. Reportes por Franja Horaria
+  if (elementosDashboard.canvasFranjas) {
+    if (instanciasGraficas.franjas) instanciasGraficas.franjas.destroy();
+    const mapaColoresFranja = {
+      "Hora pico": esOscuro ? "#F59E0B" : "#D97706",
+      "Hora valle": esOscuro ? "#2DD4BF" : "#0D9488",
+    };
+    instanciasGraficas.franjas = new window.Chart(elementosDashboard.canvasFranjas, {
       type: "doughnut",
       data: {
-        labels: conteosCategorias.map((c) => c.etiqueta),
+        labels: conteosFranjas.map((c) => c.etiqueta),
         datasets: [
           {
-            data: conteosCategorias.map((c) => c.cantidad),
-            backgroundColor: [colorAcento, esOscuro ? "#F59E0B" : "#D97706", esOscuro ? "#EF4444" : "#DC2626"],
+            data: conteosFranjas.map((c) => c.cantidad),
+            backgroundColor: conteosFranjas.map(
+              (c) => mapaColoresFranja[c.etiqueta] || colorAcento,
+            ),
             borderWidth: 2,
             borderColor: colorSuperficie,
           },
@@ -541,6 +590,7 @@ function renderizarDashboardInteractivo(
     });
   }
 
+  // 2. Reportes por Nivel de Criticidad
   if (elementosDashboard.canvasCriticidad) {
     if (instanciasGraficas.criticidad) instanciasGraficas.criticidad.destroy();
     const mapaColoresNivel = {
@@ -576,6 +626,36 @@ function renderizarDashboardInteractivo(
     });
   }
 
+  // 3. Reportes por Categoría
+  if (elementosDashboard.canvasCategorias) {
+    if (instanciasGraficas.categorias) instanciasGraficas.categorias.destroy();
+    instanciasGraficas.categorias = new window.Chart(elementosDashboard.canvasCategorias, {
+      type: "doughnut",
+      data: {
+        labels: conteosCategorias.map((c) => c.etiqueta),
+        datasets: [
+          {
+            data: conteosCategorias.map((c) => c.cantidad),
+            backgroundColor: [colorAcento, esOscuro ? "#F59E0B" : "#D97706", esOscuro ? "#EF4444" : "#DC2626"],
+            borderWidth: 2,
+            borderColor: colorSuperficie,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: { color: colorTexto, boxWidth: 12, font: { size: 11 } },
+          },
+        },
+      },
+    });
+  }
+
+  // 4. Reportes por Tipo de Actor
   if (elementosDashboard.canvasActores) {
     if (instanciasGraficas.actores) instanciasGraficas.actores.destroy();
     instanciasGraficas.actores = new window.Chart(elementosDashboard.canvasActores, {
@@ -610,6 +690,7 @@ function renderizarDashboardInteractivo(
     });
   }
 
+  // 5. Reportes por Día de la Semana
   if (elementosDashboard.canvasDias) {
     if (instanciasGraficas.dias) instanciasGraficas.dias.destroy();
     instanciasGraficas.dias = new window.Chart(elementosDashboard.canvasDias, {
@@ -638,6 +719,35 @@ function renderizarDashboardInteractivo(
             beginAtZero: true,
             ticks: { color: colorSecundario, stepSize: 1 },
             grid: { color: colorRejilla },
+          },
+        },
+      },
+    });
+  }
+
+  // 6. Reportes por Origen
+  if (elementosDashboard.canvasOrigenes) {
+    if (instanciasGraficas.origenes) instanciasGraficas.origenes.destroy();
+    instanciasGraficas.origenes = new window.Chart(elementosDashboard.canvasOrigenes, {
+      type: "doughnut",
+      data: {
+        labels: conteosOrigenes.map((c) => c.etiqueta),
+        datasets: [
+          {
+            data: conteosOrigenes.map((c) => c.cantidad),
+            backgroundColor: [colorAcento, esOscuro ? "#6366F1" : "#4F46E5"],
+            borderWidth: 2,
+            borderColor: colorSuperficie,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: { color: colorTexto, boxWidth: 12, font: { size: 11 } },
           },
         },
       },
@@ -693,60 +803,19 @@ function renderizarGraficas(reportes) {
 
   renderizarDashboardInteractivo(
     reportes,
-    conteosCategorias,
-    conteosNiveles,
-    conteosActores,
-    conteosDias,
-  );
-
-  elementosGraficas.total.textContent = String(reportes.length);
-  mostrarFrecuenciaMaxima(elementosGraficas.cuadra, conteosCuadras);
-  mostrarFrecuenciaMaxima(elementosGraficas.categoria, conteosCategorias);
-  mostrarFrecuenciaMaxima(elementosGraficas.actor, conteosActores);
-
-  renderizarGraficaBarras(
-    elementosGraficas.cuadras,
-    conteosCuadras,
-    reportes.length,
-    "Reportes por cuadra",
-  );
-  renderizarGraficaBarras(
-    elementosGraficas.categorias,
-    conteosCategorias,
-    reportes.length,
-    "Reportes por categoría",
-  );
-  renderizarGraficaBarras(
-    elementosGraficas.actores,
-    conteosActores,
-    reportes.length,
-    "Reportes por tipo de actor",
-  );
-  renderizarGraficaBarras(
-    elementosGraficas.franjas,
     conteosFranjas,
-    reportes.length,
-    "Reportes por franja horaria",
-  );
-  renderizarGraficaBarras(
-    elementosGraficas.niveles,
     conteosNiveles,
-    reportes.length,
-    "Reportes por nivel de criticidad",
-  );
-  renderizarGraficaBarras(
-    elementosGraficas.origenes,
-    conteosOrigenes,
-    reportes.length,
-    "Reportes por origen",
-  );
-  renderizarGraficaBarras(
-    elementosGraficas.dias,
+    conteosCategorias,
+    conteosActores,
     conteosDias,
-    reportes.length,
-    "Reportes por día de la semana",
+    conteosOrigenes,
   );
-  renderizarMatrizCategoriasActores(reportes);
+
+  if (elementosGraficas.total) elementosGraficas.total.textContent = String(reportes.length);
+  if (elementosGraficas.cuadra) mostrarFrecuenciaMaxima(elementosGraficas.cuadra, conteosCuadras);
+  if (elementosGraficas.categoria) mostrarFrecuenciaMaxima(elementosGraficas.categoria, conteosCategorias);
+  if (elementosGraficas.actor) mostrarFrecuenciaMaxima(elementosGraficas.actor, conteosActores);
+
   mostrarEstado(estadoGraficas, `Gráficas calculadas con ${reportes.length} reporte(s).`);
 }
 
@@ -922,6 +991,10 @@ function renderizarBarrasCategorias(reportes) {
 }
 
 function cambiarVista(nombreVista) {
+  try {
+    sessionStorage.setItem("santaMartaVistaActiva", nombreVista);
+  } catch {}
+
   const mostrarCaptura = nombreVista === "captura";
   const mostrarTablero = nombreVista === "tablero";
   const mostrarGraficas = nombreVista === "graficas";
@@ -1784,14 +1857,24 @@ async function inicializar() {
   criterios = criteriosCargados;
   reportesIniciales = reportes.map((reporte) => normalizarReporte(reporte));
   const idsIniciales = new Set(reportesIniciales.map((reporte) => reporte.id));
-  reportesLocales = leerReportesLocales().map((reporte) => {
-    const reporteNormalizado = normalizarReporte(reporte, false);
-    if (idsIniciales.has(reporteNormalizado.id)) {
-      throw new Error(`El ID ${reporteNormalizado.id} ya existe en los datos de ejemplo.`);
+  reportesLocales = [];
+  try {
+    const guardados = leerReportesLocales();
+    for (const item of guardados) {
+      try {
+        const norm = normalizarReporte(item, false);
+        if (!idsIniciales.has(norm.id)) {
+          idsIniciales.add(norm.id);
+          reportesLocales.push(norm);
+        }
+      } catch (err) {
+        console.warn("Reporte local omitido:", err);
+      }
     }
-    idsIniciales.add(reporteNormalizado.id);
-    return reporteNormalizado;
-  });
+  } catch (err) {
+    console.warn("No se pudieron leer reportes locales:", err);
+    reportesLocales = [];
+  }
 
   datosListos = true;
   publicarReportesActualizados();
@@ -1801,6 +1884,13 @@ async function inicializar() {
     "Al elegir un punto, sus coordenadas se consultarán con OpenStreetMap/Photon para obtener la dirección.",
   );
   mostrarEstado(estadoCaptura, "Listo para registrar un reporte.");
+
+  try {
+    const vistaGuardada = sessionStorage.getItem("santaMartaVistaActiva");
+    if (vistaGuardada && ["captura", "tablero", "graficas"].includes(vistaGuardada)) {
+      cambiarVista(vistaGuardada);
+    }
+  } catch {}
 }
 
 formulario.addEventListener("submit", guardarReporte);

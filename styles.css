@@ -1702,30 +1702,51 @@ main {
 
 .dashboard-charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-  gap: 0.85rem;
-  margin-bottom: 0.9rem;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 56rem) {
+  .dashboard-charts-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 80rem) {
+  .dashboard-charts-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.4rem;
+  }
 }
 
 .chart-dash-card {
   background: var(--superficie);
   border: 1px solid var(--borde);
   border-radius: var(--radio);
-  padding: 0.9rem 1rem;
+  padding: 1.15rem 1.25rem;
   box-shadow: var(--sombra);
   display: flex;
   flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.chart-dash-card:hover {
+  border-color: var(--borde-fuerte, rgba(255, 255, 255, 0.16));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .chart-dash-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.75rem;
 }
 
 .chart-dash-header h3 {
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   margin: 0;
   font-weight: 600;
   color: var(--texto);
@@ -1733,7 +1754,7 @@ main {
 
 .chart-dash-canvas-wrap {
   position: relative;
-  height: 220px;
+  height: 240px;
   width: 100%;
 }
 

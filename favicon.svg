@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Control de mal parqueo Santa Marta</title>
+  <rect width="64" height="64" rx="14" fill="#0F5E63"/>
+  <path d="M32 55C32 55 49 41 49 28A17 17 0 0 0 15 28C15 41 32 55 32 55Z" fill="#FFFFFF"/>
+  <circle cx="32" cy="28" r="8.5" fill="#E8590C"/>
+  <circle cx="32" cy="28" r="3.5" fill="#FFD54F"/>
+</svg>
