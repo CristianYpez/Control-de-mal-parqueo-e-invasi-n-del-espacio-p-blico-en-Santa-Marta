@@ -1,6 +1,6 @@
 [
   {
-    "id": "MP-014",
+    "id": "MP-013",
     "origen": "campo",
     "fecha_hora": "2026-11-13T11:40",
     "lat": 11.2418,
@@ -14,7 +14,23 @@
       "nivel": "Alto"
     }
   },
+  { 
+    "id": "MP-14",
+    "origen": "campo",
+    "fecha_hora": "2026-11-23T12:18",
+    "lat": 11.225395,
+    "lng": 74.18961333333333,
+    "cuadra": "Cra. 21e #29I-06, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "vehiculo_particular",
+    "foto": "",
+    "criticidad": {
+      "puntaje": 8,
+      "nivel": "Alto"
+    }
+  },
   {
+    
     "id": "MP-015",
     "origen": "ciudadano",
     "fecha_hora": "2026-11-13T07:10",
