@@ -1629,30 +1629,56 @@ main {
   min-width: 0;
   max-width: 100%;
   overflow: visible;
+  box-sizing: border-box;
 }
 
 #resumen-operativo .fila-titulo {
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: baseline;
 }
 
 .lista-resumen {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 1.15rem;
   margin: 0.7rem 0 0;
-  padding: 0.2rem 0.2rem 0.5rem;
+  padding: 0.2rem 0 0.5rem;
   list-style: none;
-  max-height: 720px;
-  overflow-y: auto;
-  overflow-x: hidden !important;
-  scrollbar-gutter: stable;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
+  overflow: visible;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* Indicador de carga progresiva al hacer scroll */
+.centinela-scroll-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1.25rem 0.85rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.centinela-scroll-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent-cyan);
+  animation: spinnerGiro 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spinnerGiro {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ==========================================================================
@@ -1827,17 +1853,20 @@ main {
 
 /* 2. Sección Media — Cuerpo de Información (.card-body) */
 .card-body {
-  padding: 0.85rem 1.25rem 1.15rem;
+  padding: 0.85rem 1.15rem 1.15rem;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
   flex: 1 1 auto;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .card-header-info {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  max-width: 100%;
 }
 
 .card-date {
@@ -1857,6 +1886,8 @@ main {
   line-height: 1.3;
   margin: 0;
   letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .card-location {
@@ -1867,6 +1898,8 @@ main {
   gap: 6px;
   line-height: 1.35;
   margin: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .card-location svg {
@@ -1878,12 +1911,14 @@ main {
 /* Tira de 3 columnas (.meta-strip) */
 .meta-strip {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
   background: var(--bg-surface-elevated);
-  padding: 0.75rem 0.85rem;
+  padding: 0.75rem 0.65rem;
   border-radius: 12px;
   border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .meta-col {
@@ -1891,6 +1926,7 @@ main {
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
+  overflow: hidden;
 }
 
 .meta-col-header {
@@ -1898,6 +1934,7 @@ main {
   align-items: center;
   gap: 4px;
   color: var(--text-muted);
+  overflow: hidden;
 }
 
 .meta-col-header svg {
@@ -1911,6 +1948,9 @@ main {
   letter-spacing: 0.05em;
   color: var(--text-muted);
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .meta-value {
@@ -1930,6 +1970,10 @@ main {
   padding-top: 0.75rem;
   border-top: 1px solid var(--border-subtle);
   margin-top: auto;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .footer-coords {

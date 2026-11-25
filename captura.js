@@ -1263,7 +1263,273 @@ function iniciarEdicionFotoReporte(reporte) {
   img.src = obtenerFuenteFoto(reporte.foto);
 }
 
+let reportesParaResumen = [];
+let indicePaginacionResumen = 0;
+const TAMANO_PAGINA_RESUMEN = 6;
+let observadorScrollResumen = null;
+
+function renderizarElementoReporte(reporte, nombresCategorias, nombresActores) {
+  const elemento = document.createElement("li");
+  const nivelCrit = (reporte.criticidad?.nivel || "Sin nivel").toLowerCase();
+
+  // Clases semánticas SaaS Hero-Banner
+  elemento.classList.add(
+    "tarjeta-resumen-cuadra",
+    "report-card-vertical",
+    "tarjeta-reporte-item",
+    `criticidad--${nivelCrit}`,
+    `severity--${nivelCrit}`,
+  );
+  elemento.setAttribute("data-id", reporte.id);
+
+  const fuente = obtenerFuenteFoto(reporte.foto);
+  const puntajeTxt = reporte.criticidad?.puntaje !== undefined ? `${reporte.criticidad.puntaje} PTS` : "";
+  const nivelLabel = nivelCrit.toUpperCase();
+  const tipoInfraccion = nombresCategorias[reporte.categoria] || reporte.categoria || "Infracción";
+  const dirTexto = reporte.direccion?.trim() || `Cuadra ${reporte.cuadra || "No especificada"}`;
+  const actorTexto = nombresActores[reporte.actor] || reporte.actor || "Vehículo particular";
+  const origenTexto = reporte.origen === "campo" ? "Operativo campo" : "Ciudadano";
+  const sectorTexto = reporte.cuadra ? `Cuadra ${reporte.cuadra}` : "Fuera de la zona";
+
+  let fechaCorta = "Sin fecha";
+  if (reporte.fecha_hora) {
+    const p = reporte.fecha_hora.split("T");
+    fechaCorta = `${p[0]} · ${p[1] ? p[1].slice(0, 5) : ""}`;
+  }
+
+  elemento.innerHTML = `
+    <!-- Banner Superior Hero -->
+    <div class="card-hero">
+      <img
+        class="card-hero__img"
+        src="${fuente || ""}"
+        alt="Evidencia fotográfica ${reporte.id}"
+        loading="lazy"
+        onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22200%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23161D26%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20fill%3D%22%2364748B%22%20font-family%3D%22sans-serif%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3EEvidencia%20Censurada%3C%2Ftext%3E%3C%2Fsvg%3E';"
+      />
+      <span class="hero-tag hero-tag--id font-mono">#${reporte.id}</span>
+      <span class="hero-tag hero-tag--severity severity--${nivelCrit}">
+        <span class="severity-dot"></span>
+        ${nivelLabel} · ${puntajeTxt}
+      </span>
+      <button type="button" class="hero-tag hero-btn-expand" data-action="expand" title="Ampliar foto">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          <line x1="11" y1="8" x2="11" y2="14"></line>
+          <line x1="8" y1="11" x2="14" y2="11"></line>
+        </svg>
+        <span>Ampliar foto</span>
+      </button>
+    </div>
+
+    <!-- Cuerpo de Información -->
+    <div class="card-body">
+      <div class="card-header-info">
+        <span class="card-date font-mono">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          ${fechaCorta}
+        </span>
+        <h4 class="card-title">${tipoInfraccion}</h4>
+        <p class="card-location">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>${dirTexto}</span>
+        </p>
+      </div>
+
+      <!-- Tira de 3 Columnas (Meta Strip) -->
+      <div class="meta-strip">
+        <div class="meta-col">
+          <div class="meta-col-header">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span class="meta-label">ACTOR</span>
+          </div>
+          <span class="meta-value" title="${actorTexto}">${actorTexto}</span>
+        </div>
+        <div class="meta-col">
+          <div class="meta-col-header">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span class="meta-label">ORIGEN</span>
+          </div>
+          <span class="meta-value" title="${origenTexto}">${origenTexto}</span>
+        </div>
+        <div class="meta-col">
+          <div class="meta-col-header">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+            <span class="meta-label">SECTOR</span>
+          </div>
+          <span class="meta-value" title="${sectorTexto}">${sectorTexto}</span>
+        </div>
+      </div>
+
+      <!-- Footer Inferior -->
+      <div class="card-footer">
+        <div class="footer-coords font-mono">
+          <svg class="pin-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>${Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng) ? `${reporte.lat.toFixed(4)}, ${reporte.lng.toFixed(4)}` : "Sin coordenadas"}</span>
+        </div>
+        <button type="button" class="btn-map" data-action="map">
+          <span>Ver en mapa</span>
+          <span>&rarr;</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Eventos
+  const btnExpand = elemento.querySelector('[data-action="expand"]');
+  if (btnExpand) {
+    btnExpand.addEventListener("click", (e) => {
+      e.stopPropagation();
+      abrirVisorFoto(reporte);
+    });
+  }
+
+  const btnMap = elemento.querySelector('[data-action="map"]');
+  const accionarMapa = (e) => {
+    e.stopPropagation();
+    if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
+      window.dispatchEvent(
+        new CustomEvent("mapa:centrar-coordenadas", {
+          detail: { lat: reporte.lat, lng: reporte.lng, zoom: 18, reporteId: reporte.id },
+        }),
+      );
+      const mapaElem = document.querySelector("#mapa-tablero");
+      if (mapaElem) {
+        mapaElem.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  };
+
+  if (btnMap) {
+    btnMap.addEventListener("click", accionarMapa);
+  }
+
+  // Clic en la tarjeta abre el visor
+  elemento.addEventListener("click", (e) => {
+    if (e.target.closest("button") || e.target.closest("a")) return;
+    abrirVisorFoto(reporte);
+  });
+
+  return elemento;
+}
+
+function cargarSiguienteLoteResumen() {
+  if (indicePaginacionResumen >= reportesParaResumen.length) {
+    removerCentinelaScrollResumen();
+    return;
+  }
+
+  const nombresCategorias = {
+    doble_fila: "Doble fila / vía prohibida",
+    bloqueo_rampa_cebra_paradero: "Rampa, cebra o paradero",
+    invasion_anden: "Invasión de andén",
+  };
+
+  const nombresActores = {
+    vehiculo_particular: "Vehículo particular",
+    motocicleta: "Motocicleta",
+    vehiculo_carga: "Carga descargando",
+    carga_descargando: "Carga descargando",
+    mobiliario_comercial: "Mobiliario comercial",
+  };
+
+  const centinela = document.getElementById("centinela-scroll-resumen");
+  const fragmento = document.createDocumentFragment();
+  const fin = Math.min(indicePaginacionResumen + TAMANO_PAGINA_RESUMEN, reportesParaResumen.length);
+
+  for (let i = indicePaginacionResumen; i < fin; i++) {
+    const card = renderizarElementoReporte(reportesParaResumen[i], nombresCategorias, nombresActores);
+    fragmento.append(card);
+  }
+
+  indicePaginacionResumen = fin;
+
+  if (centinela && centinela.parentNode === listaResumen) {
+    listaResumen.insertBefore(fragmento, centinela);
+  } else {
+    listaResumen.append(fragmento);
+  }
+
+  if (indicePaginacionResumen >= reportesParaResumen.length) {
+    removerCentinelaScrollResumen();
+  }
+}
+
+function removerCentinelaScrollResumen() {
+  if (observadorScrollResumen) {
+    observadorScrollResumen.disconnect();
+    observadorScrollResumen = null;
+  }
+  const centinela = document.getElementById("centinela-scroll-resumen");
+  if (centinela) {
+    centinela.remove();
+  }
+}
+
+function configurarScrollInfinitoResumen() {
+  removerCentinelaScrollResumen();
+
+  if (indicePaginacionResumen >= reportesParaResumen.length) {
+    return;
+  }
+
+  const centinela = document.createElement("li");
+  centinela.id = "centinela-scroll-resumen";
+  centinela.className = "centinela-scroll-resumen";
+  centinela.setAttribute("aria-hidden", "true");
+  centinela.innerHTML = `
+    <span class="centinela-scroll-spinner"></span>
+    <span>Cargando más reportes...</span>
+  `;
+  listaResumen.append(centinela);
+
+  if ("IntersectionObserver" in window) {
+    observadorScrollResumen = new IntersectionObserver(
+      (entries) => {
+        const entrada = entries[0];
+        if (entrada && entrada.isIntersecting) {
+          cargarSiguienteLoteResumen();
+        }
+      },
+      {
+        root: null, // viewport global de la ventana
+        rootMargin: "250px",
+        threshold: 0.1,
+      },
+    );
+    observadorScrollResumen.observe(centinela);
+  } else {
+    // Fallback con scroll listener global
+    const onScroll = () => {
+      const scrollPos = window.innerHeight + window.scrollY;
+      const threshold = document.documentElement.scrollHeight - 300;
+      if (scrollPos >= threshold) {
+        cargarSiguienteLoteResumen();
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+  }
+}
+
 function renderizarResumen(reportes) {
+  removerCentinelaScrollResumen();
   listaResumen.replaceChildren();
 
   const badgeTotal = document.getElementById("badge-total-resumen");
@@ -1281,189 +1547,17 @@ function renderizarResumen(reportes) {
   }
 
   // Ordenar todos los reportes del más reciente al más antiguo
-  const reportesOrdenados = [...reportes].sort((a, b) =>
+  reportesParaResumen = [...reportes].sort((a, b) =>
     (b.fecha_hora || "").localeCompare(a.fecha_hora || "")
   );
 
   if (badgeTotal) {
-    badgeTotal.textContent = `${reportesOrdenados.length} reporte(s) · Más recientes`;
+    badgeTotal.textContent = `${reportesParaResumen.length} reporte(s) · Más recientes`;
   }
 
-  const nombresCategorias = {
-    doble_fila: "Doble fila / vía prohibida",
-    bloqueo_rampa_cebra_paradero: "Rampa, cebra o paradero",
-    invasion_anden: "Invasión de andén",
-  };
-
-  const nombresActores = {
-    vehiculo_particular: "Vehículo particular",
-    motocicleta: "Motocicleta",
-    vehiculo_carga: "Carga descargando",
-    carga_descargando: "Carga descargando",
-    mobiliario_comercial: "Mobiliario comercial",
-  };
-
-  for (const reporte of reportesOrdenados) {
-    const elemento = document.createElement("li");
-    const nivelCrit = (reporte.criticidad?.nivel || "Sin nivel").toLowerCase();
-
-    // Clases semánticas SaaS Hero-Banner
-    elemento.classList.add(
-      "tarjeta-resumen-cuadra",
-      "report-card-vertical",
-      "tarjeta-reporte-item",
-      `criticidad--${nivelCrit}`,
-      `severity--${nivelCrit}`,
-    );
-    elemento.setAttribute("data-id", reporte.id);
-
-    const fuente = obtenerFuenteFoto(reporte.foto);
-    const puntajeTxt = reporte.criticidad?.puntaje !== undefined ? `${reporte.criticidad.puntaje} PTS` : "";
-    const nivelLabel = nivelCrit.toUpperCase();
-    const tipoInfraccion = nombresCategorias[reporte.categoria] || reporte.categoria || "Infracción";
-    const dirTexto = reporte.direccion?.trim() || `Cuadra ${reporte.cuadra || "No especificada"}`;
-    const actorTexto = nombresActores[reporte.actor] || reporte.actor || "Vehículo particular";
-    const origenTexto = reporte.origen === "campo" ? "Operativo campo" : "Ciudadano";
-    const sectorTexto = reporte.cuadra ? `Cuadra ${reporte.cuadra}` : "Fuera de la zona";
-
-    let fechaCorta = "Sin fecha";
-    if (reporte.fecha_hora) {
-      const p = reporte.fecha_hora.split("T");
-      fechaCorta = `${p[0]} · ${p[1] ? p[1].slice(0, 5) : ""}`;
-    }
-
-    elemento.innerHTML = `
-      <!-- Banner Superior Hero -->
-      <div class="card-hero">
-        <img
-          class="card-hero__img"
-          src="${fuente || ""}"
-          alt="Evidencia fotográfica ${reporte.id}"
-          loading="lazy"
-          onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22200%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23161D26%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20fill%3D%22%2364748B%22%20font-family%3D%22sans-serif%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3EEvidencia%20Censurada%3C%2Ftext%3E%3C%2Fsvg%3E';"
-        />
-        <span class="hero-tag hero-tag--id font-mono">#${reporte.id}</span>
-        <span class="hero-tag hero-tag--severity severity--${nivelCrit}">
-          <span class="severity-dot"></span>
-          ${nivelLabel} · ${puntajeTxt}
-        </span>
-        <button type="button" class="hero-tag hero-btn-expand" data-action="expand" title="Ampliar foto">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            <line x1="11" y1="8" x2="11" y2="14"></line>
-            <line x1="8" y1="11" x2="14" y2="11"></line>
-          </svg>
-          <span>Ampliar foto</span>
-        </button>
-      </div>
-
-      <!-- Cuerpo de Información -->
-      <div class="card-body">
-        <div class="card-header-info">
-          <span class="card-date font-mono">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            ${fechaCorta}
-          </span>
-          <h4 class="card-title">${tipoInfraccion}</h4>
-          <p class="card-location">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-            <span>${dirTexto}, Santa Marta, Magdalena</span>
-          </p>
-        </div>
-
-        <!-- Tira de 3 Columnas (Meta Strip) -->
-        <div class="meta-strip">
-          <div class="meta-col">
-            <div class="meta-col-header">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span class="meta-label">ACTOR</span>
-            </div>
-            <span class="meta-value" title="${actorTexto}">${actorTexto}</span>
-          </div>
-          <div class="meta-col">
-            <div class="meta-col-header">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              </svg>
-              <span class="meta-label">ORIGEN</span>
-            </div>
-            <span class="meta-value" title="${origenTexto}">${origenTexto}</span>
-          </div>
-          <div class="meta-col">
-            <div class="meta-col-header">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-              </svg>
-              <span class="meta-label">SECTOR</span>
-            </div>
-            <span class="meta-value" title="${sectorTexto}">${sectorTexto}</span>
-          </div>
-        </div>
-
-        <!-- Footer Inferior -->
-        <div class="card-footer">
-          <div class="footer-coords font-mono">
-            <svg class="pin-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-            <span>${Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng) ? `${reporte.lat.toFixed(4)}, ${reporte.lng.toFixed(4)}` : "Sin coordenadas"}</span>
-          </div>
-          <button type="button" class="btn-map" data-action="map">
-            <span>Ver en mapa</span>
-            <span>&rarr;</span>
-          </button>
-        </div>
-      </div>
-    `;
-
-    // Eventos
-    const btnExpand = elemento.querySelector('[data-action="expand"]');
-    if (btnExpand) {
-      btnExpand.addEventListener("click", (e) => {
-        e.stopPropagation();
-        abrirVisorFoto(reporte);
-      });
-    }
-
-    const btnMap = elemento.querySelector('[data-action="map"]');
-    const accionarMapa = (e) => {
-      e.stopPropagation();
-      if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
-        window.dispatchEvent(
-          new CustomEvent("mapa:centrar-coordenadas", {
-            detail: { lat: reporte.lat, lng: reporte.lng, zoom: 18, reporteId: reporte.id },
-          }),
-        );
-        const mapaElem = document.querySelector("#mapa-tablero");
-        if (mapaElem) {
-          mapaElem.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }
-    };
-
-    if (btnMap) {
-      btnMap.addEventListener("click", accionarMapa);
-    }
-
-    // Clic en la tarjeta abre el visor o centra en mapa
-    elemento.addEventListener("click", (e) => {
-      if (e.target.closest("button") || e.target.closest("a")) return;
-      abrirVisorFoto(reporte);
-    });
-
-    listaResumen.append(elemento);
-  }
+  indicePaginacionResumen = 0;
+  cargarSiguienteLoteResumen();
+  configurarScrollInfinitoResumen();
 }
 
 function agregarFotoInfraccion(tarjeta, reporte) {
