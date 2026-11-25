@@ -1,0 +1,8 @@
+Carpeta para almacenar las fotos de los reportes.
+
+Cómo nombrarlas y usarlas:
+1. Guarda aquí tus imágenes (por ejemplo: MP-001.jpg, MP-002.png, etc.).
+2. En tu archivo 'datos/reportes.json', en el campo "foto", coloca la ruta relativa:
+   "foto": "datos/fotos/MP-001.jpg"
+
+Formatos recomendados: .jpg, .jpeg, .png, .webp.
