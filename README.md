@@ -2,6 +2,8 @@
 
 Prototipo web ciudadano para registrar y consultar situaciones de mal parqueo e invasión del espacio público en Santa Marta, Colombia.
 
+🌐 **Demo en línea:** [controldelmalparqueo.vercel.app](https://controldelmalparqueo.vercel.app/)
+
 ## Funcionalidades
 
 - **Registro ciudadano:** permite marcar un punto dentro del perímetro de cobertura aproximado o usar la geolocalización, completar automáticamente la dirección, describir la situación y el tipo de actor, y adjuntar una foto opcional.
