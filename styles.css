@@ -2257,6 +2257,9 @@ main {
 
 .modal-foto-acciones {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
 }
 
 .btn-modal-accion {
@@ -2281,6 +2284,30 @@ main {
   background: #F1F5F9;
   color: #0F172A;
   transform: translateY(-1px);
+}
+
+.btn-modal-accion--editar {
+  background: #0284C7;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-modal-accion--editar:hover {
+  background: #0369A1;
+  color: #FFFFFF;
+}
+
+[data-theme="light"] .btn-modal-accion--editar,
+[data-tema="claro"] .btn-modal-accion--editar {
+  background: #0284C7;
+  color: #FFFFFF;
+  border: 1px solid #0284C7;
+}
+
+[data-theme="light"] .btn-modal-accion--editar:hover,
+[data-tema="claro"] .btn-modal-accion--editar:hover {
+  background: #0369A1;
+  color: #FFFFFF;
 }
 
 [data-theme="light"] .btn-modal-accion,

@@ -437,10 +437,10 @@ function aplicarCapas() {
   capaCalor.setLatLngs(
     capasSeleccionadas.has("calor")
       ? reportesEnMapa.map((reporte) => [
-          reporte.lat,
-          reporte.lng,
-          obtenerPesoCriticidad(reporte),
-        ])
+        reporte.lat,
+        reporte.lng,
+        obtenerPesoCriticidad(reporte),
+      ])
       : [],
   );
   capaPuntos.clearLayers();
@@ -671,7 +671,22 @@ function inicializarMapas() {
 
   window.addEventListener("mapa:centrar-coordenadas", ({ detail }) => {
     if (detail?.lat && detail?.lng && mapaTablero) {
-      mapaTablero.setView([detail.lat, detail.lng], 16, { animate: true });
+      const zoom = detail.zoom || 18;
+      mapaTablero.invalidateSize();
+      mapaTablero.flyTo([detail.lat, detail.lng], zoom, { animate: true, duration: 1 });
+      if (!mapaTablero.hasLayer(capaPuntos)) {
+        capaPuntos.addTo(mapaTablero);
+      }
+      setTimeout(() => {
+        capaPuntos.eachLayer((layer) => {
+          if (layer.getLatLng) {
+            const pos = layer.getLatLng();
+            if (Math.abs(pos.lat - detail.lat) < 0.00015 && Math.abs(pos.lng - detail.lng) < 0.00015) {
+              layer.openPopup();
+            }
+          }
+        });
+      }, 500);
     }
   });
   botonesModoCapas.una.addEventListener("click", () => setModo("una"));

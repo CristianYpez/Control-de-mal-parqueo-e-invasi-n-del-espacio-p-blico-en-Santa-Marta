@@ -170,6 +170,7 @@ let seleccionCensura = null;
 let numeroCargaFoto = 0;
 let controladorGeocodificacion = null;
 let numeroGeocodificacion = 0;
+let reporteEnEdicionCensura = null;
 
 function aplicarTema(tema, guardar = false) {
   const esOscuro = tema === "oscuro";
@@ -1114,6 +1115,18 @@ function abrirVisorFoto(reporte) {
     origenElem.textContent = reporte.origen === "campo" ? "Operativo en campo" : "Reporte ciudadano";
   }
 
+  const btnEditarFoto = document.getElementById("btn-modal-editar-foto");
+  if (btnEditarFoto) {
+    if (reporte.foto && reporte.foto.trim()) {
+      btnEditarFoto.style.display = "";
+      btnEditarFoto.onclick = () => {
+        iniciarEdicionFotoReporte(reporte);
+      };
+    } else {
+      btnEditarFoto.style.display = "none";
+    }
+  }
+
   const btnVerMapa = document.getElementById("btn-modal-ver-en-mapa");
   if (btnVerMapa) {
     btnVerMapa.onclick = () => {
@@ -1121,9 +1134,13 @@ function abrirVisorFoto(reporte) {
       if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
         window.dispatchEvent(
           new CustomEvent("mapa:centrar-coordenadas", {
-            detail: { lat: reporte.lat, lng: reporte.lng },
+            detail: { lat: reporte.lat, lng: reporte.lng, zoom: 18, reporteId: reporte.id },
           }),
         );
+        const mapaElem = document.querySelector("#mapa-tablero");
+        if (mapaElem) {
+          mapaElem.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       }
     };
   }
@@ -1143,6 +1160,71 @@ function cerrarVisorFoto() {
   } else {
     modal.removeAttribute("open");
   }
+}
+
+function restaurarTextosEditorCensura() {
+  const tituloCensura = document.querySelector("#titulo-censura");
+  if (tituloCensura) tituloCensura.textContent = "Censura de foto";
+  botonCancelarCensura.textContent = "Volver al reporte";
+  botonConfirmarFoto.textContent = "Usar esta foto";
+  const btnGaleria = document.querySelector("#boton-elegir-otra-foto");
+  const btnCamara = document.querySelector("#boton-tomar-otra-foto");
+  if (btnGaleria) btnGaleria.style.display = "";
+  if (btnCamara) btnCamara.style.display = "";
+}
+
+function iniciarEdicionFotoReporte(reporte) {
+  if (!reporte || !reporte.foto) return;
+  reporteEnEdicionCensura = reporte;
+  cerrarVisorFoto();
+
+  const numeroActual = ++numeroCargaFoto;
+  historialCensura = [];
+  seleccionCensura = null;
+  confirmacionPrivacidadFoto.checked = false;
+  contadorCensura.textContent = "0 zonas censuradas";
+  marcoSeleccionCensura.style.display = "none";
+  botonDeshacerCensura.disabled = true;
+  botonConfirmarFoto.disabled = true;
+  lienzoCensura.width = 0;
+  lienzoCensura.height = 0;
+
+  const tituloCensura = document.querySelector("#titulo-censura");
+  if (tituloCensura) tituloCensura.textContent = `Censurar foto · Reporte #${reporte.id}`;
+  botonCancelarCensura.textContent = "Volver al tablero";
+  botonConfirmarFoto.textContent = "Guardar foto censurada";
+
+  const btnGaleria = document.querySelector("#boton-elegir-otra-foto");
+  const btnCamara = document.querySelector("#boton-tomar-otra-foto");
+  if (btnGaleria) btnGaleria.style.display = "none";
+  if (btnCamara) btnCamara.style.display = "none";
+
+  cambiarVista("censura");
+  estadoCensura.textContent = "Cargando foto del reporte para censurar…";
+
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    if (numeroActual !== numeroCargaFoto) return;
+    const ancho = Math.min(img.naturalWidth || img.width, ANCHO_MAXIMO_FOTO);
+    const alto = Math.max(1, Math.round(((img.naturalHeight || img.height) * ancho) / (img.naturalWidth || img.width)));
+    lienzoCensura.width = ancho;
+    lienzoCensura.height = alto;
+
+    const contexto = obtenerContextoCensura();
+    contexto.imageSmoothingEnabled = true;
+    contexto.fillStyle = "#ffffff";
+    contexto.fillRect(0, 0, ancho, alto);
+    contexto.drawImage(img, 0, 0, ancho, alto);
+
+    botonConfirmarFoto.disabled = !confirmacionPrivacidadFoto.checked;
+    estadoCensura.textContent = "Arrastra sobre la imagen para pixelar placas o rostros. Marca la confirmación y guarda.";
+  };
+  img.onerror = () => {
+    if (numeroActual !== numeroCargaFoto) return;
+    estadoCensura.textContent = "No se pudo cargar la imagen para editar.";
+  };
+  img.src = obtenerFuenteFoto(reporte.foto);
 }
 
 function renderizarResumen(reportes) {
@@ -1193,7 +1275,7 @@ function renderizarResumen(reportes) {
     elemento.setAttribute("data-id", reporte.id);
 
     if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
-      elemento.title = `Clic en la tarjeta para centrar reporte ${reporte.id} en el mapa`;
+      elemento.title = `Clic en la tarjeta para ver reporte ${reporte.id} de cerca en el mapa`;
       elemento.addEventListener("click", (e) => {
         if (
           e.target.closest("figure") ||
@@ -1206,9 +1288,13 @@ function renderizarResumen(reportes) {
         }
         window.dispatchEvent(
           new CustomEvent("mapa:centrar-coordenadas", {
-            detail: { lat: reporte.lat, lng: reporte.lng },
+            detail: { lat: reporte.lat, lng: reporte.lng, zoom: 18, reporteId: reporte.id },
           }),
         );
+        const mapaElem = document.querySelector("#mapa-tablero");
+        if (mapaElem) {
+          mapaElem.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       });
     }
 
@@ -1725,6 +1811,60 @@ function deshacerCensura() {
 }
 
 function confirmarFotoCensurada() {
+  if (reporteEnEdicionCensura) {
+    if (
+      !lienzoCensura.width ||
+      seleccionCensura ||
+      !confirmacionPrivacidadFoto.checked
+    ) {
+      estadoCensura.textContent =
+        "Termina la selección de zonas y confirma que la foto no muestra rostros ni placas.";
+      return;
+    }
+
+    try {
+      const nuevaFoto = lienzoCensura.toDataURL("image/jpeg", 0.75);
+      if (!nuevaFoto.startsWith("data:image/jpeg;base64,")) {
+        throw new Error("El navegador no pudo exportar la foto censurada.");
+      }
+      const idEditado = reporteEnEdicionCensura.id;
+      reporteEnEdicionCensura.foto = nuevaFoto;
+
+      const idxIni = reportesIniciales.findIndex((r) => r.id === idEditado);
+      if (idxIni !== -1) {
+        reportesIniciales[idxIni].foto = nuevaFoto;
+      }
+
+      const idxLoc = reportesLocales.findIndex((r) => r.id === idEditado);
+      if (idxLoc !== -1) {
+        reportesLocales[idxLoc].foto = nuevaFoto;
+      } else {
+        reportesLocales.push({ ...reporteEnEdicionCensura, foto: nuevaFoto });
+      }
+
+      try {
+        guardarReportesLocales(reportesLocales);
+      } catch (err) {
+        console.warn("No se pudo persistir en localStorage:", err);
+      }
+
+      publicarReportesActualizados();
+      restaurarTextosEditorCensura();
+      reporteEnEdicionCensura = null;
+      cambiarVista("tablero");
+
+      const actualizado = obtenerReportesActuales().find((r) => r.id === idEditado);
+      if (actualizado) {
+        setTimeout(() => abrirVisorFoto(actualizado), 200);
+      }
+      return;
+    } catch (error) {
+      console.error("No se pudo exportar la foto censurada.", error);
+      estadoCensura.textContent = `No se pudo confirmar la foto: ${error.message}`;
+      return;
+    }
+  }
+
   const archivo = entradaFoto.files[0] || entradaFotoCamara?.files[0];
   if (
     !archivo ||
@@ -2109,176 +2249,191 @@ async function inicializar() {
     for (const item of guardados) {
       try {
         const norm = normalizarReporte(item, false);
-        if (!idsIniciales.has(norm.id)) {
-          idsIniciales.add(norm.id);
-          reportesLocales.push(norm);
+          const idxInicial = reportesIniciales.findIndex((r) => r.id === norm.id);
+          if (idxInicial !== -1) {
+            reportesIniciales[idxInicial] = { ...reportesIniciales[idxInicial], ...norm };
+          } else if (!idsIniciales.has(norm.id)) {
+            idsIniciales.add(norm.id);
+            reportesLocales.push(norm);
+          }
+        } catch (error) {
+          problemas.push(`${item?.id ?? "sin ID"} (guardado en este celular): ${error.message}`);
         }
-      } catch (error) {
-        problemas.push(`${item?.id ?? "sin ID"} (guardado en este celular): ${error.message}`);
       }
-    }
   } catch (error) {
-    problemas.push(`Reportes guardados en este celular: ${error.message}`);
-    reportesLocales = [];
-  }
-
-  datosListos = true;
-  publicarReportesActualizados();
-  actualizarVistaCriticidad();
-  mostrarEstado(
-    estadoUbicacion,
-    "Al elegir un punto, sus coordenadas se consultarán con OpenStreetMap/Photon para obtener la dirección.",
-  );
-  if (problemas.length > 0) {
-    const aviso = `${problemas.length} reporte(s) no se cargaron: ${problemas.join(" · ")}`;
-    mostrarEstado(estadoCaptura, aviso);
-    mostrarEstado(estadoTablero, aviso);
-    console.error(aviso);
-  } else {
-    mostrarEstado(estadoCaptura, "Listo para registrar un reporte.");
-  }
-
-  try {
-    const vistaGuardada = sessionStorage.getItem("santaMartaVistaActiva");
-    if (vistaGuardada && ["captura", "tablero", "graficas"].includes(vistaGuardada)) {
-      cambiarVista(vistaGuardada);
+      problemas.push(`Reportes guardados en este celular: ${error.message}`);
+      reportesLocales = [];
     }
-  } catch { }
-}
+
+    datosListos = true;
+    publicarReportesActualizados();
+    actualizarVistaCriticidad();
+    mostrarEstado(
+      estadoUbicacion,
+      "Al elegir un punto, sus coordenadas se consultarán con OpenStreetMap/Photon para obtener la dirección.",
+    );
+    if (problemas.length > 0) {
+      const aviso = `${problemas.length} reporte(s) no se cargaron: ${problemas.join(" · ")}`;
+      mostrarEstado(estadoCaptura, aviso);
+      mostrarEstado(estadoTablero, aviso);
+      console.error(aviso);
+    } else {
+      mostrarEstado(estadoCaptura, "Listo para registrar un reporte.");
+    }
+
+    try {
+      const vistaGuardada = sessionStorage.getItem("santaMartaVistaActiva");
+      if (vistaGuardada && ["captura", "tablero", "graficas"].includes(vistaGuardada)) {
+        cambiarVista(vistaGuardada);
+      }
+    } catch { }
+  }
 
 formulario.addEventListener("submit", guardarReporte);
-entradaFoto.addEventListener("change", () => {
-  if (entradaFoto.files[0]) prepararFotoParaCensura(entradaFoto.files[0]);
-});
-if (entradaFotoCamara) {
-  entradaFotoCamara.addEventListener("change", () => {
-    if (entradaFotoCamara.files[0]) prepararFotoParaCensura(entradaFotoCamara.files[0]);
+  entradaFoto.addEventListener("change", () => {
+    if (entradaFoto.files[0]) prepararFotoParaCensura(entradaFoto.files[0]);
   });
-}
-if (botonGaleriaFoto) {
-  botonGaleriaFoto.addEventListener("click", () => abrirSelectorFoto("galeria"));
-}
-botonTomarFoto.addEventListener("click", () => abrirSelectorFoto("camara"));
-botonElegirOtraFoto.addEventListener("click", () => abrirSelectorFoto("galeria"));
-if (botonTomarOtraFoto) {
-  botonTomarOtraFoto.addEventListener("click", () => abrirSelectorFoto("camara"));
-}
-if (botonToggleFiltros && contenedorFiltros) {
-  botonToggleFiltros.addEventListener("click", () => {
-    const estaOculto = contenedorFiltros.classList.toggle("filtros--ocultos-movil");
-    botonToggleFiltros.setAttribute("aria-expanded", String(!estaOculto));
-    botonToggleFiltros.textContent = estaOculto ? "Mostrar filtros" : "Ocultar filtros";
-  });
-}
-botonCancelarCensura.addEventListener("click", () => {
-  entradaFoto.value = "";
-  if (entradaFotoCamara) entradaFotoCamara.value = "";
-  reiniciarEditorCensura();
-  cambiarVista("captura");
-});
-confirmacionPrivacidadFoto.addEventListener("change", () => {
-  if (!confirmacionPrivacidadFoto.checked) {
-    fotoConfirmada = "";
-    botonGuardarReporte.disabled = Boolean(entradaFoto.files[0] || entradaFotoCamara?.files[0]);
+  if (entradaFotoCamara) {
+    entradaFotoCamara.addEventListener("change", () => {
+      if (entradaFotoCamara.files[0]) prepararFotoParaCensura(entradaFotoCamara.files[0]);
+    });
   }
-  botonConfirmarFoto.disabled =
-    !confirmacionPrivacidadFoto.checked || !lienzoCensura.width || Boolean(seleccionCensura);
-});
-lienzoCensura.addEventListener("pointerdown", manejarInicioSeleccion);
-lienzoCensura.addEventListener("pointermove", manejarMovimientoSeleccion);
-lienzoCensura.addEventListener("pointerup", manejarFinSeleccion);
-lienzoCensura.addEventListener("pointercancel", manejarCancelacionSeleccion);
-botonDeshacerCensura.addEventListener("click", deshacerCensura);
-botonConfirmarFoto.addEventListener("click", confirmarFotoCensurada);
-document.querySelector("#reporte-categoria").addEventListener("change", actualizarVistaCriticidad);
-document.querySelector("#reporte-actor").addEventListener("change", actualizarVistaCriticidad);
-entradaDireccion.addEventListener("input", actualizarVistaCriticidad);
-for (const boton of botonesCategoria) {
-  boton.addEventListener("click", () => {
-    document.querySelector("#reporte-categoria").value = boton.dataset.seleccionCategoria;
-    actualizarSeleccionGrupo(botonesCategoria, boton.dataset.seleccionCategoria);
+  if (botonGaleriaFoto) {
+    botonGaleriaFoto.addEventListener("click", () => abrirSelectorFoto("galeria"));
+  }
+  botonTomarFoto.addEventListener("click", () => abrirSelectorFoto("camara"));
+  botonElegirOtraFoto.addEventListener("click", () => abrirSelectorFoto("galeria"));
+  if (botonTomarOtraFoto) {
+    botonTomarOtraFoto.addEventListener("click", () => abrirSelectorFoto("camara"));
+  }
+  if (botonToggleFiltros && contenedorFiltros) {
+    botonToggleFiltros.addEventListener("click", () => {
+      const estaOculto = contenedorFiltros.classList.toggle("filtros--ocultos-movil");
+      botonToggleFiltros.setAttribute("aria-expanded", String(!estaOculto));
+      botonToggleFiltros.textContent = estaOculto ? "Mostrar filtros" : "Ocultar filtros";
+    });
+  }
+  botonCancelarCensura.addEventListener("click", () => {
+    if (reporteEnEdicionCensura) {
+      restaurarTextosEditorCensura();
+      const idRegreso = reporteEnEdicionCensura.id;
+      reporteEnEdicionCensura = null;
+      reiniciarEditorCensura();
+      cambiarVista("tablero");
+      const rep = obtenerReportesActuales().find((r) => r.id === idRegreso);
+      if (rep) {
+        setTimeout(() => abrirVisorFoto(rep), 150);
+      }
+      return;
+    }
+    entradaFoto.value = "";
+    if (entradaFotoCamara) entradaFotoCamara.value = "";
+    reiniciarEditorCensura();
+    cambiarVista("captura");
+  });
+  confirmacionPrivacidadFoto.addEventListener("change", () => {
+    if (!confirmacionPrivacidadFoto.checked) {
+      fotoConfirmada = "";
+      botonGuardarReporte.disabled = Boolean(entradaFoto.files[0] || entradaFotoCamara?.files[0]);
+    }
+    botonConfirmarFoto.disabled =
+      !confirmacionPrivacidadFoto.checked || !lienzoCensura.width || Boolean(seleccionCensura);
+  });
+  lienzoCensura.addEventListener("pointerdown", manejarInicioSeleccion);
+  lienzoCensura.addEventListener("pointermove", manejarMovimientoSeleccion);
+  lienzoCensura.addEventListener("pointerup", manejarFinSeleccion);
+  lienzoCensura.addEventListener("pointercancel", manejarCancelacionSeleccion);
+  botonDeshacerCensura.addEventListener("click", deshacerCensura);
+  botonConfirmarFoto.addEventListener("click", confirmarFotoCensurada);
+  document.querySelector("#reporte-categoria").addEventListener("change", actualizarVistaCriticidad);
+  document.querySelector("#reporte-actor").addEventListener("change", actualizarVistaCriticidad);
+  entradaDireccion.addEventListener("input", actualizarVistaCriticidad);
+  for (const boton of botonesCategoria) {
+    boton.addEventListener("click", () => {
+      document.querySelector("#reporte-categoria").value = boton.dataset.seleccionCategoria;
+      actualizarSeleccionGrupo(botonesCategoria, boton.dataset.seleccionCategoria);
+      actualizarVistaCriticidad();
+    });
+  }
+  for (const boton of botonesActor) {
+    boton.addEventListener("click", () => {
+      document.querySelector("#reporte-actor").value = boton.dataset.seleccionActor;
+      actualizarSeleccionGrupo(botonesActor, boton.dataset.seleccionActor);
+    });
+  }
+  botonGeolocalizacion.addEventListener("click", pedirGeolocalizacion);
+  botonLimpiarUbicacion.addEventListener("click", () => {
+    ubicacionSeleccionada = null;
+    cancelarBusquedaDireccion();
+    entradaDireccion.value = "";
+    window.dispatchEvent(new Event("mapa:limpiar-seleccion"));
+    mostrarEstado(estadoUbicacion, "Toca el mapa o usa tu ubicación.");
+  });
+  botonVistaCaptura.addEventListener("click", () => cambiarVista("captura"));
+  botonVistaTablero.addEventListener("click", () => cambiarVista("tablero"));
+  botonVistaGraficas.addEventListener("click", () => cambiarVista("graficas"));
+  if (botonNavMovilCaptura) botonNavMovilCaptura.addEventListener("click", () => cambiarVista("captura"));
+  if (botonNavMovilTablero) botonNavMovilTablero.addEventListener("click", () => cambiarVista("tablero"));
+  if (botonNavMovilGraficas) botonNavMovilGraficas.addEventListener("click", () => cambiarVista("graficas"));
+  window.addEventListener("resize", () => {
+    window.dispatchEvent(new Event("captura:activar"));
+    window.dispatchEvent(new Event("tablero:activar"));
+  });
+  botonNuevoReporte.addEventListener("click", () => cambiarVista("captura"));
+  botonGraficasNuevoReporte.addEventListener("click", () => cambiarVista("captura"));
+  botonGraficasVerTablero.addEventListener("click", () => cambiarVista("tablero"));
+  for (const control of Object.values(controlesFiltros)) {
+    control.addEventListener("change", actualizarTablero);
+    control.addEventListener("input", actualizarTablero);
+  }
+  document.querySelector("#boton-exportar").addEventListener("click", exportarReportes);
+  document.querySelector("#boton-importar").addEventListener("click", () => {
+    selectorArchivoImportar.click();
+  });
+  selectorArchivoImportar.addEventListener("change", async (evento) => {
+    const entrada = evento.currentTarget;
+    await importarReportes(entrada.files[0]);
+    entrada.value = "";
+  });
+  document.querySelector("#boton-imprimir").addEventListener("click", () => window.print());
+  window.addEventListener("mapa:ubicacion-seleccionada", manejarUbicacionSeleccionada);
+  // mapa.js valida el perímetro y emite este evento solo para puntos aceptados.
+  window.addEventListener("mapa:ubicacion-rechazada", ({ detail }) => {
+    ubicacionSeleccionada = null;
+    cancelarBusquedaDireccion();
+    entradaDireccion.value = "";
     actualizarVistaCriticidad();
+    mostrarEstado(estadoUbicacion, detail?.mensaje ?? "La ubicación está fuera del área permitida.");
   });
-}
-for (const boton of botonesActor) {
-  boton.addEventListener("click", () => {
-    document.querySelector("#reporte-actor").value = boton.dataset.seleccionActor;
-    actualizarSeleccionGrupo(botonesActor, boton.dataset.seleccionActor);
-  });
-}
-botonGeolocalizacion.addEventListener("click", pedirGeolocalizacion);
-botonLimpiarUbicacion.addEventListener("click", () => {
-  ubicacionSeleccionada = null;
-  cancelarBusquedaDireccion();
-  entradaDireccion.value = "";
-  window.dispatchEvent(new Event("mapa:limpiar-seleccion"));
-  mostrarEstado(estadoUbicacion, "Toca el mapa o usa tu ubicación.");
-});
-botonVistaCaptura.addEventListener("click", () => cambiarVista("captura"));
-botonVistaTablero.addEventListener("click", () => cambiarVista("tablero"));
-botonVistaGraficas.addEventListener("click", () => cambiarVista("graficas"));
-if (botonNavMovilCaptura) botonNavMovilCaptura.addEventListener("click", () => cambiarVista("captura"));
-if (botonNavMovilTablero) botonNavMovilTablero.addEventListener("click", () => cambiarVista("tablero"));
-if (botonNavMovilGraficas) botonNavMovilGraficas.addEventListener("click", () => cambiarVista("graficas"));
-window.addEventListener("resize", () => {
-  window.dispatchEvent(new Event("captura:activar"));
-  window.dispatchEvent(new Event("tablero:activar"));
-});
-botonNuevoReporte.addEventListener("click", () => cambiarVista("captura"));
-botonGraficasNuevoReporte.addEventListener("click", () => cambiarVista("captura"));
-botonGraficasVerTablero.addEventListener("click", () => cambiarVista("tablero"));
-for (const control of Object.values(controlesFiltros)) {
-  control.addEventListener("change", actualizarTablero);
-  control.addEventListener("input", actualizarTablero);
-}
-document.querySelector("#boton-exportar").addEventListener("click", exportarReportes);
-document.querySelector("#boton-importar").addEventListener("click", () => {
-  selectorArchivoImportar.click();
-});
-selectorArchivoImportar.addEventListener("change", async (evento) => {
-  const entrada = evento.currentTarget;
-  await importarReportes(entrada.files[0]);
-  entrada.value = "";
-});
-document.querySelector("#boton-imprimir").addEventListener("click", () => window.print());
-window.addEventListener("mapa:ubicacion-seleccionada", manejarUbicacionSeleccionada);
-// mapa.js valida el perímetro y emite este evento solo para puntos aceptados.
-window.addEventListener("mapa:ubicacion-rechazada", ({ detail }) => {
-  ubicacionSeleccionada = null;
-  cancelarBusquedaDireccion();
-  entradaDireccion.value = "";
-  actualizarVistaCriticidad();
-  mostrarEstado(estadoUbicacion, detail?.mensaje ?? "La ubicación está fuera del área permitida.");
-});
 
-// Soporte para Visor Modal de Fotos de Infracción
-const modalVisor = document.getElementById("modal-visor-foto");
-if (modalVisor) {
-  const btnCerrar = document.getElementById("btn-cerrar-modal-foto");
-  if (btnCerrar) {
-    btnCerrar.addEventListener("click", cerrarVisorFoto);
+  // Soporte para Visor Modal de Fotos de Infracción
+  const modalVisor = document.getElementById("modal-visor-foto");
+  if (modalVisor) {
+    const btnCerrar = document.getElementById("btn-cerrar-modal-foto");
+    if (btnCerrar) {
+      btnCerrar.addEventListener("click", cerrarVisorFoto);
+    }
+    modalVisor.addEventListener("click", (e) => {
+      // Si se hace clic en el backdrop fuera de la tarjeta
+      if (e.target === modalVisor) {
+        cerrarVisorFoto();
+      }
+    });
   }
-  modalVisor.addEventListener("click", (e) => {
-    // Si se hace clic en el backdrop fuera de la tarjeta
-    if (e.target === modalVisor) {
-      cerrarVisorFoto();
+  window.addEventListener("foto:abrir-visor", (e) => {
+    if (e.detail?.reporte) {
+      abrirVisorFoto(e.detail.reporte);
     }
   });
-}
-window.addEventListener("foto:abrir-visor", (e) => {
-  if (e.detail?.reporte) {
-    abrirVisorFoto(e.detail.reporte);
-  }
-});
 
-inicializarTema();
-botonTema.addEventListener("click", () => {
-  aplicarTema(document.documentElement.dataset.tema === "oscuro" ? "claro" : "oscuro", true);
-});
+  inicializarTema();
+  botonTema.addEventListener("click", () => {
+    aplicarTema(document.documentElement.dataset.tema === "oscuro" ? "claro" : "oscuro", true);
+  });
 
-inicializar().catch((error) => {
-  const aviso = `No se pudieron cargar los datos. ${error.message}`;
-  mostrarEstado(estadoCaptura, aviso);
-  mostrarEstado(estadoTablero, aviso);
-  console.error(error);
-});
+  inicializar().catch((error) => {
+    const aviso = `No se pudieron cargar los datos. ${error.message}`;
+    mostrarEstado(estadoCaptura, aviso);
+    mostrarEstado(estadoTablero, aviso);
+    console.error(error);
+  });
