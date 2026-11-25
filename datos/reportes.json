@@ -1,138 +1,274 @@
 [
   {
-    "id": "MP-013",
+    "id": "MP-001",
     "origen": "campo",
-    "fecha_hora": "2026-11-13T11:40",
-    "lat": 11.2418,
-    "lng": -74.2015,
-    "cuadra": "CR5-C14-C15",
-    "categoria": "bloqueo_rampa_cebra_paradero",
-    "actor": "vehiculo_particular",
-    "foto": "",
-    "criticidad": {
-      "puntaje": 9,
-      "nivel": "Alto"
-    }
-  },
-  { 
-    "id": "MP-14",
-    "origen": "campo",
-    "fecha_hora": "2026-11-23T12:18",
-    "lat": 11.225395,
-    "lng": -74.18961333333333,
-    "cuadra": "Cra. 21e #29I-06, Comuna 1, Santa Marta, Magdalena",
-    "categoria": "bloqueo_rampa_cebra_paradero",
-    "actor": "vehiculo_particular",
-    "foto": "",
-    "criticidad": {
-      "puntaje": 8,
-      "nivel": "Alto"
-    }
-  },
-  {
-    
-    "id": "MP-015",
-    "origen": "ciudadano",
-    "fecha_hora": "2026-11-13T07:10",
-    "lat": 11.2426,
-    "lng": -74.2008,
-    "cuadra": "CR5-C14-C15",
-    "categoria": "invasion_anden",
-    "actor": "motocicleta",
-    "foto": "",
-    "criticidad": {
-      "puntaje": 8,
-      "nivel": "Alto"
-    }
-  },
-  {
-    "id": "MP-016",
-    "origen": "campo",
-    "fecha_hora": "2026-11-13T18:20",
-    "lat": 11.2412,
-    "lng": -74.2021,
-    "cuadra": "CR5-C14-C15",
+    "fecha_hora": "2026-11-24T14:43",
+    "lat": 11.22615833333333,
+    "lng": -74.18898,
+    "cuadra": "Fuera de la zona",
+    "direccion": "#21f-42 a 21f, Cl. 29h #2178, Santa Marta, Magdalena",
     "categoria": "doble_fila",
     "actor": "vehiculo_particular",
-    "foto": "",
-    "criticidad": {
-      "puntaje": 9,
-      "nivel": "Alto"
-    }
-  },
-  {
-    "id": "MP-017",
-    "origen": "ciudadano",
-    "fecha_hora": "2026-11-13T10:00",
-    "lat": 11.2431,
-    "lng": -74.1994,
-    "cuadra": "CR5-C15-C16",
-    "categoria": "doble_fila",
-    "actor": "vehiculo_carga",
-    "foto": "",
-    "criticidad": {
-      "puntaje": 7,
-      "nivel": "Alto"
-    }
-  },
-  {
-    "id": "MP-018",
-    "origen": "campo",
-    "fecha_hora": "2026-11-13T12:15",
-    "lat": 11.2438,
-    "lng": -74.1989,
-    "cuadra": "CR5-C15-C16",
-    "categoria": "invasion_anden",
-    "actor": "vehiculo_carga",
-    "foto": "",
-    "criticidad": {
-      "puntaje": 8,
-      "nivel": "Alto"
-    }
-  },
-  {
-    "id": "MP-019",
-    "origen": "ciudadano",
-    "fecha_hora": "2026-11-13T09:10",
-    "lat": 11.2398,
-    "lng": -74.203,
-    "cuadra": "CR4-C14-C15",
-    "categoria": "invasion_anden",
-    "actor": "mobiliario_comercial",
-    "foto": "",
+    "foto": "datos/fotos/reporte01.jpeg",
     "criticidad": {
       "puntaje": 4,
       "nivel": "Bajo"
     }
   },
   {
-    "id": "MP-020",
+    "id": "MP-002",
     "origen": "campo",
-    "fecha_hora": "2026-11-13T08:30",
-    "lat": 11.2389,
-    "lng": -74.2041,
-    "cuadra": "CR3-C14-C15",
+    "fecha_hora": "2026-11-24T14:41",
+    "lat": 11.22510333333333,
+    "lng": -74.19049166666667,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Cl. 29H3 #21D-03, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte02.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-003",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T14:41",
+    "lat": 11.224975,
+    "lng": -74.19065833333333,
+    "cuadra": "Fuera de la zona",
+    "direccion": "La casa de las empanadas fast food, Manzana O Casa 362 Sector universidad del Magdalena",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_carga",
+    "foto": "datos/fotos/reporte03.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-004",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T14:40",
+    "lat": 11.22485,
+    "lng": -74.19079666666667,
+    "cuadra": "Fuera de la zona",
+    "direccion": "La Tambora Cocina Criolla, Cl. 1a, Comuna 1, Santa Marta, Magdalena",
     "categoria": "doble_fila",
     "actor": "motocicleta",
-    "foto": "",
+    "foto": "datos/fotos/reporte04.jpeg",
     "criticidad": {
-      "puntaje": 5,
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-005",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T14:40",
+    "lat": 11.224775,
+    "lng": -74.19088666666667,
+    "cuadra": "Fuera de la zona",
+    "direccion": "La Tambora Cocina Criolla, Cl. 1a, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "doble_fila",
+    "actor": "motocicleta",
+    "foto": "datos/fotos/reporte05.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-006",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T14:40",
+    "lat": 11.22475833333333,
+    "lng": -74.190925,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Chinchumixdondejose, Cl. 1a, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "doble_fila",
+    "actor": "motocicleta",
+    "foto": "datos/fotos/reporte06.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-007",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T14:40",
+    "lat": 11.22475333333333,
+    "lng": -74.190955,
+    "cuadra": "Fuera de la zona",
+    "direccion": "SENDÉ GRANIZADOS, Cl. 29L3 #21D-38, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "doble_fila",
+    "actor": "motocicleta",
+    "foto": "datos/fotos/reporte07.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-008",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T14:40",
+    "lat": 11.22459666666667,
+    "lng": -74.19113,
+    "cuadra": "Fuera de la zona",
+    "direccion": "5mida, mz o casa 355. al lado de la panaderia, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_carga",
+    "foto": "datos/fotos/reporte08.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-009",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T14:39",
+    "lat": 11.224075,
+    "lng": -74.19120833333334,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Cra. 21C, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte09.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-010",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T14:38",
+    "lat": 11.22389166666667,
+    "lng": -74.19116166666667,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Cra. 21C, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte10.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-011",
+    "origen": "campo",
+    "fecha_hora": "2026-11-23T16:59",
+    "lat": 11.22393,
+    "lng": -74.19023833333334,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Cl. 29i 4 # 21D-27, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte11.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-012",
+    "origen": "campo",
+    "fecha_hora": "2026-11-23T16:59",
+    "lat": 11.22386333333333,
+    "lng": -74.190345,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Cl. 29i 4 # 21D-38, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte12.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-013",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T16:53",
+    "lat": 11.221045,
+    "lng": -74.198751,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Cra. 23 #39-2 a 39-30, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte13.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-014",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T16:57",
+    "lat": 11.222601,
+    "lng": -74.195292,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Cl. 32 #25-12 a 25-62, Comuna 1, Santa Marta, Magdalena",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte14.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-015",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T17:00",
+    "lat": 11.224955,
+    "lng": -74.194943,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Av. Del Ferrocarril #29e-53, Comuna 4, Santa Marta, Magdalena",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte15.jpeg",
+    "criticidad": {
+      "puntaje": 6,
       "nivel": "Medio"
     }
   },
   {
-    "id": "MP-021",
-    "origen": "ciudadano",
-    "fecha_hora": "2026-11-13T17:00",
-    "lat": 11.2444,
-    "lng": -74.1981,
-    "cuadra": "CR6-C14-C15",
-    "categoria": "bloqueo_rampa_cebra_paradero",
+    "id": "MP-016",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T14:54",
+    "lat": 11.238973,
+    "lng": -74.216276,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Cra 1c #24 -4, Santa Marta, Magdalena",
+    "categoria": "doble_fila",
     "actor": "vehiculo_particular",
-    "foto": "",
+    "foto": "datos/fotos/reporte16.jpeg",
     "criticidad": {
-      "puntaje": 9,
-      "nivel": "Alto"
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-017",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T15:36",
+    "lat": 11.239089,
+    "lng": -74.216203,
+    "cuadra": "Fuera de la zona",
+    "direccion": "Cra. 1c #24-2 a 24-36, Santa Marta, Magdalena",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "motocicleta",
+    "foto": "datos/fotos/reporte17.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
     }
   }
 ]

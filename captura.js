@@ -1180,6 +1180,7 @@ function renderizarResumen(reportes) {
   const nombresActores = {
     vehiculo_particular: "Vehículo particular",
     motocicleta: "Motocicleta",
+    vehiculo_carga: "Carga descargando",
     carga_descargando: "Carga descargando",
     mobiliario_comercial: "Mobiliario comercial",
   };
