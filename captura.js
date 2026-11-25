@@ -1070,42 +1070,47 @@ function abrirVisorFoto(reporte) {
   }
 
   const idElem = document.getElementById("modal-foto-id");
-  if (idElem) idElem.textContent = `Reporte #${reporte.id}`;
+  if (idElem) idElem.textContent = `#${reporte.id}`;
 
   const critElem = document.getElementById("modal-foto-criticidad");
   if (critElem) {
     const nivel = (reporte.criticidad?.nivel || "Sin nivel").toLowerCase();
-    const puntaje = reporte.criticidad?.puntaje !== undefined ? ` · ${reporte.criticidad.puntaje} pts` : "";
-    critElem.textContent = `Nivel ${nivel}${puntaje}`;
+    const puntaje = reporte.criticidad?.puntaje !== undefined ? ` · ${reporte.criticidad.puntaje} PTS` : "";
+    critElem.textContent = `NIVEL ${nivel.toUpperCase()}${puntaje}`;
     critElem.className = `badge-modal-crit badge-modal-crit--${nivel}`;
   }
 
+  // Título: Tipo de Infracción (Regla de jerarquía inversa)
+  const nombresCat = {
+    doble_fila: "Doble fila / vía prohibida",
+    bloqueo_rampa_cebra_paradero: "Bloqueo de rampa, cebra o paradero",
+    invasion_anden: "Invasión de andén peatonal",
+  };
+  const tipoInfraccion = nombresCat[reporte.categoria] || reporte.categoria || "Infracción de estacionamiento";
+
   const tituloElem = document.getElementById("modal-foto-titulo");
   if (tituloElem) {
-    tituloElem.textContent = reporte.direccion || `Cuadra ${reporte.cuadra}`;
+    tituloElem.textContent = tipoInfraccion;
   }
 
-  const subtituloElem = document.getElementById("modal-foto-subtitulo");
-  if (subtituloElem) {
-    subtituloElem.textContent = `Sector: ${reporte.cuadra} · Santa Marta`;
+  // Subtítulo: Dirección completa
+  const dirTexto = reporte.direccion || `Cuadra ${reporte.cuadra || "No especificada"}`;
+  const subtituloTextoElem = document.getElementById("modal-foto-direccion-texto");
+  if (subtituloTextoElem) {
+    subtituloTextoElem.textContent = `${dirTexto}, Santa Marta, Magdalena`;
+  } else {
+    const subtituloElem = document.getElementById("modal-foto-subtitulo");
+    if (subtituloElem) subtituloElem.textContent = `${dirTexto}, Santa Marta, Magdalena`;
   }
 
+  // Grilla de Metadatos (4 celdas sin duplicar dirección):
+  // 1. UBICACIÓN / SECTOR
   const cuadraElem = document.getElementById("modal-foto-cuadra");
-  if (cuadraElem) cuadraElem.textContent = reporte.cuadra || "No especificada";
-
-  const dirElem = document.getElementById("modal-foto-direccion");
-  if (dirElem) dirElem.textContent = reporte.direccion || "No registrada";
-
-  const catElem = document.getElementById("modal-foto-categoria");
-  if (catElem) {
-    const nombresCat = {
-      doble_fila: "Doble fila / vía prohibida",
-      bloqueo_rampa_cebra_paradero: "Rampa, cebra o paradero",
-      invasion_anden: "Invasión de andén",
-    };
-    catElem.textContent = nombresCat[reporte.categoria] || reporte.categoria || "-";
+  if (cuadraElem) {
+    cuadraElem.textContent = reporte.cuadra ? `Sector: ${reporte.cuadra}` : "Santa Marta · Zona urbana";
   }
 
+  // 2. ACTOR VIAL
   const actorElem = document.getElementById("modal-foto-actor");
   if (actorElem) {
     const nombresActor = {
@@ -1114,17 +1119,36 @@ function abrirVisorFoto(reporte) {
       carga_descargando: "Carga descargando",
       mobiliario_comercial: "Mobiliario comercial",
     };
-    actorElem.textContent = nombresActor[reporte.actor] || reporte.actor || "-";
+    actorElem.textContent = nombresActor[reporte.actor] || reporte.actor || "Vehículo";
   }
 
+  // 3. FECHA Y HORA
   const fechaElem = document.getElementById("modal-foto-fecha");
   if (fechaElem) {
-    fechaElem.textContent = reporte.fecha_hora ? reporte.fecha_hora.replace("T", " · ") : "-";
+    if (reporte.fecha_hora) {
+      const partes = reporte.fecha_hora.split("T");
+      const fechaParte = partes[0] || "";
+      const horaParte = partes[1] ? partes[1].slice(0, 5) : "";
+      fechaElem.textContent = `${fechaParte} · ${horaParte}`;
+    } else {
+      fechaElem.textContent = "Sin fecha registrada";
+    }
   }
 
+  // 4. ORIGEN
   const origenElem = document.getElementById("modal-foto-origen");
   if (origenElem) {
     origenElem.textContent = reporte.origen === "campo" ? "Operativo en campo" : "Reporte ciudadano";
+  }
+
+  // Botón ampliar foto en ventana / pestaña
+  const btnZoomFoto = document.getElementById("btn-modal-media-zoom");
+  if (btnZoomFoto) {
+    btnZoomFoto.onclick = () => {
+      if (fuente) {
+        window.open(fuente, "_blank", "noopener,noreferrer");
+      }
+    };
   }
 
   const btnEditarFoto = document.getElementById("btn-modal-editar-foto");
@@ -1283,7 +1307,14 @@ function renderizarResumen(reportes) {
     const elemento = document.createElement("li");
     const nivelCrit = (reporte.criticidad?.nivel || "Sin nivel").toLowerCase();
 
-    elemento.classList.add("tarjeta-resumen-cuadra", "tarjeta-reporte-item", `criticidad--${nivelCrit}`);
+    // Clases semánticas SaaS de alta densidad
+    elemento.classList.add(
+      "tarjeta-resumen-cuadra",
+      "report-card",
+      "tarjeta-reporte-item",
+      `criticidad--${nivelCrit}`,
+      `severity--${nivelCrit}`,
+    );
     elemento.setAttribute("data-id", reporte.id);
 
     if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
@@ -1293,8 +1324,7 @@ function renderizarResumen(reportes) {
           e.target.closest("figure") ||
           e.target.closest("button") ||
           e.target.closest("a") ||
-          e.target.closest(".resumen-fotos-grid") ||
-          e.target.closest(".foto-infraccion-thumb-wrap")
+          e.target.closest(".report-card__media")
         ) {
           return;
         }
@@ -1310,107 +1340,143 @@ function renderizarResumen(reportes) {
       });
     }
 
-    // Cabecera: ID, Dirección/Cuadra y Badges
+    // 1. Columna Izquierda: Miniatura fotográfica de evidencia
+    const fuente = obtenerFuenteFoto(reporte.foto);
+    const mediaCol = document.createElement("figure");
+    mediaCol.className = "report-card__media";
+    mediaCol.tabIndex = 0;
+    mediaCol.setAttribute("role", "button");
+    mediaCol.setAttribute("aria-label", `Ver evidencia fotográfica de reporte ${reporte.id}`);
+    mediaCol.innerHTML = `
+      <img class="report-card__img" src="${fuente || ""}" alt="Evidencia ${reporte.id}" loading="lazy" />
+      <span class="report-card__media-badge">FOTO</span>
+      <span class="report-card__media-zoom" title="Ver foto">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          <line x1="11" y1="8" x2="11" y2="14"></line>
+          <line x1="8" y1="11" x2="14" y2="11"></line>
+        </svg>
+      </span>
+    `;
+
+    const abrirModal = (ev) => {
+      ev.stopPropagation();
+      abrirVisorFoto(reporte);
+    };
+    mediaCol.addEventListener("click", abrirModal);
+    mediaCol.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        abrirModal(ev);
+      }
+    });
+    elemento.append(mediaCol);
+
+    // 2. Columna Derecha: Contenido y Metadatos de Alta Densidad
+    const bodyCol = document.createElement("div");
+    bodyCol.className = "report-card__body";
+
+    // Top: Badge monospace ID + Badge severidad + Hint de mapa
     const cabecera = document.createElement("div");
-    cabecera.className = "resumen-card-header";
+    cabecera.className = "report-card__header";
 
-    const bloqueTitulo = document.createElement("div");
-    bloqueTitulo.className = "resumen-card-titulo-bloque";
+    const tagsWrap = document.createElement("div");
+    tagsWrap.className = "report-card__tags";
 
-    const badgeId = document.createElement("span");
-    badgeId.className = "resumen-rank-badge resumen-id-badge";
-    badgeId.textContent = `#${reporte.id}`;
-    bloqueTitulo.append(badgeId);
+    const tagId = document.createElement("span");
+    tagId.className = "report-card__id font-mono";
+    tagId.textContent = `#${reporte.id}`;
 
-    const infoTitulo = document.createElement("div");
-    infoTitulo.className = "resumen-card-nombres";
-    const titulo = document.createElement("strong");
-    titulo.className = "resumen-card-titulo";
-    titulo.textContent = reporte.direccion?.trim() || `Cuadra ${reporte.cuadra}`;
+    const tagCrit = document.createElement("span");
+    tagCrit.className = `report-card__severity report-card__severity--${nivelCrit}`;
+    const puntajeTxt = reporte.criticidad?.puntaje !== undefined ? ` · ${reporte.criticidad.puntaje} PTS` : "";
+    tagCrit.textContent = `NIVEL ${nivelCrit.toUpperCase()}${puntajeTxt}`;
 
-    const fechaFormateada = reporte.fecha_hora ? reporte.fecha_hora.replace("T", " · ") : "Sin fecha";
-    const subtitulo = document.createElement("span");
-    subtitulo.className = "resumen-card-subtitulo";
-    subtitulo.textContent = `Cuadra ${reporte.cuadra} · 🕒 ${fechaFormateada}`;
-    infoTitulo.append(titulo, subtitulo);
-    bloqueTitulo.append(infoTitulo);
+    tagsWrap.append(tagId, tagCrit);
 
-    cabecera.append(bloqueTitulo);
+    const actionHint = document.createElement("span");
+    actionHint.className = "report-card__action-hint";
+    actionHint.innerHTML = `
+      <span>Ver mapa</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    `;
 
-    const grupoPills = document.createElement("div");
-    grupoPills.className = "resumen-card-pills";
+    cabecera.append(tagsWrap, actionHint);
+    bodyCol.append(cabecera);
 
-    const pillNivel = document.createElement("span");
-    pillNivel.className = `resumen-pill-nivel resumen-pill-nivel--${nivelCrit}`;
-    pillNivel.textContent = nivelCrit.toUpperCase();
+    // Jerarquía Inversa: Tipo de Infracción (Título) + Dirección (Subtítulo con Pin)
+    const titlesWrap = document.createElement("div");
+    titlesWrap.className = "report-card__titles";
 
-    const pillPuntaje = document.createElement("span");
-    pillPuntaje.className = "resumen-pill-puntaje";
-    pillPuntaje.innerHTML = `<strong>${reporte.criticidad?.puntaje ?? 0}</strong> <small>pts</small>`;
+    const tipoInfraccion = nombresCategorias[reporte.categoria] || reporte.categoria || "Infracción";
+    const titleElem = document.createElement("h4");
+    titleElem.className = "report-card__title";
+    titleElem.textContent = tipoInfraccion;
 
-    grupoPills.append(pillNivel, pillPuntaje);
-    cabecera.append(grupoPills);
-    elemento.append(cabecera);
+    const dirTexto = reporte.direccion?.trim() || `Cuadra ${reporte.cuadra || "No especificada"}`;
+    const addressElem = document.createElement("p");
+    addressElem.className = "report-card__address";
+    addressElem.title = `${dirTexto}, Santa Marta`;
+    addressElem.innerHTML = `
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+      </svg>
+      <span>${dirTexto}</span>
+    `;
 
-    // Fila de Chips con Información del Reporte
-    const filaChips = document.createElement("div");
-    filaChips.className = "reporte-chips-fila";
+    titlesWrap.append(titleElem, addressElem);
+    bodyCol.append(titlesWrap);
 
-    const categoriaTexto = nombresCategorias[reporte.categoria] || reporte.categoria || "No especificada";
-    const chipCat = document.createElement("span");
-    chipCat.className = "reporte-chip";
-    chipCat.innerHTML = `<strong>Infracción:</strong> ${categoriaTexto}`;
+    // Metadatos inferiores limpios: Actor vial, Fecha/hora y Coordenadas tabulares
+    const metaWrap = document.createElement("div");
+    metaWrap.className = "report-card__meta";
 
-    const actorTexto = nombresActores[reporte.actor] || reporte.actor || "No especificado";
-    const chipActor = document.createElement("span");
-    chipActor.className = "reporte-chip";
-    chipActor.innerHTML = `<strong>Actor:</strong> ${actorTexto}`;
+    const actorTexto = nombresActores[reporte.actor] || reporte.actor || "Vehículo";
+    const itemActor = document.createElement("span");
+    itemActor.className = "report-card__meta-item";
+    itemActor.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+      </svg>
+      <span>${actorTexto}</span>
+    `;
 
-    const origenTexto = reporte.origen === "campo" ? "Operativo campo" : "Ciudadano";
-    const chipOrigen = document.createElement("span");
-    chipOrigen.className = "reporte-chip";
-    chipOrigen.innerHTML = `<strong>Origen:</strong> ${origenTexto}`;
+    let fechaCorta = "Sin fecha";
+    if (reporte.fecha_hora) {
+      const p = reporte.fecha_hora.split("T");
+      fechaCorta = `${p[0]} · ${p[1] ? p[1].slice(0, 5) : ""}`;
+    }
+    const itemFecha = document.createElement("span");
+    itemFecha.className = "report-card__meta-item font-mono";
+    itemFecha.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      <span>${fechaCorta}</span>
+    `;
 
-    filaChips.append(chipCat, chipActor, chipOrigen);
-    elemento.append(filaChips);
+    metaWrap.append(itemActor, itemFecha);
 
-    // Evidencia fotográfica si el reporte incluye foto
-    if (typeof reporte.foto === "string" && reporte.foto.trim().length > 0) {
-      const fotosHeader = document.createElement("div");
-      fotosHeader.className = "resumen-fotos-header";
-      fotosHeader.innerHTML = `
-        <span class="resumen-fotos-titulo">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-            <polyline points="21 15 16 10 5 21"></polyline>
-          </svg>
-          Evidencia fotográfica
-        </span>
-        <span class="resumen-fotos-guia">Toca para ampliar</span>
+    if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
+      const itemCoords = document.createElement("span");
+      itemCoords.className = "report-card__meta-item font-mono";
+      itemCoords.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+        </svg>
+        <span>${reporte.lat.toFixed(4)}, ${reporte.lng.toFixed(4)}</span>
       `;
-      elemento.append(fotosHeader);
-
-      const galeria = document.createElement("div");
-      galeria.className = "resumen-fotos-grid";
-      galeria.setAttribute("role", "group");
-      galeria.setAttribute("aria-label", `Foto censurada del reporte ${reporte.id}`);
-
-      agregarFotoInfraccion(galeria, reporte);
-      elemento.append(galeria);
+      metaWrap.append(itemCoords);
     }
 
-    // Pie de tarjeta con coordenadas y botón de ubicación en mapa
-    const metaFila = document.createElement("div");
-    metaFila.className = "resumen-card-meta";
-    metaFila.innerHTML = `
-      <span class="resumen-meta-etiqueta">
-        📍 ${Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng) ? `${reporte.lat.toFixed(4)}, ${reporte.lng.toFixed(4)}` : "Sin coordenadas"}
-      </span>
-      ${Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng) ? `<span class="resumen-meta-ubicacion">Ver en mapa →</span>` : ""}
-    `;
-    elemento.append(metaFila);
-
+    bodyCol.append(metaWrap);
+    elemento.append(bodyCol);
     listaResumen.append(elemento);
   }
 }

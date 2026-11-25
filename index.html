@@ -16,11 +16,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Space+Grotesk:wght@600;700&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <link rel="stylesheet" href="./styles.css?v=17" />
+  <link rel="stylesheet" href="./styles.css?v=18" />
 </head>
 
 <body>
@@ -498,6 +498,13 @@
               <li class="ayuda">Los reportes aparecerán cuando se carguen los datos.</li>
             </ol>
           </section>
+          <section class="panel panel--categorias" aria-labelledby="titulo-categorias">
+            <p class="sobretitulo">DISTRIBUCIÓN</p>
+            <h2 id="titulo-categorias">Reportes por categoría</h2>
+            <div id="barras-categorias" class="barras-categorias" aria-live="polite">
+              <p class="ayuda">Las categorías aparecerán cuando se carguen los reportes.</p>
+            </div>
+          </section>
         </div>
       </div>
     </section>
@@ -674,58 +681,107 @@
       censurarlas.
     </aside>
 
-    <!-- Modal Visor de Fotos de Infracción -->
+    <!-- Modal Visor de Fotos de Infracción (SaaS Dark Mode de Alta Densidad) -->
     <dialog id="modal-visor-foto" class="modal-visor-foto" aria-labelledby="modal-foto-titulo" aria-modal="true">
       <div class="modal-visor-card">
-        <button type="button" class="modal-visor-cerrar" id="btn-cerrar-modal-foto" aria-label="Cerrar visor de foto">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        <button type="button" class="modal-visor-cerrar" id="btn-cerrar-modal-foto" aria-label="Cerrar modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
         <div class="modal-visor-body">
+          <!-- Columna Izquierda: Evidencia Fotográfica -->
           <div class="modal-visor-media">
             <img id="modal-foto-img" src="" alt="Foto de infracción censurada" />
-            <div class="modal-visor-media-tag">Foto censurada con difuminado</div>
+            <div class="modal-visor-media-tag">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              <span>Foto censurada con difuminado</span>
+            </div>
+            <button type="button" class="modal-visor-media-zoom" id="btn-modal-media-zoom" title="Ampliar imagen" aria-label="Ver imagen ampliada">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="11" y1="8" x2="11" y2="14"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+              <span>Ver</span>
+            </button>
           </div>
+
+          <!-- Columna Derecha: Información y Metadatos -->
           <div class="modal-visor-info">
             <div class="modal-visor-header">
-              <span class="badge-modal-id" id="modal-foto-id">Reporte #000</span>
-              <span class="badge-modal-crit" id="modal-foto-criticidad">Nivel alto</span>
+              <span class="badge-modal-id" id="modal-foto-id">#MP-000</span>
+              <span class="badge-modal-crit" id="modal-foto-criticidad">NIVEL MEDIO · 6 PTS</span>
             </div>
-            <h3 id="modal-foto-titulo" class="modal-foto-titulo">Detalle de la infracción</h3>
-            <p id="modal-foto-subtitulo" class="modal-foto-subtitulo">Cuadra y dirección registrada</p>
+
+            <div class="modal-visor-titulos">
+              <h3 id="modal-foto-titulo" class="modal-foto-titulo">Doble fila / vía prohibida</h3>
+              <p id="modal-foto-subtitulo" class="modal-foto-subtitulo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span id="modal-foto-direccion-texto">Av. Del Ferrocarril #29e-53, Comuna 4, Santa Marta, Magdalena</span>
+              </p>
+            </div>
 
             <div class="modal-foto-detalles-grid">
               <div class="modal-foto-item">
-                <span class="modal-lbl">Cuadra</span>
-                <span id="modal-foto-cuadra" class="modal-val">-</span>
+                <span class="modal-lbl">UBICACIÓN / SECTOR</span>
+                <div class="modal-val">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                  </svg>
+                  <span id="modal-foto-cuadra">Fuera de la zona · Santa Marta</span>
+                </div>
               </div>
               <div class="modal-foto-item">
-                <span class="modal-lbl">Dirección</span>
-                <span id="modal-foto-direccion" class="modal-val">-</span>
+                <span class="modal-lbl">ACTOR VIAL</span>
+                <div class="modal-val">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                  </svg>
+                  <span id="modal-foto-actor">Vehículo particular</span>
+                </div>
               </div>
               <div class="modal-foto-item">
-                <span class="modal-lbl">Infracción</span>
-                <span id="modal-foto-categoria" class="modal-val">-</span>
+                <span class="modal-lbl">FECHA Y HORA</span>
+                <div class="modal-val font-mono">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span id="modal-foto-fecha">24 Nov 2026 · 17:00</span>
+                </div>
               </div>
               <div class="modal-foto-item">
-                <span class="modal-lbl">Tipo de actor</span>
-                <span id="modal-foto-actor" class="modal-val">-</span>
-              </div>
-              <div class="modal-foto-item">
-                <span class="modal-lbl">Fecha y hora</span>
-                <span id="modal-foto-fecha" class="modal-val">-</span>
-              </div>
-              <div class="modal-foto-item">
-                <span class="modal-lbl">Origen</span>
-                <span id="modal-foto-origen" class="modal-val">-</span>
+                <span class="modal-lbl">ORIGEN</span>
+                <div class="modal-val">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                  <span id="modal-foto-origen">Operativo en campo</span>
+                </div>
               </div>
             </div>
 
             <div class="modal-foto-acciones">
-              <button type="button" id="btn-modal-editar-foto" class="btn-modal-accion btn-modal-accion--editar">
+              <button type="button" id="btn-modal-editar-foto" class="btn-primary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M12 20h9"></path>
@@ -733,7 +789,7 @@
                 </svg>
                 <span>Editar / Censurar foto</span>
               </button>
-              <button type="button" id="btn-modal-ver-en-mapa" class="btn-modal-accion">
+              <button type="button" id="btn-modal-ver-en-mapa" class="btn-secondary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
