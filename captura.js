@@ -954,6 +954,9 @@ function actualizarVistaCriticidad() {
 }
 
 function renderizarBarrasCategorias(reportes) {
+  if (!barrasCategorias) {
+    return;
+  }
   const cantidades = new Map(
     Object.keys(nombresCategorias).map((categoria) => [categoria, 0]),
   );
