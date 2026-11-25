@@ -270,5 +270,69 @@
       "puntaje": 4,
       "nivel": "Bajo"
     }
+  },
+  {
+    "id": "MP-018",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T12:15",
+    "lat": 11.2438,
+    "lng": -74.1989,
+    "cuadra": "CR5-C15-C16",
+    "direccion": "Cra. 5 entre Cll. 15 y Cll. 16, Santa Marta",
+    "categoria": "invasion_anden",
+    "actor": "vehiculo_carga",
+    "foto": "datos/fotos/reporte18.jpeg",
+    "criticidad": {
+      "puntaje": 8,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-019",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-24T09:10",
+    "lat": 11.2398,
+    "lng": -74.203,
+    "cuadra": "CR4-C14-C15",
+    "direccion": "Cra. 4 entre Cll. 14 y Cll. 15, Santa Marta",
+    "categoria": "invasion_anden",
+    "actor": "mobiliario_comercial",
+    "foto": "datos/fotos/reporte19.jpeg",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-020",
+    "origen": "campo",
+    "fecha_hora": "2026-11-24T08:30",
+    "lat": 11.2389,
+    "lng": -74.2041,
+    "cuadra": "CR3-C14-C15",
+    "direccion": "Cra. 3 entre Cll. 14 y Cll. 15, Santa Marta",
+    "categoria": "doble_fila",
+    "actor": "motocicleta",
+    "foto": "datos/fotos/reporte20.jpeg",
+    "criticidad": {
+      "puntaje": 5,
+      "nivel": "Medio"
+    }
+  },
+  {
+    "id": "MP-021",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-24T17:00",
+    "lat": 11.2444,
+    "lng": -74.1981,
+    "cuadra": "CR6-C14-C15",
+    "direccion": "Cra. 6 entre Cll. 14 y Cll. 15, Santa Marta",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte21.jpeg",
+    "criticidad": {
+      "puntaje": 9,
+      "nivel": "Alto"
+    }
   }
 ]

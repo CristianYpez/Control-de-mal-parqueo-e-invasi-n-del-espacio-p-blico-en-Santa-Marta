@@ -283,6 +283,15 @@ function normalizarReporte(reporte, validarPerimetro = true) {
     cuadra = ubicarCuadra(reporte.lat, reporte.lng, vias)?.id ?? CUADRA_FUERA_DE_ZONA;
   }
 
+  // Si el reporte no tiene foto o viene vacía, asociarle foto por defecto según su ID si existe
+  let foto = typeof reporte.foto === "string" ? reporte.foto.trim() : "";
+  if (!foto) {
+    const numMatch = /MP-(?:[A-Z0-9]{3}-)?0*(\d+)/i.exec(reporte.id || "");
+    if (numMatch) {
+      foto = `datos/fotos/reporte${numMatch[1].padStart(2, "0")}.jpeg`;
+    }
+  }
+
   const criticidad = calcularCriticidad({ ...reporte, cuadra }, vias, criterios);
   return {
     id: reporte.id,
@@ -294,7 +303,7 @@ function normalizarReporte(reporte, validarPerimetro = true) {
     direccion: reporte.direccion?.trim() ?? "",
     categoria: reporte.categoria,
     actor: reporte.actor,
-    foto: reporte.foto,
+    foto,
     criticidad,
   };
 }
@@ -2249,13 +2258,25 @@ async function inicializar() {
     for (const item of guardados) {
       try {
         const norm = normalizarReporte(item, false);
-          const idxInicial = reportesIniciales.findIndex((r) => r.id === norm.id);
-          if (idxInicial !== -1) {
-            reportesIniciales[idxInicial] = { ...reportesIniciales[idxInicial], ...norm };
-          } else if (!idsIniciales.has(norm.id)) {
-            idsIniciales.add(norm.id);
-            reportesLocales.push(norm);
+        const idxInicial = reportesIniciales.findIndex((r) => r.id === norm.id);
+        if (idxInicial !== -1) {
+          const fotoActual = reportesIniciales[idxInicial].foto;
+          const fotoNorm = norm.foto && norm.foto.trim() !== "" ? norm.foto : fotoActual;
+          reportesIniciales[idxInicial] = {
+            ...reportesIniciales[idxInicial],
+            ...norm,
+            foto: fotoNorm,
+          };
+        } else if (!idsIniciales.has(norm.id)) {
+          if (!norm.foto || norm.foto.trim() === "") {
+            const numMatch = /MP-(?:[A-Z0-9]{3}-)?0*(\d+)/i.exec(norm.id || "");
+            if (numMatch) {
+              norm.foto = `datos/fotos/reporte${numMatch[1].padStart(2, "0")}.jpeg`;
+            }
           }
+          idsIniciales.add(norm.id);
+          reportesLocales.push(norm);
+        }
         } catch (error) {
           problemas.push(`${item?.id ?? "sin ID"} (guardado en este celular): ${error.message}`);
         }
