@@ -1307,27 +1307,139 @@ function renderizarResumen(reportes) {
     const elemento = document.createElement("li");
     const nivelCrit = (reporte.criticidad?.nivel || "Sin nivel").toLowerCase();
 
-    // Clases semánticas SaaS de alta densidad
+    // Clases semánticas SaaS Hero-Banner
     elemento.classList.add(
       "tarjeta-resumen-cuadra",
-      "report-card",
+      "report-card-vertical",
       "tarjeta-reporte-item",
       `criticidad--${nivelCrit}`,
       `severity--${nivelCrit}`,
     );
     elemento.setAttribute("data-id", reporte.id);
 
-    if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
-      elemento.title = `Clic en la tarjeta para ver reporte ${reporte.id} de cerca en el mapa`;
-      elemento.addEventListener("click", (e) => {
-        if (
-          e.target.closest("figure") ||
-          e.target.closest("button") ||
-          e.target.closest("a") ||
-          e.target.closest(".report-card__media")
-        ) {
-          return;
-        }
+    const fuente = obtenerFuenteFoto(reporte.foto);
+    const puntajeTxt = reporte.criticidad?.puntaje !== undefined ? `${reporte.criticidad.puntaje} PTS` : "";
+    const nivelLabel = nivelCrit.toUpperCase();
+    const tipoInfraccion = nombresCategorias[reporte.categoria] || reporte.categoria || "Infracción";
+    const dirTexto = reporte.direccion?.trim() || `Cuadra ${reporte.cuadra || "No especificada"}`;
+    const actorTexto = nombresActores[reporte.actor] || reporte.actor || "Vehículo particular";
+    const origenTexto = reporte.origen === "campo" ? "Operativo campo" : "Ciudadano";
+    const sectorTexto = reporte.cuadra ? `Cuadra ${reporte.cuadra}` : "Fuera de la zona";
+
+    let fechaCorta = "Sin fecha";
+    if (reporte.fecha_hora) {
+      const p = reporte.fecha_hora.split("T");
+      fechaCorta = `${p[0]} · ${p[1] ? p[1].slice(0, 5) : ""}`;
+    }
+
+    elemento.innerHTML = `
+      <!-- Banner Superior Hero -->
+      <div class="card-hero">
+        <img
+          class="card-hero__img"
+          src="${fuente || ""}"
+          alt="Evidencia fotográfica ${reporte.id}"
+          loading="lazy"
+          onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22200%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23161D26%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20fill%3D%22%2364748B%22%20font-family%3D%22sans-serif%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3EEvidencia%20Censurada%3C%2Ftext%3E%3C%2Fsvg%3E';"
+        />
+        <span class="hero-tag hero-tag--id font-mono">#${reporte.id}</span>
+        <span class="hero-tag hero-tag--severity severity--${nivelCrit}">
+          <span class="severity-dot"></span>
+          ${nivelLabel} · ${puntajeTxt}
+        </span>
+        <button type="button" class="hero-tag hero-btn-expand" data-action="expand" title="Ampliar foto">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="11" y1="8" x2="11" y2="14"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+          <span>Ampliar foto</span>
+        </button>
+      </div>
+
+      <!-- Cuerpo de Información -->
+      <div class="card-body">
+        <div class="card-header-info">
+          <span class="card-date font-mono">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            ${fechaCorta}
+          </span>
+          <h4 class="card-title">${tipoInfraccion}</h4>
+          <p class="card-location">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>${dirTexto}, Santa Marta, Magdalena</span>
+          </p>
+        </div>
+
+        <!-- Tira de 3 Columnas (Meta Strip) -->
+        <div class="meta-strip">
+          <div class="meta-col">
+            <div class="meta-col-header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span class="meta-label">ACTOR</span>
+            </div>
+            <span class="meta-value" title="${actorTexto}">${actorTexto}</span>
+          </div>
+          <div class="meta-col">
+            <div class="meta-col-header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              <span class="meta-label">ORIGEN</span>
+            </div>
+            <span class="meta-value" title="${origenTexto}">${origenTexto}</span>
+          </div>
+          <div class="meta-col">
+            <div class="meta-col-header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+              </svg>
+              <span class="meta-label">SECTOR</span>
+            </div>
+            <span class="meta-value" title="${sectorTexto}">${sectorTexto}</span>
+          </div>
+        </div>
+
+        <!-- Footer Inferior -->
+        <div class="card-footer">
+          <div class="footer-coords font-mono">
+            <svg class="pin-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>${Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng) ? `${reporte.lat.toFixed(4)}, ${reporte.lng.toFixed(4)}` : "Sin coordenadas"}</span>
+          </div>
+          <button type="button" class="btn-map" data-action="map">
+            <span>Ver en mapa</span>
+            <span>&rarr;</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Eventos
+    const btnExpand = elemento.querySelector('[data-action="expand"]');
+    if (btnExpand) {
+      btnExpand.addEventListener("click", (e) => {
+        e.stopPropagation();
+        abrirVisorFoto(reporte);
+      });
+    }
+
+    const btnMap = elemento.querySelector('[data-action="map"]');
+    const accionarMapa = (e) => {
+      e.stopPropagation();
+      if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
         window.dispatchEvent(
           new CustomEvent("mapa:centrar-coordenadas", {
             detail: { lat: reporte.lat, lng: reporte.lng, zoom: 18, reporteId: reporte.id },
@@ -1337,146 +1449,19 @@ function renderizarResumen(reportes) {
         if (mapaElem) {
           mapaElem.scrollIntoView({ behavior: "smooth", block: "center" });
         }
-      });
-    }
-
-    // 1. Columna Izquierda: Miniatura fotográfica de evidencia
-    const fuente = obtenerFuenteFoto(reporte.foto);
-    const mediaCol = document.createElement("figure");
-    mediaCol.className = "report-card__media";
-    mediaCol.tabIndex = 0;
-    mediaCol.setAttribute("role", "button");
-    mediaCol.setAttribute("aria-label", `Ver evidencia fotográfica de reporte ${reporte.id}`);
-    mediaCol.innerHTML = `
-      <img class="report-card__img" src="${fuente || ""}" alt="Evidencia ${reporte.id}" loading="lazy" />
-      <span class="report-card__media-badge">FOTO</span>
-      <span class="report-card__media-zoom" title="Ver foto">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          <line x1="11" y1="8" x2="11" y2="14"></line>
-          <line x1="8" y1="11" x2="14" y2="11"></line>
-        </svg>
-      </span>
-    `;
-
-    const abrirModal = (ev) => {
-      ev.stopPropagation();
-      abrirVisorFoto(reporte);
-    };
-    mediaCol.addEventListener("click", abrirModal);
-    mediaCol.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter" || ev.key === " ") {
-        ev.preventDefault();
-        abrirModal(ev);
       }
+    };
+
+    if (btnMap) {
+      btnMap.addEventListener("click", accionarMapa);
+    }
+
+    // Clic en la tarjeta abre el visor o centra en mapa
+    elemento.addEventListener("click", (e) => {
+      if (e.target.closest("button") || e.target.closest("a")) return;
+      abrirVisorFoto(reporte);
     });
-    elemento.append(mediaCol);
 
-    // 2. Columna Derecha: Contenido y Metadatos de Alta Densidad
-    const bodyCol = document.createElement("div");
-    bodyCol.className = "report-card__body";
-
-    // Top: Badge monospace ID + Badge severidad + Hint de mapa
-    const cabecera = document.createElement("div");
-    cabecera.className = "report-card__header";
-
-    const tagsWrap = document.createElement("div");
-    tagsWrap.className = "report-card__tags";
-
-    const tagId = document.createElement("span");
-    tagId.className = "report-card__id font-mono";
-    tagId.textContent = `#${reporte.id}`;
-
-    const tagCrit = document.createElement("span");
-    tagCrit.className = `report-card__severity report-card__severity--${nivelCrit}`;
-    const puntajeTxt = reporte.criticidad?.puntaje !== undefined ? ` · ${reporte.criticidad.puntaje} PTS` : "";
-    tagCrit.textContent = `NIVEL ${nivelCrit.toUpperCase()}${puntajeTxt}`;
-
-    tagsWrap.append(tagId, tagCrit);
-
-    const actionHint = document.createElement("span");
-    actionHint.className = "report-card__action-hint";
-    actionHint.innerHTML = `
-      <span>Ver mapa</span>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polyline points="9 18 15 12 9 6"></polyline>
-      </svg>
-    `;
-
-    cabecera.append(tagsWrap, actionHint);
-    bodyCol.append(cabecera);
-
-    // Jerarquía Inversa: Tipo de Infracción (Título) + Dirección (Subtítulo con Pin)
-    const titlesWrap = document.createElement("div");
-    titlesWrap.className = "report-card__titles";
-
-    const tipoInfraccion = nombresCategorias[reporte.categoria] || reporte.categoria || "Infracción";
-    const titleElem = document.createElement("h4");
-    titleElem.className = "report-card__title";
-    titleElem.textContent = tipoInfraccion;
-
-    const dirTexto = reporte.direccion?.trim() || `Cuadra ${reporte.cuadra || "No especificada"}`;
-    const addressElem = document.createElement("p");
-    addressElem.className = "report-card__address";
-    addressElem.title = `${dirTexto}, Santa Marta`;
-    addressElem.innerHTML = `
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-        <circle cx="12" cy="10" r="3"></circle>
-      </svg>
-      <span>${dirTexto}</span>
-    `;
-
-    titlesWrap.append(titleElem, addressElem);
-    bodyCol.append(titlesWrap);
-
-    // Metadatos inferiores limpios: Actor vial, Fecha/hora y Coordenadas tabulares
-    const metaWrap = document.createElement("div");
-    metaWrap.className = "report-card__meta";
-
-    const actorTexto = nombresActores[reporte.actor] || reporte.actor || "Vehículo";
-    const itemActor = document.createElement("span");
-    itemActor.className = "report-card__meta-item";
-    itemActor.innerHTML = `
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-      </svg>
-      <span>${actorTexto}</span>
-    `;
-
-    let fechaCorta = "Sin fecha";
-    if (reporte.fecha_hora) {
-      const p = reporte.fecha_hora.split("T");
-      fechaCorta = `${p[0]} · ${p[1] ? p[1].slice(0, 5) : ""}`;
-    }
-    const itemFecha = document.createElement("span");
-    itemFecha.className = "report-card__meta-item font-mono";
-    itemFecha.innerHTML = `
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"></circle>
-        <polyline points="12 6 12 12 16 14"></polyline>
-      </svg>
-      <span>${fechaCorta}</span>
-    `;
-
-    metaWrap.append(itemActor, itemFecha);
-
-    if (Number.isFinite(reporte.lat) && Number.isFinite(reporte.lng)) {
-      const itemCoords = document.createElement("span");
-      itemCoords.className = "report-card__meta-item font-mono";
-      itemCoords.innerHTML = `
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
-        </svg>
-        <span>${reporte.lat.toFixed(4)}, ${reporte.lng.toFixed(4)}</span>
-      `;
-      metaWrap.append(itemCoords);
-    }
-
-    bodyCol.append(metaWrap);
-    elemento.append(bodyCol);
     listaResumen.append(elemento);
   }
 }
