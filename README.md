@@ -24,10 +24,11 @@
 
 | Integrante | Rol Oficial | Aporte en el Proyecto |
 | :--- | :--- | :--- |
-| **** | Integrador del mapa e instrucciones IA | Organización del proyecto; desarrollo con la IA (mapa de calor dinámico, canvas de censura, calibración, comparador, pruebas y documentos); conteo del Conector Troncal e integración web. |
-| **** | Analista de campo y privacidad | Conteo de la Av. del Ferrocarril (entradas y salidas); levantamiento de evidencia fotográfica y estructuración de `datos/vias.json`. |
-| **** | Ingeniero de lógica y clasificación | Conteo de la Calle 31 (oriente) (entradas y salidas); calibración del índice de criticidad en `criterios.json` y algoritmos de filtrado. |
-| **** | Diseñador de interfaz y documentador | Conteo de la Calle 31 (sur) en hora pico; protocolo de anonimización y censura de placas/rostros (Ley 1581); redacción de anexos y estilos UI. |
+| **Angel santiago florez salazar
+** | Integrador del mapa e instrucciones IA | Organización del proyecto; desarrollo con la IA (mapa de calor dinámico, canvas de censura, calibración, comparador, pruebas y documentos); conteo del Conector Troncal e integración web. |
+| **Andres Felipe Reyes Escorcia** | Analista de campo y privacidad | Conteo de la Av. del Ferrocarril (entradas y salidas); levantamiento de evidencia fotográfica y estructuración de `datos/vias.json`. |
+| **Ali rojas vergara** | Ingeniero de lógica y clasificación | Conteo de la Calle 31 (oriente) (entradas y salidas); calibración del índice de criticidad en `criterios.json` y algoritmos de filtrado. |
+| **Cristian alberto yepez quiroz** | Diseñador de interfaz y documentador | Conteo de la Calle 31 (sur) en hora pico; protocolo de anonimización y censura de placas/rostros (Ley 1581); redacción de anexos y estilos UI. |
 
 **Docente:** Aquiles Cohen
 
