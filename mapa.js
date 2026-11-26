@@ -84,7 +84,7 @@ let capasSeleccionadas = new Set(["calor"]);
 let paletaSeleccionada = "serena";
 
 const PALETAS_CALOR = {
-  serena: ["#fff9c4", "#ffee58", "#ffb300", "#f4511e", "#7f0000"],
+  serena: ["rgba(255, 255, 255, 0)", "#fef08a", "#fde047", "#fb923c", "#ef4444", "#7f1d1d"],
   termica: ["#2166ac", "#00bcd4", "#4caf50", "#ffeb3b", "#ff9800", "#e53935"],
 };
 
@@ -200,13 +200,21 @@ function actualizarCalorCaptura(reportes) {
   if (!mapaCaptura || typeof window.L?.heatLayer !== "function") return;
   const puntos = reportes
     .filter((r) => estaDentroDelPerimetro(r.lat, r.lng))
-    .map((r) => [r.lat, r.lng, 0.65]);
+    .map((r) => [r.lat, r.lng, obtenerPesoCriticidad(r)]);
   if (!capaCalorCaptura) {
     capaCalorCaptura = L.heatLayer(puntos, {
-      radius: 34,
-      blur: 24,
-      minOpacity: 0.35,
-      max: 5,
+      radius: 20,
+      blur: 12,
+      minOpacity: 0.05,
+      max: 12,
+      gradient: {
+        0.0: "rgba(255, 255, 255, 0)",
+        0.2: "#fef08a",
+        0.4: "#fde047",
+        0.65: "#fb923c",
+        0.85: "#ef4444",
+        1.0: "#7f1d1d",
+      },
     }).addTo(mapaCaptura);
   } else {
     capaCalorCaptura.setLatLngs(puntos);
@@ -221,19 +229,99 @@ function mostrarEstadoMapa(elemento, mensaje) {
   }
 }
 
+function clamp(valor, minimo, maximo) {
+  return Math.max(minimo, Math.min(maximo, valor));
+}
+
+// 1. Radio dinámico según el nivel de zoom
+function calcularRadioPorZoom(zoom) {
+  const base = Math.pow(1.36, zoom - 10) * 7.5;
+  return clamp(Math.round(base), 8, 40);
+}
+
+// 4. Desvanecimiento y blur dinámico
+function calcularBlurPorZoom(radio, zoom) {
+  const factor = zoom <= 12 ? 0.52 : 0.68;
+  return clamp(Math.round(radio * factor), 4, 25);
+}
+
+// 3. Agrupación espacial por cuadrícula según el zoom (Spatial Clustering)
+function agruparReportesPorZoom(reportes, zoom) {
+  if (!reportes || reportes.length === 0) {
+    return { puntos: [], maxPeso: 1 };
+  }
+
+  // Paso angular adaptativo en grados según el zoom:
+  // Zoom 11: ~0.007° (~750m) -> agrupa puntos lejanos
+  // Zoom 14: ~0.0012° (~130m) -> agrupa por sector
+  // Zoom 16: ~0.0003° (~30m) -> agrupa en la misma cuadra
+  // Zoom >= 18: ~0.00008° (~8m) -> prácticamente individual
+  const pasoGrados = Math.max(0.00008, 0.016 / Math.pow(2, zoom - 10));
+  const celdas = new Map();
+
+  for (const r of reportes) {
+    if (typeof r.lat !== "number" || typeof r.lng !== "number") continue;
+    const peso = obtenerPesoCriticidad(r);
+
+    const celdaX = Math.floor(r.lat / pasoGrados);
+    const celdaY = Math.floor(r.lng / pasoGrados);
+    const clave = `${celdaX}_${celdaY}`;
+
+    if (!celdas.has(clave)) {
+      celdas.set(clave, {
+        latPonderada: r.lat * peso,
+        lngPonderada: r.lng * peso,
+        pesoTotal: peso,
+        conteo: 1,
+      });
+    } else {
+      const c = celdas.get(clave);
+      c.latPonderada += r.lat * peso;
+      c.lngPonderada += r.lng * peso;
+      c.pesoTotal += peso;
+      c.conteo += 1;
+    }
+  }
+
+  let maxPeso = 1;
+  const puntos = [];
+
+  for (const c of celdas.values()) {
+    if (c.pesoTotal > maxPeso) {
+      maxPeso = c.pesoTotal;
+    }
+    puntos.push([
+      c.latPonderada / c.pesoTotal,
+      c.lngPonderada / c.pesoTotal,
+      c.pesoTotal,
+    ]);
+  }
+
+  return { puntos, maxPeso };
+}
+
+// 2. Intensidad normalizada y cálculo dinámico de max
+function calcularMaxCalor(maxPeso) {
+  const factorSensibilidad = Number(controlesCalor.sensibilidad?.value || 6) / 6;
+  const umbralBase = 14;
+  const maxReferencia = Math.max(umbralBase, maxPeso * 1.35);
+  return Math.max(8, maxReferencia / factorSensibilidad);
+}
+
 function crearCapaCalor() {
   return L.heatLayer([], {
-    radius: 38,
-    blur: 26,
-    minOpacity: 0.35,
-    max: 6,
-    maxZoom: 11,
+    radius: 12,
+    blur: 6,
+    minOpacity: 0.05,
+    max: 14,
+    maxZoom: 18,
     gradient: {
-      0.05: "#fff9c4",
-      0.28: "#efdb23",
-      0.52: "#f3aa00",
-      0.76: "#ec4a19",
-      1: "#780000",
+      0.0: "rgba(255, 255, 255, 0)",
+      0.18: "#fef9c3",
+      0.35: "#fde047",
+      0.60: "#fb923c",
+      0.82: "#ef4444",
+      1.00: "#7f1d1d",
     },
   });
 }
@@ -432,17 +520,63 @@ function dibujarCeldas() {
   }
 }
 
+let frameActualizacionCalor = null;
+let temporizadorDebounceCalor = null;
+
+// Actualiza el radio, blur, max y puntos agrupados en la capa de calor
+function actualizarCapaCalorDinamica() {
+  if (!mapaTablero || !capaCalor) return;
+
+  const zoom = mapaTablero.getZoom();
+  const radio = calcularRadioPorZoom(zoom);
+  const blur = calcularBlurPorZoom(radio, zoom);
+
+  const { puntos, maxPeso } = agruparReportesPorZoom(reportesEnMapa, zoom);
+  const maxNormalizado = calcularMaxCalor(maxPeso);
+
+  capaCalor.setOptions({
+    radius: radio,
+    blur: blur,
+    max: maxNormalizado,
+    minOpacity: 0.05,
+    gradient: obtenerGradienteCalor(),
+  });
+
+  if (capasSeleccionadas.has("calor")) {
+    capaCalor.setLatLngs(puntos);
+  } else {
+    capaCalor.setLatLngs([]);
+  }
+
+  if (valoresCalor.radio) valoresCalor.radio.value = String(radio);
+  if (valoresCalor.desenfoque) valoresCalor.desenfoque.value = String(blur);
+}
+
+// Controla el rendimiento con debounce y requestAnimationFrame en zoom y paneo
+function programarActualizacionCalor(inmediato = false) {
+  if (temporizadorDebounceCalor) {
+    clearTimeout(temporizadorDebounceCalor);
+    temporizadorDebounceCalor = null;
+  }
+  if (frameActualizacionCalor) {
+    cancelAnimationFrame(frameActualizacionCalor);
+    frameActualizacionCalor = null;
+  }
+
+  if (inmediato) {
+    frameActualizacionCalor = requestAnimationFrame(actualizarCapaCalorDinamica);
+    return;
+  }
+
+  temporizadorDebounceCalor = setTimeout(() => {
+    frameActualizacionCalor = requestAnimationFrame(actualizarCapaCalorDinamica);
+  }, 100);
+}
+
 // Muestra solo las capas seleccionadas y refresca los datos de cada una.
 function aplicarCapas() {
-  capaCalor.setLatLngs(
-    capasSeleccionadas.has("calor")
-      ? reportesEnMapa.map((reporte) => [
-        reporte.lat,
-        reporte.lng,
-        obtenerPesoCriticidad(reporte),
-      ])
-      : [],
-  );
+  actualizarCapaCalorDinamica();
+
   capaPuntos.clearLayers();
   for (const reporte of reportesEnMapa) {
     L.marker([reporte.lat, reporte.lng])
@@ -464,10 +598,7 @@ function aplicarCapas() {
     if (visible && !mapaTablero.hasLayer(capa)) {
       capa.addTo(mapaTablero);
       if (nombre === "calor") {
-        capaCalor.setOptions({
-          ...obtenerAjustesCalor(),
-          gradient: obtenerGradienteCalor(),
-        });
+        actualizarCapaCalorDinamica();
       }
     } else if (!visible && nombre !== "calor" && mapaTablero.hasLayer(capa)) {
       mapaTablero.removeLayer(capa);
@@ -549,25 +680,21 @@ function actualizarPaleta() {
 // Aplica los controles de intensidad y mantiene sus valores visibles.
 function actualizarAjustesCalor() {
   const sensibilidad = Number(controlesCalor.sensibilidad.value);
-  const radio = Number(controlesCalor.radio.value);
-  const desenfoque = Number(controlesCalor.desenfoque.value);
   valoresCalor.sensibilidad.value = String(sensibilidad);
-  valoresCalor.radio.value = String(radio);
-  valoresCalor.desenfoque.value = String(desenfoque);
-  if (mapaTablero.hasLayer(capaCalor)) {
-    capaCalor.setOptions(obtenerAjustesCalor());
-  }
-}
-
-function obtenerAjustesCalor() {
-  return {
-    max: 12 - Number(controlesCalor.sensibilidad.value),
-    radius: Number(controlesCalor.radio.value),
-    blur: Number(controlesCalor.desenfoque.value),
-  };
+  programarActualizacionCalor(true);
 }
 
 function obtenerGradienteCalor() {
+  if (paletaSeleccionada === "serena") {
+    return {
+      0.0: "rgba(255, 255, 255, 0)",
+      0.18: "#fef9c3",
+      0.35: "#fde047",
+      0.60: "#fb923c",
+      0.82: "#ef4444",
+      1.00: "#7f1d1d",
+    };
+  }
   const colores = PALETAS_CALOR[paletaSeleccionada];
   return Object.fromEntries(
     colores.map((color, indice) => [indice / (colores.length - 1), color]),
@@ -648,6 +775,10 @@ function inicializarMapas() {
   setModo("una");
   actualizarAjustesCalor();
   actualizarPaleta();
+
+  // Escuchar eventos de zoom y paneo para recalcular proporcionalidad del mapa de calor
+  mapaTablero.on("zoomend", () => programarActualizacionCalor(true));
+  mapaTablero.on("moveend", () => programarActualizacionCalor(false));
 
   mapaCaptura.on("click", ({ latlng }) => seleccionarUbicacion(latlng.lat, latlng.lng));
   window.addEventListener("mapa:solicitar-ubicacion", ({ detail }) => {
