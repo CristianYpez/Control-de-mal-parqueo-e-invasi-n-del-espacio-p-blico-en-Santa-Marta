@@ -361,7 +361,7 @@ h2 {
 }
 
 main {
-  width: min(100% - 3rem, 1680px);
+  width: min(100% - 2rem, 1920px);
   margin-inline: auto;
   padding-block: 1.5rem 3rem;
 }
@@ -1358,9 +1358,11 @@ main {
 
 .columnas-tablero {
   display: grid;
+  grid-template-columns: 1fr;
   min-width: 0;
   align-items: start;
-  gap: 0.7rem;
+  gap: 1.25rem;
+  width: 100%;
 }
 
 .panel--mapa {
@@ -3330,13 +3332,14 @@ main {
   }
 
   .columnas-tablero {
-    grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.9fr);
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
     align-items: start;
+    gap: 1.25rem;
   }
 
   .mapa--tablero {
-    height: 660px;
-    min-height: 580px;
+    height: 720px;
+    min-height: 600px;
   }
 
   .acciones-tablero {
@@ -3362,18 +3365,19 @@ main {
   }
 
   .columnas-tablero {
-    grid-template-columns: minmax(0, 1.2fr) minmax(22rem, 0.8fr);
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
+    gap: 1.5rem;
     align-items: start;
   }
 
   .mapa--tablero {
-    height: 720px;
-    min-height: 640px;
+    height: calc(100vh - 12rem);
+    min-height: 680px;
+    max-height: 920px;
   }
 
   .columna-resumen {
-    gap: 1rem;
+    gap: 1.25rem;
   }
 }
 
