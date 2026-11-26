@@ -2,7 +2,8 @@
 // Cada cuadra de vias.json trae su "tramo": la esquina donde empieza y la esquina donde termina,
 // [[lat, lng], [lat, lng]]. El punto se asigna a la cuadra cuyo tramo queda más cerca,
 // siempre que esté a menos de DISTANCIA_MAXIMA_METROS. Si no hay ninguna tan cerca,
-// el punto está fuera de la zona del estudio y el tipo de vía no suma puntos.
+// el punto está fuera de la zona del estudio y 
+// el tipo de vía no suma puntos.
 const DISTANCIA_MAXIMA_METROS = 30;
 const CUADRA_FUERA_DE_ZONA = "Fuera de la zona";
 const METROS_POR_GRADO = 111320;
