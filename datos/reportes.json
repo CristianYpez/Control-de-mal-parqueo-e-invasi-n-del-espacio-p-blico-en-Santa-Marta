@@ -334,5 +334,149 @@
       "puntaje": 9,
       "nivel": "Alto"
     }
+  },
+  {
+    "id": "MP-022",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-24T15:38",
+    "lat": 11.2246,
+    "lng": -74.1903,
+    "direccion": "Calle 30 # 31-15, Frente a Unimagdalena, Santa Marta",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte22.jpeg",
+    "cuadra": "C30-CR31-CR32",
+    "criticidad": {
+      "puntaje": 7,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-023",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-24T15:38",
+    "lat": 11.2247,
+    "lng": -74.1909,
+    "direccion": "Calle 29I # 21D-10, Sector Unimagdalena, Santa Marta",
+    "categoria": "invasion_anden",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte23.jpeg",
+    "cuadra": "C29I-CR21C-CR21D",
+    "criticidad": {
+      "puntaje": 4,
+      "nivel": "Bajo"
+    }
+  },
+  {
+    "id": "MP-024",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-24T15:40",
+    "lat": 11.2247,
+    "lng": -74.1895,
+    "direccion": "Calle 30 con Carrera 31B, Acceso Unimagdalena, Santa Marta",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte24.jpeg",
+    "cuadra": "C30-CR31-CR32",
+    "criticidad": {
+      "puntaje": 7,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-025",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-25T11:45",
+    "lat": 11.2255,
+    "lng": -74.1885,
+    "direccion": "Carrera 32 # 29-45, Entrada Principal Unimagdalena, Santa Marta",
+    "categoria": "invasion_anden",
+    "actor": "motocicleta",
+    "foto": "datos/fotos/reporte25.jpeg",
+    "cuadra": "CR32-C29-C30",
+    "criticidad": {
+      "puntaje": 8,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-026",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-25T12:05",
+    "lat": 11.2252,
+    "lng": -74.191,
+    "direccion": "Carrera 21D # 29H-35, Sector Ciudadela 29 de Julio, Santa Marta",
+    "categoria": "invasion_anden",
+    "actor": "motocicleta",
+    "foto": "datos/fotos/reporte26.jpeg",
+    "cuadra": "CR21D-C29H-C29I",
+    "criticidad": {
+      "puntaje": 6,
+      "nivel": "Medio"
+    }
+  },
+  {
+    "id": "MP-027",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-25T12:10",
+    "lat": 11.226,
+    "lng": -74.1885,
+    "direccion": "Carrera 32 # 22-50, Zona Comercial Unimagdalena, Santa Marta",
+    "categoria": "invasion_anden",
+    "actor": "motocicleta",
+    "foto": "datos/fotos/reporte27.jpeg",
+    "cuadra": "CR32-C29-C30",
+    "criticidad": {
+      "puntaje": 8,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-028",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-25T12:11",
+    "lat": 11.2246,
+    "lng": -74.1912,
+    "direccion": "Calle 29I # 21D-30, Sector Unimagdalena, Santa Marta",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte28.jpeg",
+    "cuadra": "C29I-CR21C-CR21D",
+    "criticidad": {
+      "puntaje": 7,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-029",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-25T12:13",
+    "lat": 11.2244,
+    "lng": -74.1911,
+    "direccion": "Cl. 29I # 56, Comuna 1, Sector Unimagdalena, Santa Marta",
+    "categoria": "doble_fila",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte30.jpeg",
+    "cuadra": "CR21D-C29H-C29I",
+    "criticidad": {
+      "puntaje": 7,
+      "nivel": "Alto"
+    }
+  },
+  {
+    "id": "MP-030",
+    "origen": "ciudadano",
+    "fecha_hora": "2026-11-25T12:12",
+    "lat": 11.2248,
+    "lng": -74.1908,
+    "direccion": "Cl. 29I3 # 21D-44, Comuna 1, Sector Unimagdalena, Santa Marta",
+    "categoria": "bloqueo_rampa_cebra_paradero",
+    "actor": "vehiculo_particular",
+    "foto": "datos/fotos/reporte31.jpeg",
+    "cuadra": "C29I-CR21C-CR21D",
+    "criticidad": {
+      "puntaje": 7,
+      "nivel": "Alto"
+    }
   }
 ]

@@ -53,6 +53,15 @@ Para el levantamiento de los registros reales de campo, se seleccionó un corred
 | **MP-019** | Invasión de andén | Motocicleta | Calle 20 # 5-30 | Secundaria (1)| Valle (1) | 4 pts | **Bajo** | Sí (difuminada) |
 | **MP-020** | Bloqueo de rampa o cebra | Vehículo particular | Carrera 5ta # 23-11 | Arterial (3) | Pico (3) | 9 pts | **Alto** | Sí (difuminada) |
 | **MP-021** | Doble fila / vía prohibida | Vehículo particular | Carrera 1ra # 14-10 | Secundaria (1)| Pico (3) | 7 pts | **Alto** | Sí (difuminada) |
+| **MP-022** | Doble fila / vía prohibida | Vehículo particular | Calle 30 # 31-15 (Frente Unimagdalena) | Arterial (3) | Valle (1) | 7 pts | **Alto** | Sí (pixelada) |
+| **MP-023** | Invasión de andén | Vehículo particular | Calle 29I # 21D-10 (Unimagdalena) | Secundaria (1)| Valle (1) | 4 pts | **Bajo** | Sí (pixelada) |
+| **MP-024** | Doble fila / vía prohibida | Vehículo particular | Calle 30 con Cra. 31B (Unimagdalena) | Arterial (3) | Valle (1) | 7 pts | **Alto** | Sí (pixelada) |
+| **MP-025** | Invasión de andén | Motocicleta | Carrera 32 # 29-45 (Entrada Unimagdalena)| Arterial (3) | Pico (3) | 8 pts | **Alto** | Sí (pixelada) |
+| **MP-026** | Invasión de andén | Motocicleta | Cra. 21D # 29H-35 (Ciudadela 29 Julio) | Secundaria (1)| Pico (3) | 6 pts | **Medio** | Sí (pixelada) |
+| **MP-027** | Invasión de andén | Motocicleta | Carrera 32 # 22-50 (Comercial Unimagdalena)| Arterial (3) | Pico (3) | 8 pts | **Alto** | Sí (pixelada) |
+| **MP-028** | Doble fila / vía prohibida | Vehículo particular | Calle 29I # 21D-30 (Sector Unimagdalena)| Secundaria (1)| Pico (3) | 7 pts | **Alto** | Sí (pixelada) |
+| **MP-029** | Doble fila / vía prohibida | Vehículo particular | Cl. 29I # 56, Comuna 1 (Unimagdalena) | Secundaria (1)| Pico (3) | 7 pts | **Alto** | Sí (pixelada) |
+| **MP-030** | Bloqueo de rampa o cebra | Vehículo particular | Cl. 29I3 # 21D-44 (Sector Unimagdalena)| Secundaria (1)| Pico (3) | 7 pts | **Alto** | Sí (pixelada) |
 
 ---
 

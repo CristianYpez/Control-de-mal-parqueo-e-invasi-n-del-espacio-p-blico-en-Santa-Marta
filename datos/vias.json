@@ -73,5 +73,65 @@
         -74.209507
       ]
     ]
+  },
+  {
+    "id": "C30-CR31-CR32",
+    "nombre": "Calle 30 entre Carreras 31 y 32 (Frente Unimagdalena)",
+    "tipo": "arterial",
+    "tramo": [
+      [
+        11.2248,
+        -74.1905
+      ],
+      [
+        11.2245,
+        -74.1885
+      ]
+    ]
+  },
+  {
+    "id": "CR32-C29-C30",
+    "nombre": "Carrera 32 entre Calles 29 y 30 (Acceso Principal Unimagdalena)",
+    "tipo": "arterial",
+    "tramo": [
+      [
+        11.2265,
+        -74.1885
+      ],
+      [
+        11.2245,
+        -74.1885
+      ]
+    ]
+  },
+  {
+    "id": "C29I-CR21C-CR21D",
+    "nombre": "Calle 29I entre Carreras 21C y 21D (Sector Unimagdalena / Comuna 1)",
+    "tipo": "secundaria",
+    "tramo": [
+      [
+        11.2244,
+        -74.1915
+      ],
+      [
+        11.2249,
+        -74.1905
+      ]
+    ]
+  },
+  {
+    "id": "CR21D-C29H-C29I",
+    "nombre": "Carrera 21D entre Calles 29H y 29I (Sector Ciudadela 29 de Julio)",
+    "tipo": "secundaria",
+    "tramo": [
+      [
+        11.226,
+        -74.1908
+      ],
+      [
+        11.2244,
+        -74.1911
+      ]
+    ]
   }
 ]
