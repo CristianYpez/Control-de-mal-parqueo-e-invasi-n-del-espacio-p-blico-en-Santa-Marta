@@ -84,7 +84,7 @@ let capasSeleccionadas = new Set(["calor"]);
 let paletaSeleccionada = "serena";
 
 const PALETAS_CALOR = {
-  serena: ["rgba(255, 255, 255, 0)", "#fef08a", "#fde047", "#fb923c", "#ef4444", "#7f1d1d"],
+  serena: ["#fef08a", "#facc15", "#fb923c", "#ef4444", "#7f1d1d"],
   termica: ["#2166ac", "#00bcd4", "#4caf50", "#ffeb3b", "#ff9800", "#e53935"],
 };
 
@@ -235,14 +235,14 @@ function clamp(valor, minimo, maximo) {
 
 // 1. Radio dinámico según el nivel de zoom
 function calcularRadioPorZoom(zoom) {
-  const base = Math.pow(1.36, zoom - 10) * 7.5;
-  return clamp(Math.round(base), 8, 40);
+  const base = 10 + (zoom - 10) * 3.8;
+  return clamp(Math.round(base), 12, 40);
 }
 
 // 4. Desvanecimiento y blur dinámico
 function calcularBlurPorZoom(radio, zoom) {
-  const factor = zoom <= 12 ? 0.52 : 0.68;
-  return clamp(Math.round(radio * factor), 4, 25);
+  const factor = zoom <= 12 ? 0.6 : 0.72;
+  return clamp(Math.round(radio * factor), 6, 26);
 }
 
 // 3. Agrupación espacial por cuadrícula según el zoom (Spatial Clustering)
@@ -252,11 +252,10 @@ function agruparReportesPorZoom(reportes, zoom) {
   }
 
   // Paso angular adaptativo en grados según el zoom:
-  // Zoom 11: ~0.007° (~750m) -> agrupa puntos lejanos
-  // Zoom 14: ~0.0012° (~130m) -> agrupa por sector
-  // Zoom 16: ~0.0003° (~30m) -> agrupa en la misma cuadra
-  // Zoom >= 18: ~0.00008° (~8m) -> prácticamente individual
-  const pasoGrados = Math.max(0.00008, 0.016 / Math.pow(2, zoom - 10));
+  // Zoom 11: ~0.002° (~200m)
+  // Zoom 14: ~0.0006° (~60m)
+  // Zoom >= 16: ~0.0001° (~10m)
+  const pasoGrados = Math.max(0.0001, 0.003 / Math.pow(1.5, zoom - 10));
   const celdas = new Map();
 
   for (const r of reportes) {
@@ -302,24 +301,26 @@ function agruparReportesPorZoom(reportes, zoom) {
 
 // 2. Intensidad normalizada y cálculo dinámico de max
 function calcularMaxCalor(maxPeso) {
-  const factorSensibilidad = Number(controlesCalor.sensibilidad?.value || 6) / 6;
-  const umbralBase = 14;
-  const maxReferencia = Math.max(umbralBase, maxPeso * 1.35);
-  return Math.max(8, maxReferencia / factorSensibilidad);
+  const factorSensibilidad = Number(controlesCalor.sensibilidad?.value || 6);
+  // Con max entre 4 y 7:
+  // 1 reporte (peso 1) -> 1 / 5 = 0.20 (amarillo suave)
+  // 2 reportes (peso 2-3) -> 2 / 5 = 0.40 (amarillo cálido, sin rojo)
+  // 4+ reportes (peso 6+) -> saturación hacia rojo (> 0.8)
+  const base = Math.max(4, Math.round(maxPeso * 0.85));
+  return Math.max(3, base + (6 - factorSensibilidad));
 }
 
 function crearCapaCalor() {
   return L.heatLayer([], {
-    radius: 12,
-    blur: 6,
-    minOpacity: 0.05,
-    max: 14,
+    radius: 18,
+    blur: 12,
+    minOpacity: 0.35,
+    max: 5,
     maxZoom: 18,
     gradient: {
-      0.0: "rgba(255, 255, 255, 0)",
-      0.18: "#fef9c3",
-      0.35: "#fde047",
-      0.60: "#fb923c",
+      0.15: "#fef08a",
+      0.38: "#facc15",
+      0.62: "#fb923c",
       0.82: "#ef4444",
       1.00: "#7f1d1d",
     },
@@ -538,7 +539,7 @@ function actualizarCapaCalorDinamica() {
     radius: radio,
     blur: blur,
     max: maxNormalizado,
-    minOpacity: 0.05,
+    minOpacity: 0.35,
     gradient: obtenerGradienteCalor(),
   });
 
@@ -687,10 +688,9 @@ function actualizarAjustesCalor() {
 function obtenerGradienteCalor() {
   if (paletaSeleccionada === "serena") {
     return {
-      0.0: "rgba(255, 255, 255, 0)",
-      0.18: "#fef9c3",
-      0.35: "#fde047",
-      0.60: "#fb923c",
+      0.15: "#fef08a",
+      0.38: "#facc15",
+      0.62: "#fb923c",
       0.82: "#ef4444",
       1.00: "#7f1d1d",
     };

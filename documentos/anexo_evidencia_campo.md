@@ -1,6 +1,21 @@
-# Anexo de Evidencia de Campo · Reto No. 2
-**Control de Mal Parqueo e Invasión del Espacio Público en Santa Marta**  
-*Universidad del Magdalena · Facultad de Ingeniería*
+<p align="center">
+  <img src="../logo/unimagdalena-logo.png" alt="Universidad del Magdalena" width="200" />
+</p>
+
+<h1 align="center">Anexo de Evidencia de Campo · Reto No. 2</h1>
+<h3 align="center">Control de Mal Parqueo e Invasión del Espacio Público en Santa Marta</h3>
+
+<p align="center">
+  <strong>Universidad del Magdalena · Facultad de Ingeniería · Introducción a la Ingeniería de Sistemas (2026-2)</strong><br>
+  <strong>Equipo:</strong> Trancón Samario · <strong>Docente:</strong> Aquiles Cohen
+</p>
+
+<p align="center">
+  ▶️ <a href="https://controldelmalparqueo.vercel.app/"><strong>Demo en línea</strong></a> · 
+  <a href="../README.md">README principal</a> · 
+  <a href="diagrama_arquitectura.md">Diagrama de arquitectura</a> · 
+  <a href="bitacora_ingenieria.md">Bitácora</a>
+</p>
 
 ---
 

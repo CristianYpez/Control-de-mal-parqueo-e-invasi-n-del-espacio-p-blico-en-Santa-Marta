@@ -1,6 +1,21 @@
-# Diagrama de Arquitectura del Sistema · Reto No. 2
-**Control de Mal Parqueo e Invasión del Espacio Público en Santa Marta**  
-*Universidad del Magdalena · Facultad de Ingeniería · Programa de Ingeniería de Sistemas*
+<p align="center">
+  <img src="../logo/unimagdalena-logo.png" alt="Universidad del Magdalena" width="200" />
+</p>
+
+<h1 align="center">Diagrama de Arquitectura del Sistema · Reto No. 2</h1>
+<h3 align="center">Control de Mal Parqueo e Invasión del Espacio Público en Santa Marta</h3>
+
+<p align="center">
+  <strong>Universidad del Magdalena · Facultad de Ingeniería · Programa de Ingeniería de Sistemas (2026-2)</strong><br>
+  <strong>Equipo:</strong> Trancón Samario · <strong>Docente:</strong> Aquiles Cohen
+</p>
+
+<p align="center">
+  ▶️ <a href="https://controldelmalparqueo.vercel.app/"><strong>Demo en línea</strong></a> · 
+  <a href="../README.md">README principal</a> · 
+  <a href="anexo_evidencia_campo.md">Anexo de campo</a> · 
+  <a href="bitacora_ingenieria.md">Bitácora</a>
+</p>
 
 ---
 

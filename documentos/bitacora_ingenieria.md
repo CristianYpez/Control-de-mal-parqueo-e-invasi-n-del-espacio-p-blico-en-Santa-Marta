@@ -1,7 +1,32 @@
-# Bitácora de Ingeniería · Reto No. 2
-**Control de Mal Parqueo e Invasión del Espacio Público en Santa Marta**  
-*Universidad del Magdalena · Facultad de Ingeniería · Introducción a la Ingeniería de Sistemas (2026-2)*  
-*Docente: Aquiles Cohen*
+<p align="center">
+  <img src="../logo/unimagdalena-logo.png" alt="Universidad del Magdalena" width="200" />
+</p>
+
+<h1 align="center">Bitácora de Ingeniería · Reto No. 2</h1>
+<h3 align="center">Control de Mal Parqueo e Invasión del Espacio Público en Santa Marta</h3>
+
+<p align="center">
+  <strong>Universidad del Magdalena · Facultad de Ingeniería · Introducción a la Ingeniería de Sistemas (2026-2)</strong><br>
+  <strong>Equipo:</strong> Trancón Samario · <strong>Docente:</strong> Aquiles Cohen
+</p>
+
+<p align="center">
+  ▶️ <a href="https://controldelmalparqueo.vercel.app/"><strong>Demo en línea</strong></a> · 
+  <a href="../README.md">README principal</a> · 
+  <a href="anexo_evidencia_campo.md">Anexo de campo</a> · 
+  <a href="diagrama_arquitectura.md">Diagrama de arquitectura</a>
+</p>
+
+---
+
+### Integrantes del Equipo
+
+| Integrante | Rol Oficial | Aporte en el Proyecto |
+| :--- | :--- | :--- |
+| **Sergio Orejarena** | Integrador del mapa e instrucciones IA | Organización del proyecto; desarrollo con la IA (mapa de calor dinámico, canvas de censura, calibración, comparador, pruebas y documentos); conteo del Conector Troncal e integración web. |
+| **Jose Lopez** | Analista de campo y privacidad | Conteo de la Av. del Ferrocarril (entradas y salidas); levantamiento de evidencia fotográfica y estructuración de `datos/vias.json`. |
+| **Juan Ariza** | Ingeniero de lógica y clasificación | Conteo de la Calle 31 (oriente) (entradas y salidas); calibración del índice de criticidad en `criterios.json` y algoritmos de filtrado. |
+| **Oswel Moreno** | Diseñador de interfaz y documentador | Conteo de la Calle 31 (sur) en hora pico; protocolo de anonimización y censura de placas/rostros (Ley 1581); redacción de anexos y estilos UI. |
 
 ---
 
