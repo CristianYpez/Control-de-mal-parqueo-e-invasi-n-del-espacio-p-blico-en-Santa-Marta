@@ -2,7 +2,7 @@ import { calcularCriticidad } from "./criticidad.js?v=7";
 import { ubicarCuadra, CUADRA_FUERA_DE_ZONA } from "./cuadras.js?v=1";
 import { filtrarReportes } from "./filtros.js?v=6";
 import { resumirPorCuadra } from "./resumen.js?v=6";
-import { estaDentroDelPerimetro } from "./mapa.js?v=8";
+import { estaDentroDelPerimetro } from "./mapa.js?v=9";
 
 const CLAVE_ALMACENAMIENTO = "santaMartaReportesV1";
 const CLAVE_TEMA = "santaMartaTema";
@@ -2040,14 +2040,30 @@ function confirmarFotoCensurada() {
       throw new Error("El navegador no pudo exportar la foto censurada.");
     }
     botonGuardarReporte.disabled = false;
-    estadoFoto.textContent = "Foto censurada lista.";
+    estadoFoto.textContent = "Foto censurada y confirmada.";
     estadoCensura.textContent = "Foto confirmada. Se guardará únicamente esta versión censurada.";
+    actualizarPreviewFotoFormulario(fotoConfirmada);
     cambiarVista("captura");
   } catch (error) {
     fotoConfirmada = "";
     botonGuardarReporte.disabled = true;
     console.error("No se pudo exportar la foto censurada.", error);
     estadoCensura.textContent = `No se pudo confirmar la foto: ${error.message}`;
+  }
+}
+
+function actualizarPreviewFotoFormulario(dataUrl) {
+  const contenedorPreview = document.querySelector("#preview-foto-captura");
+  const imgPreview = document.querySelector("#img-preview-captura");
+  const contenedorAcciones = document.querySelector("#contenedor-foto-acciones");
+  if (dataUrl) {
+    if (imgPreview) imgPreview.src = dataUrl;
+    if (contenedorPreview) contenedorPreview.classList.remove("oculto");
+    if (contenedorAcciones) contenedorAcciones.classList.add("oculto");
+  } else {
+    if (imgPreview) imgPreview.src = "";
+    if (contenedorPreview) contenedorPreview.classList.add("oculto");
+    if (contenedorAcciones) contenedorAcciones.classList.remove("oculto");
   }
 }
 
@@ -2058,6 +2074,7 @@ function reiniciarEditorCensura() {
   seleccionCensura = null;
   marcoSeleccionCensura.style.display = "none";
   confirmacionPrivacidadFoto.checked = false;
+  actualizarPreviewFotoFormulario(null);
   contadorCensura.textContent = "0 zonas censuradas";
   lienzoCensura.width = 0;
   lienzoCensura.height = 0;
@@ -2170,14 +2187,27 @@ async function importarReportes(archivo) {
 
 function manejarUbicacionSeleccionada(evento) {
   const { lat, lng } = evento.detail ?? {};
+  const badgeEstadoDir = document.querySelector("#badge-estado-direccion");
+  const btnLimpiarDir = document.querySelector("#boton-limpiar-ubicacion");
+
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     mostrarEstado(estadoUbicacion, "El mapa devolvió una ubicación inválida. Selecciona otro punto.");
     ubicacionSeleccionada = null;
+    if (badgeEstadoDir) {
+      badgeEstadoDir.textContent = "Haz clic en el mapa";
+      badgeEstadoDir.className = "badge-estado-direccion";
+    }
+    if (btnLimpiarDir) btnLimpiarDir.classList.add("oculto");
     return;
   }
 
   ubicacionSeleccionada = { lat, lng };
   entradaDireccion.value = "";
+  if (badgeEstadoDir) {
+    badgeEstadoDir.textContent = "Buscando…";
+    badgeEstadoDir.className = "badge-estado-direccion badge-estado-direccion--buscando";
+  }
+  if (btnLimpiarDir) btnLimpiarDir.classList.remove("oculto");
   actualizarVistaCriticidad();
   void buscarDireccion(lat, lng);
 }
@@ -2187,6 +2217,7 @@ async function buscarDireccion(lat, lng) {
   controladorGeocodificacion = new AbortController();
   const controlador = controladorGeocodificacion;
   const solicitud = ++numeroGeocodificacion;
+  const badgeEstadoDir = document.querySelector("#badge-estado-direccion");
   mostrarEstado(estadoUbicacion, "Buscando la dirección del punto en el mapa…");
 
   try {
@@ -2252,12 +2283,20 @@ async function buscarDireccion(lat, lng) {
         ubicacionSeleccionada.direccion = direccion;
       }
       actualizarVistaCriticidad();
-      mostrarEstado(estadoUbicacion, `Dirección del punto: ${direccion}`);
+      mostrarEstado(estadoUbicacion, `✓ Dirección identificada: ${direccion}`);
+      if (badgeEstadoDir) {
+        badgeEstadoDir.textContent = "✓ Ubicación fijada";
+        badgeEstadoDir.className = "badge-estado-direccion badge-estado-direccion--ok";
+      }
     } else {
       mostrarEstado(
         estadoUbicacion,
-        "Punto marcado. Puedes escribir la dirección en el campo si lo deseas.",
+        "Punto marcado en el mapa. Puedes escribir o ajustar la dirección en el campo.",
       );
+      if (badgeEstadoDir) {
+        badgeEstadoDir.textContent = "✓ Punto en mapa";
+        badgeEstadoDir.className = "badge-estado-direccion badge-estado-direccion--ok";
+      }
     }
   } catch (error) {
     if (error.name === "AbortError" || solicitud !== numeroGeocodificacion) {
@@ -2267,6 +2306,45 @@ async function buscarDireccion(lat, lng) {
       estadoUbicacion,
       "Punto marcado. Escribe la dirección en el campo.",
     );
+    if (badgeEstadoDir) {
+      badgeEstadoDir.textContent = "✓ Punto en mapa";
+      badgeEstadoDir.className = "badge-estado-direccion badge-estado-direccion--ok";
+    }
+  }
+}
+
+async function buscarDireccionEnMapa(texto) {
+  if (!texto || !texto.trim()) return;
+  const query = texto.trim();
+  mostrarEstado(estadoUbicacion, `Buscando "${query}" en Santa Marta…`);
+  const badgeEstadoDir = document.querySelector("#badge-estado-direccion");
+  if (badgeEstadoDir) {
+    badgeEstadoDir.textContent = "Buscando…";
+    badgeEstadoDir.className = "badge-estado-direccion badge-estado-direccion--buscando";
+  }
+  try {
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query + " Santa Marta")}&lat=11.24&lon=-74.2&limit=1`;
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (res.ok) {
+      const data = await res.json();
+      const coords = data.features?.[0]?.geometry?.coordinates;
+      if (coords && coords.length >= 2) {
+        const [lng, lat] = coords;
+        window.dispatchEvent(
+          new CustomEvent("mapa:solicitar-ubicacion", {
+            detail: { lat, lng },
+          }),
+        );
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn("Fallo geocodificación Photon:", err);
+  }
+  mostrarEstado(estadoUbicacion, "No se encontró el punto exacto. Toca directamente en el mapa.");
+  if (badgeEstadoDir) {
+    badgeEstadoDir.textContent = "Escribe o marca mapa";
+    badgeEstadoDir.className = "badge-estado-direccion";
   }
 }
 
@@ -2363,6 +2441,14 @@ function guardarReporte(evento) {
     cancelarBusquedaDireccion();
     window.dispatchEvent(new Event("mapa:limpiar-seleccion"));
     reiniciarEditorCensura();
+    actualizarPreviewFotoFormulario(null);
+    const badgeEstadoDir = document.querySelector("#badge-estado-direccion");
+    if (badgeEstadoDir) {
+      badgeEstadoDir.textContent = "Haz clic en el mapa";
+      badgeEstadoDir.className = "badge-estado-direccion";
+    }
+    document.querySelector("#boton-limpiar-ubicacion")?.classList.add("oculto");
+    document.querySelectorAll(".btn-atajo-sector").forEach((b) => b.classList.remove("btn-atajo-sector--activo"));
     for (const boton of [...botonesCategoria, ...botonesActor]) {
       boton.setAttribute("aria-pressed", "false");
     }
@@ -2454,8 +2540,12 @@ async function inicializar() {
       const vistaGuardada = sessionStorage.getItem("santaMartaVistaActiva");
       if (vistaGuardada && ["captura", "tablero", "graficas"].includes(vistaGuardada)) {
         cambiarVista(vistaGuardada);
+      } else {
+        cambiarVista("captura");
       }
-    } catch { }
+    } catch {
+      cambiarVista("captura");
+    }
   }
 
 formulario.addEventListener("submit", guardarReporte);
@@ -2537,7 +2627,69 @@ formulario.addEventListener("submit", guardarReporte);
     entradaDireccion.value = "";
     window.dispatchEvent(new Event("mapa:limpiar-seleccion"));
     mostrarEstado(estadoUbicacion, "Toca el mapa o usa tu ubicación.");
+    const badgeEstadoDir = document.querySelector("#badge-estado-direccion");
+    if (badgeEstadoDir) {
+      badgeEstadoDir.textContent = "Haz clic en el mapa";
+      badgeEstadoDir.className = "badge-estado-direccion";
+    }
+    botonLimpiarUbicacion.classList.add("oculto");
+    document.querySelectorAll(".btn-atajo-sector").forEach((b) => b.classList.remove("btn-atajo-sector--activo"));
+    actualizarVistaCriticidad();
   });
+
+  // Atajos rápidos de sectores en el mapa
+  document.querySelectorAll(".btn-atajo-sector").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lat = parseFloat(btn.dataset.sectorLat);
+      const lng = parseFloat(btn.dataset.sectorLng);
+      const zoom = parseInt(btn.dataset.sectorZoom, 10) || 16;
+      if (!isNaN(lat) && !isNaN(lng)) {
+        window.dispatchEvent(
+          new CustomEvent("mapa:volar-a", {
+            detail: { lat, lng, zoom },
+          }),
+        );
+        document.querySelectorAll(".btn-atajo-sector").forEach((b) => b.classList.remove("btn-atajo-sector--activo"));
+        btn.classList.add("btn-atajo-sector--activo");
+      }
+    });
+  });
+
+  // Búsqueda de dirección con botón o Enter
+  const botonBuscarDir = document.querySelector("#boton-buscar-direccion");
+  if (botonBuscarDir) {
+    botonBuscarDir.addEventListener("click", () => {
+      buscarDireccionEnMapa(entradaDireccion.value);
+    });
+  }
+  entradaDireccion.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      buscarDireccionEnMapa(entradaDireccion.value);
+    }
+  });
+
+  // Gestión de preview de foto en el formulario
+  const btnEliminarPreview = document.querySelector("#boton-eliminar-foto-preview");
+  if (btnEliminarPreview) {
+    btnEliminarPreview.addEventListener("click", () => {
+      fotoConfirmada = "";
+      entradaFoto.value = "";
+      if (entradaFotoCamara) entradaFotoCamara.value = "";
+      reiniciarEditorCensura();
+      actualizarPreviewFotoFormulario(null);
+      mostrarEstado(estadoFoto, "Foto eliminada. Puedes adjuntar otra si deseas.");
+    });
+  }
+
+  const btnReeditarCensura = document.querySelector("#boton-reeditar-censura");
+  if (btnReeditarCensura) {
+    btnReeditarCensura.addEventListener("click", () => {
+      if (fotoConfirmada) {
+        cambiarVista("censura");
+      }
+    });
+  }
   botonVistaCaptura.addEventListener("click", () => cambiarVista("captura"));
   botonVistaTablero.addEventListener("click", () => cambiarVista("tablero"));
   botonVistaGraficas.addEventListener("click", () => cambiarVista("graficas"));

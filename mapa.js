@@ -160,7 +160,39 @@ function seleccionarUbicacion(latitud, longitud, centrarMapa = false) {
   if (marcadorUbicacion) {
     marcadorUbicacion.setLatLng(ubicacion);
   } else {
-    marcadorUbicacion = L.marker(ubicacion).addTo(mapaCaptura);
+    const iconoPin = L.divIcon({
+      className: "marcador-pin-captura-wrapper",
+      html: `
+        <div class="pin-pulso-radar" aria-hidden="true"></div>
+        <div class="pin-cuerpo-marcador" aria-hidden="true">
+          <svg width="28" height="36" viewBox="0 0 24 32" fill="none">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 20 12 20s12-11 12-20c0-6.63-5.37-12-12-12z" fill="#EF4444"/>
+            <circle cx="12" cy="11" r="5" fill="#FFFFFF"/>
+            <circle cx="12" cy="11" r="2.5" fill="#B91C1C"/>
+          </svg>
+        </div>
+      `,
+      iconSize: [28, 36],
+      iconAnchor: [14, 36],
+      popupAnchor: [0, -36],
+    });
+
+    marcadorUbicacion = L.marker(ubicacion, {
+      icon: iconoPin,
+      draggable: true,
+      autoPan: true,
+    }).addTo(mapaCaptura);
+
+    marcadorUbicacion.on("dragend", (e) => {
+      const pos = e.target.getLatLng();
+      seleccionarUbicacion(pos.lat, pos.lng, false);
+    });
+
+    marcadorUbicacion.bindTooltip("Arrastra para ajustar el punto exacto", {
+      direction: "top",
+      offset: [0, -38],
+      className: "tooltip-pin-captura",
+    });
   }
 
   if (centrarMapa) {
@@ -174,10 +206,13 @@ function seleccionarUbicacion(latitud, longitud, centrarMapa = false) {
 }
 
 function crearMapa(elemento, opciones = {}) {
+  const centro = opciones.center || CENTRO_SANTA_MARTA;
+  const zoom = opciones.zoom || NIVEL_ZOOM_INICIAL;
+  const { center: _c, zoom: _z, ...restoOpciones } = opciones;
   const mapa = L.map(elemento, {
     zoomControl: true,
-    ...opciones,
-  }).setView(CENTRO_SANTA_MARTA, NIVEL_ZOOM_INICIAL);
+    ...restoOpciones,
+  }).setView(centro, zoom);
 
   const capaBase = L.tileLayer(URL_OSM, {
     maxZoom: 19,
@@ -730,7 +765,9 @@ function dibujar(reportes) {
 }
 
 function activarMapaCaptura() {
-  requestAnimationFrame(() => mapaCaptura.invalidateSize());
+  requestAnimationFrame(() => {
+    mapaCaptura?.invalidateSize();
+  });
 }
 
 function activarCapas() {
@@ -758,7 +795,10 @@ function inicializarMapas() {
     throw new Error("Leaflet.heat no cargó. Comprueba la conexión a internet y el CDN.");
   }
 
-  const resCaptura = crearMapa(mapaCapturaElemento);
+  const resCaptura = crearMapa(mapaCapturaElemento, {
+    center: [11.232, -74.195],
+    zoom: 15,
+  });
   mapaCaptura = resCaptura.mapa;
   capaBaseCaptura = resCaptura.capaBase;
 
@@ -783,6 +823,15 @@ function inicializarMapas() {
   mapaCaptura.on("click", ({ latlng }) => seleccionarUbicacion(latlng.lat, latlng.lng));
   window.addEventListener("mapa:solicitar-ubicacion", ({ detail }) => {
     seleccionarUbicacion(detail?.lat, detail?.lng, true);
+  });
+  window.addEventListener("mapa:volar-a", ({ detail }) => {
+    if (detail?.lat && detail?.lng && mapaCaptura) {
+      mapaCaptura.invalidateSize();
+      mapaCaptura.flyTo([detail.lat, detail.lng], detail.zoom || 16, {
+        animate: true,
+        duration: 0.8,
+      });
+    }
   });
   window.addEventListener("mapa:limpiar-seleccion", () => {
     marcadorUbicacion?.remove();
@@ -843,6 +892,10 @@ function inicializarMapas() {
     control.addEventListener("input", control === controlesCalor.paleta ? actualizarPaleta : actualizarAjustesCalor);
     control.addEventListener("change", control === controlesCalor.paleta ? actualizarPaleta : actualizarAjustesCalor);
   }
+
+  setTimeout(() => {
+    mapaCaptura?.invalidateSize();
+  }, 100);
 }
 
 try {
