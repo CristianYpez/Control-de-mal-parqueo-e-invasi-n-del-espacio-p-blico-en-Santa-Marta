@@ -102,7 +102,67 @@ Siguiendo la exigencia del Reto No. 2, se documentan fallos reales presentados p
 
 ---
 
-### Fallo 3: Pérdida de interactividad del botón de edición y censura de fotos
+### Fallo 3: Desproporción del área de calor al alejar el zoom (Zoom-out) y saturación en zoom cercano
+
+* **Lo que se pidió:**  
+  *"Haz que no tenga tanta área de calor al tener cierto zoom out, guíate de estos mapas de calor de densidad urbana con anillos concéntricos por sector, y haz que los puntos individuales se vean con claridad al hacer zoom in sin saturar toda la cuadra."*
+
+* **Lo que entregó la IA inicialmente (El problema):**  
+  La implementación inicial de `Leaflet.heat` utilizaba un radio fijo en píxeles (`radius: 25`, `blur: 15`, `max: 5`).  
+  Al hacer **zoom-out** (niveles 10–12), los puntos geográficos se condensaban en pocos píxeles de pantalla, haciendo que los radios estáticos se fusionaran en una masa gigante amarilla y roja que cubría barrios enteros y desbordaba hacia cerros y zonas deshabitadas. Daba la falsa impresión de que toda la ciudad de Santa Marta estaba en crisis crítica simultánea.  
+  Por el contrario, al hacer **zoom-in** (niveles 15–17), dos o tres reportes juntos saturaban de inmediato a tonos morados intensos bloqueando la visibilidad de la calle, o bien reportes aislados de criticidad baja se desvanecían volviéndose casi invisibles.  
+  Adicionalmente, en una iteración intermedia la IA intentó usar el servicio de teselas de CartoDB, lo que provocó que el mapa quedara tapado por marcas de agua gigantes de *"API KEY REQUIRED"*.
+
+* **Evidencia visual (Antes y Después):**
+
+  #### Antes: Mancha masiva desproporcionada en Zoom-Out
+  Al alejar el mapa, la falta de calibración dinámica creaba una mancha térmica gigantesca y desbordada sobre Santa Marta:
+  
+  ![Antes: Mancha gigante de calor en zoom out](img/calor_zoom_out_antes.jpg)
+
+  #### Antes: Puntos saturados e imprecisos en Zoom-In
+  Al acercar el mapa, los puntos individuales saturaban de inmediato a tonos morados continuos sin respetar la escala de la manzana vial:
+  
+  ![Antes: Puntos saturados en zoom in](img/calor_zoom_in_puntos.jpg)
+
+  #### Fallo intermedio en el chat: Bloqueo de teselas por API Key de CartoDB
+  Durante el intento de cambiar el fondo a escala de grises, se introdujo CartoDB sin contemplar que ahora exige API Key de pago, bloqueando el mapa:
+  
+  ![Fallo intermedio: Marca de agua API Key en Carto](img/fallo_carto_apikey.jpg)
+
+  #### Después: Mapa de calor dinámico calibrado, proporcional y sin marcas de agua
+  Resultado final tras la resolución guiada por el chat: núcleos concéntricos nítidos por sector (Av. Ferrocarril, Unimagdalena y Calle 30), halos proporcionados a la calzada y mapa base OpenStreetMap con filtro oscuro nativo:
+  
+  ![Después: Mapa de calor adaptativo por zoom con sectores delimitados](img/calor_calibrado_despues.jpg)
+
+* **Cómo se resolvió mediante el chat con la IA:**  
+  La solución definitiva requirió una reingeniería matemática y algorítmica en [mapa.js](file:///c:/Users/User/OneDrive/Desktop/proyecto_parqueo/mapa.js) implementada en 5 pasos coordinados:
+
+  1. **Radio dinámico por nivel de zoom (`calcularRadioPorZoom`):**  
+     Se reemplazó el valor fijo por una escala matemática ligada al nivel de zoom de Leaflet:
+     * Zoom $\le 10$: $6\text{ px}$ | Zoom $11$: $8\text{ px}$ | Zoom $12$: $11\text{ px}$ | Zoom $13$: $15\text{ px}$
+     * Zoom $14$: $21\text{ px}$ | Zoom $15$: $27\text{ px}$ | Zoom $16$: $33\text{ px}$ | Zoom $\ge 17$: $37\text{ a }42\text{ px}$
+  
+  2. **Desenfoque proporcional (`calcularBlurPorZoom`):**  
+     Se fijó el blur entre el $45\%$ y $50\%$ del radio vigente ($\text{blur} \approx \text{radio} \times 0.48$). Esto produce anillos concéntricos bien definidos estilo GIS térmico profesional (centro intenso y borde suave) en lugar de una niebla borrosa difusa.
+
+  3. **Agrupación espacial por cuadrícula adaptativa (`Spatial Clustering`):**  
+     Se implementó `agruparReportesPorZoom()`, que proyecta una malla geográfica virtual:
+     * En zoom lejano ($\le 11$), agrupa en celdas de $\approx 80\text{ m}$ y atenúa el peso acumulado con una escala logarítmica ($\text{peso} = \min(\text{total}, 3 + 3\log_2(\text{conteo} + 1))$) para evitar explosiones térmicas.
+     * En zoom cercano ($\ge 15$), divide en micro-celdas de $\approx 15\text{ m}$, permitiendo distinguir focos independientes entre esquinas opuestas de una misma cuadra.
+
+  4. **Umbral de intensidad dinámico (`calcularMaxCalor`):**  
+     Se calculó el parámetro `max` de la capa en tiempo real: en zoom lejano se eleva a $8.0\text{–}12.0$ para requerir muchos incidentes antes de pasar a rojo, mientras que en zoom cercano desciende a $2.4\text{–}3.8$, logrando que un reporte aislado tenga presencia visible y 2 o 3 reportes formen un hotspot naranja/rojo claro.
+
+  5. **Corrección de teselas y delimitación perimetral:**  
+     Se retiró el endpoint de CartoDB y se restableció OpenStreetMap con filtro CSS (`brightness(0.6) invert(1) contrast(2.8) hue-rotate(200deg)`), eliminando permanentemente la marca de agua. Adicionalmente se integró el archivo [santa-marta-perimetro.geojson](file:///c:/Users/User/OneDrive/Desktop/proyecto_parqueo/santa-marta-perimetro.geojson) y **Turf.js** para que el mapa de calor no se calcule jamás fuera del casco urbano de Santa Marta.
+
+* **Instrucción final que funcionó:**  
+  *"Escucha los eventos `zoomend` y `moveend` con debounce para recalcular dinámicamente el radio, blur y max de Leaflet.heat mediante Spatial Clustering por cuadrícula. Retira cualquier servicio de teselas que requiera API Key, usa OpenStreetMap nativo filtrado y valida el perímetro con Turf.js."*
+
+---
+
+### Fallo 4: Pérdida de interactividad del botón de edición y censura de fotos
 
 * **Lo que se pidió:**  
   *"Agrega un botón en el modal de detalle para editar o censurar fotos de reportes existentes."*
