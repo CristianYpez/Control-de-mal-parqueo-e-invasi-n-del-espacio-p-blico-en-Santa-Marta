@@ -1,4 +1,12 @@
 // Calcula la criticidad sin modificar el reporte ni depender del navegador.
+/**
+ * Módulo: criticidad.js
+ * Calcula el puntaje total (2 a 9 pts) y nivel de severidad (Bajo, Medio, Alto)
+ * sumando tres componentes configurables en datos/criterios.json y datos/vias.json:
+ *   1. Categoría de obstrucción (doble_fila, bloqueo_rampa_cebra_paradero, invasion_anden)
+ *   2. Tipo de vía (arterial = 3 pts, secundaria = 1 pt, fuera de zona = 0 pts)
+ *   3. Franja horaria (pico = 3 pts, valle = 1 pt)
+ */
 function calcularCriticidad(reporte, vias, criterios) {
   if (!reporte || !Array.isArray(vias) || !criterios) {
     throw new Error("Faltan datos válidos para calcular la criticidad.");
