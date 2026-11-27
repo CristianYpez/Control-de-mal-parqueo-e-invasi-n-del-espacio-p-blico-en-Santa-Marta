@@ -102,35 +102,48 @@ Siguiendo la exigencia del Reto No. 2, se documentan fallos reales presentados p
 
 ---
 
-### Fallo 3: Desproporción del área de calor al alejar el zoom (Zoom-out) y saturación en zoom cercano
+### Fallo 3: Desproporción del área de calor al alejar el zoom (Zoom-out) y saturación en zoom cercano con pocos reportes
 
-* **Lo que se pidió:**  
-  *"Haz que no tenga tanta área de calor al tener cierto zoom out, guíate de estos mapas de calor de densidad urbana con anillos concéntricos por sector, y haz que los puntos individuales se vean con claridad al hacer zoom in sin saturar toda la cuadra."*
+* **Lo que se pidió (Prompt exacto del usuario en el chat):**  
+  > *"dame el prompt para mejorar la escala del mapa de calor por que cuando hago zoom out ocupa mucha area en y puedes ver que cuando hago zoom in nomas son 2 reportes y ocupa mucha escala"*
+
+  ![Captura del chat con el prompt del usuario y la evidencia del fallo](img/fallo_calor_chat_prompt.png)
 
 * **Lo que entregó la IA inicialmente (El problema):**  
-  La implementación inicial de `Leaflet.heat` utilizaba un radio fijo en píxeles (`radius: 25`, `blur: 15`, `max: 5`).  
-  Al hacer **zoom-out** (niveles 10–12), los puntos geográficos se condensaban en pocos píxeles de pantalla, haciendo que los radios estáticos se fusionaran en una masa gigante amarilla y roja que cubría barrios enteros y desbordaba hacia cerros y zonas deshabitadas. Daba la falsa impresión de que toda la ciudad de Santa Marta estaba en crisis crítica simultánea.  
-  Por el contrario, al hacer **zoom-in** (niveles 15–17), dos o tres reportes juntos saturaban de inmediato a tonos morados intensos bloqueando la visibilidad de la calle, o bien reportes aislados de criticidad baja se desvanecían volviéndose casi invisibles.  
-  Adicionalmente, en una iteración intermedia la IA intentó usar el servicio de teselas de CartoDB, lo que provocó que el mapa quedara tapado por marcas de agua gigantes de *"API KEY REQUIRED"*.
+  La implementación inicial de `Leaflet.heat` utilizaba un radio fijo en píxeles (`radius: 25`, `blur: 15`, `max: 5`) completamente desvinculado de la escala métrica del terreno:
+  * **En Zoom-In:** Apenas 2 reportes juntos sobre una esquina generaban una mancha térmica sobredimensionada que tapaba la vía y la manzana entera.
+  * **En Zoom Medio:** Un solo reporte aislado proyectaba un radio descomunal que cubría barrios completos y corredores viales enteros (como la vía 90-07A).
+  * **En Zoom-Out:** Los puntos geográficos se condensaban en pocos píxeles de pantalla, haciendo que los radios estáticos se fusionaran en una masa roja gigantesca que cubría toda la ciudad de Santa Marta y desbordaba hacia cerros y zonas deshabitadas. Daba la falsa impresión de que toda la ciudad estaba colapsada.
+  * **Fallo intermedio adicional:** Al intentar corregir el estilo del mapa a escala de grises, la IA propuso CartoDB sin advertir que requería una API Key de pago, bloqueando el mapa con marcas de agua de *"API KEY REQUIRED"*.
 
-* **Evidencia visual (Antes y Después):**
+* **Evidencia visual (Antes, Fallo intermedio y Ahora):**
 
-  #### 1. Antes: Mancha masiva desproporcionada en Zoom-Out
-  Al alejar el mapa ($\text{zoom} \le 12$), la falta de calibración dinámica creaba una masa térmica gigantesca y desbordada sobre Santa Marta, cubriendo la bahía y cerros sin distinguir focos de criticidad:
+  #### 1. Antes: Solo 2 reportes ocupando una escala desmedida en Zoom-In
+  Al acercar el mapa, se evidencia que únicamente hay dos reportes en la esquina, pero la mancha de calor cubre toda la intersección y manzana vial:
   
-  ![Antes: Mancha gigante de calor en zoom out](img/calor_zoom_out_antes.jpg)
+  ![Antes Zoom In: Solo 2 reportes ocupaban demasiada escala](img/calor_antes_zoom_in_2reportes.png)
 
-  #### 2. Fallo intermedio en el chat: Bloqueo de teselas por API Key de CartoDB
+  #### 2. Antes: Un solo reporte cubriendo barrios enteros en Zoom Medio
+  Al alejar el zoom a nivel intermedio, un solo reporte proyectaba un radio desproporcionado que ocupaba hectáreas de terreno sobre la vía 90-07A:
+  
+  ![Antes Zoom Medio: Un solo reporte cubre sectores enteros](img/calor_antes_zoom_medio_desproporcion.png)
+
+  #### 3. Antes: Masa masiva desbordada sobre toda Santa Marta en Zoom-Out
+  Al alejar el mapa completo ($\text{zoom} \le 12$), los radios fijos se solapaban creando una masa térmica roja gigante que cubría la ciudad de extremo a extremo:
+  
+  ![Antes Zoom Out: Mancha roja masiva sobre Santa Marta](img/calor_antes_zoom_out_mancha.png)
+
+  #### 4. Fallo intermedio en el chat: Bloqueo de teselas por API Key de CartoDB
   Durante el intento de cambiar el fondo a escala de grises, la IA introdujo el servicio de CartoDB sin advertir que ahora exige API Key de pago, cubriendo todo el mapa con marcas de agua de *"API KEY REQUIRED"*:
   
   ![Fallo intermedio: Marca de agua API Key en Carto](img/fallo_carto_apikey.jpg)
 
-  #### 3. Ahora (Resultado calibrado por sector): Focos concéntricos independientes
+  #### 5. Ahora (Resultado calibrado por sector): Focos concéntricos independientes
   Resultado actual del sistema a escala de sector: núcleos concéntricos diferenciados en Villa Marbella, Portal Universitario, Av. Ferrocarril y Calle 30, respetando el entorno urbano sin desbordarse:
   
   ![Ahora: Focos de calor independientes y calibrados por sector](img/calor_sector_ahora.jpg)
 
-  #### 4. Ahora (Última foto a nivel de calle): Detalle en Zoom-In con puntos individuales
+  #### 6. Ahora (Última foto a nivel de calle): Detalle en Zoom-In con puntos individuales
   Resultado final a escala de calle alcanzado en el chat: al acercar el mapa, cada reporte individual tiene presencia visual nítida con sus propios halos concéntricos, respetando el ancho de la calzada, sin saturar la cuadra y sobre OpenStreetMap monocromático libre de marcas de agua:
   
   ![Ahora (Última foto): Detalle a nivel de calle con puntos individuales y halos definidos](img/calor_zoom_in_ahora.jpg)
