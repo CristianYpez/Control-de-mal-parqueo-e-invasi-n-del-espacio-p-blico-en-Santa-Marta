@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  ▶️ <a href="https://controldelmalparqueo.vercel.app/"><strong>Demo en línea</strong></a> · 
+  ▶️ <a href="https://lilangel-stack.github.io/Control-de-mal-parqueo-e-invasi-n-del-espacio-p-blico-en-Santa-Marta/"><strong>Demo en línea (GitHub Pages)</strong></a> · 
   <a href="../README.md">README principal</a> · 
   <a href="diagrama_arquitectura.md">Diagrama de arquitectura</a> · 
   <a href="bitacora_ingenieria.md">Bitácora</a>

@@ -182,7 +182,6 @@ const ATRIBUCION_OSM = '&copy; <a href="https://www.openstreetmap.org/copyright"
 
 let capaBaseCaptura;
 let capaBaseTablero;
-let capaCalorCaptura;
 let capaBordeCaptura;
 let capaBordeTablero;
 
@@ -474,31 +473,6 @@ function crearMapa(elemento, opciones = {}) {
   const { capaMascara, capaBorde } = aplicarPerimetroYMascara(mapa, { ajustarBounds });
 
   return { mapa, capaBase, capaMascara, capaBorde };
-}
-
-function actualizarCalorCaptura(reportes) {
-  if (!mapaCaptura || typeof window.L?.heatLayer !== "function") return;
-  const puntos = reportes
-    .filter((r) => estaDentroDelPerimetro(r.lat, r.lng))
-    .map((r) => [r.lat, r.lng, obtenerPesoCriticidad(r)]);
-  if (!capaCalorCaptura) {
-    capaCalorCaptura = L.heatLayer(puntos, {
-      radius: 22,
-      blur: 11,
-      minOpacity: 0.18,
-      max: 6,
-      gradient: {
-        0.0: "rgba(0, 0, 0, 0)",
-        0.08: "rgba(254, 240, 138, 0.45)",
-        0.22: "#fde047",
-        0.45: "#fb923c",
-        0.68: "#ef4444",
-        1.0: "#c026d3",
-      },
-    }).addTo(mapaCaptura);
-  } else {
-    capaCalorCaptura.setLatLngs(puntos);
-  }
 }
 
 function mostrarEstadoMapa(elemento, mensaje) {
@@ -1166,7 +1140,6 @@ function inicializarMapas() {
   window.addEventListener("reportes:actualizados", ({ detail }) => {
     const reportes = detail?.reportes ?? [];
     dibujar(reportes);
-    actualizarCalorCaptura(reportes);
   });
   window.addEventListener("reportes:filtrados", ({ detail }) => {
     dibujar(detail?.reportes ?? []);
