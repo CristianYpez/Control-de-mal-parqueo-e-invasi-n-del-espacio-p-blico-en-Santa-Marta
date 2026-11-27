@@ -20,7 +20,7 @@
     rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <link rel="stylesheet" href="./styles.css?v=18" />
+  <link rel="stylesheet" href="./styles.css?v=28" />
 </head>
 
 <body>
@@ -502,10 +502,23 @@
               <p class="sobretitulo">UBICACIÓN Y RECURRENCIA</p>
               <h2 id="titulo-mapa-tablero">Mapa de reincidencia</h2>
             </div>
+            <div class="leyenda-criticidad leyenda-criticidad--cabecera" aria-label="Escala de criticidad">
+              <span class="leyenda-etiqueta">Baja</span>
+              <span class="leyenda-criticidad__degradado" aria-hidden="true"></span>
+              <span class="leyenda-etiqueta">Crítica</span>
+            </div>
           </div>
           <div class="mapa-con-controles">
             <div id="mapa-tablero" class="mapa mapa--tablero" role="application"
               aria-label="Mapa de reincidencia de reportes"></div>
+
+            <!-- Leyenda flotante HUD directamente sobre el mapa (100% visible sin scroll) -->
+            <div class="leyenda-mapa-flotante" aria-label="Escala de calor de criticidad">
+              <span class="leyenda-mapa-flotante__titulo">Calor:</span>
+              <span class="leyenda-mapa-flotante__texto">Baja</span>
+              <span class="leyenda-criticidad__degradado" aria-hidden="true"></span>
+              <span class="leyenda-mapa-flotante__texto">Crítica</span>
+            </div>
             <details id="panel-capas-mapa" class="panel-capas-mapa">
               <summary class="panel-capas-mapa__resumen">
                 <span class="panel-capas-mapa__titulo">CAPAS DEL MAPA</span>
@@ -563,14 +576,18 @@
               <button type="button" data-periodo-mapa="todo" aria-pressed="true">TODO</button>
             </nav>
           </div>
-          <p id="resumen-periodo-mapa" class="resumen-periodo-mapa" role="status" aria-live="polite">
-            0 reportes en el período seleccionado
-          </p>
-          <p id="estado-tablero" class="estado" role="status" aria-live="polite"></p>
-          <div class="leyenda-criticidad" aria-label="Menor a mayor criticidad">
-            <span>Menor</span>
-            <span class="leyenda-criticidad__degradado" aria-hidden="true"></span>
-            <span>Mayor criticidad</span>
+          <div class="pie-info-mapa">
+            <div class="textos-estado-mapa">
+              <p id="resumen-periodo-mapa" class="resumen-periodo-mapa" role="status" aria-live="polite">
+                0 reportes en el período seleccionado
+              </p>
+              <p id="estado-tablero" class="estado" role="status" aria-live="polite"></p>
+            </div>
+            <div class="leyenda-criticidad leyenda-criticidad--pie" aria-label="Menor a mayor criticidad">
+              <span>Menor</span>
+              <span class="leyenda-criticidad__degradado" aria-hidden="true"></span>
+              <span>Mayor criticidad</span>
+            </div>
           </div>
         </section>
 
@@ -921,8 +938,9 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-  <script type="module" src="./captura.js?v=17"></script>
+  <script type="module" src="./captura.js?v=28"></script>
 </body>
 
 </html>

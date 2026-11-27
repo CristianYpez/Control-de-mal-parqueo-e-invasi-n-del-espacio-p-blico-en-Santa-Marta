@@ -1,47 +1,135 @@
 const CENTRO_SANTA_MARTA = [11.205, -74.17];
 const NIVEL_ZOOM_INICIAL = 11;
 
-// Perímetro aproximado de cobertura urbana unificado (incluye corredor hacia Bonda y extensión a El Cisne).
-const PERIMETRO_APROXIMADO = [
-  [11.184, -74.145],
-  [11.174, -74.139],
-  [11.163, -74.132],
-  [11.15, -74.13],
-  [11.14, -74.138],
-  [11.148, -74.153],
-  [11.16, -74.17],
-  [11.178, -74.19],
-  [11.2, -74.21],
-  [11.195, -74.207],
-  [11.18, -74.205],
-  [11.16, -74.203],
-  [11.14, -74.203],
-  [11.12, -74.209],
-  [11.118, -74.231],
-  [11.13, -74.248],
-  [11.15, -74.252],
-  [11.174, -74.251],
-  [11.198, -74.246],
-  [11.218, -74.238],
-  [11.229, -74.237],
-  [11.249, -74.238],
-  [11.266, -74.219],
-  [11.267, -74.188],
-  [11.252, -74.172],
-  [11.251, -74.158],
-  [11.246, -74.146],
-  [11.239, -74.137],
-  [11.238, -74.13],
-  [11.238, -74.1248],
-  [11.241, -74.115],
-  [11.241, -74.107],
-  [11.232, -74.101],
-  [11.222, -74.102],
-  [11.214, -74.112],
-  [11.208, -74.126],
-  [11.207, -74.142],
-  [11.2, -74.143],
-  [11.192, -74.144],
+// Objeto GeoJSON completo del perímetro urbano de Santa Marta (Polygon con 73 vértices detallados).
+// Calibrado con la silueta urbana oficial: costa (Taganga, Bahía, Rodadero, Pozos Colorados), lóbulo Bonda y pie de monte.
+let PERIMETRO_GEOJSON = {
+  type: "FeatureCollection",
+  name: "santa-marta-perimetro-urbano",
+  features: [
+    {
+      type: "Feature",
+      properties: {
+        nombre: "Perímetro Urbano de Santa Marta",
+        descripcion:
+          "Límite urbano oficial que abarca el casco histórico, bahías, Rodadero, Pozos Colorados y corredor a Bonda",
+        ciudad: "Santa Marta",
+        departamento: "Magdalena",
+        pais: "Colombia",
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            // 1. Taganga y Cerros del Norte
+            [-74.1942, 11.2738],
+            [-74.1915, 11.272],
+            [-74.188, 11.2692],
+            [-74.1845, 11.2665],
+            [-74.1782, 11.2635],
+            [-74.172, 11.2612],
+            [-74.165, 11.2585],
+            [-74.158, 11.2562],
+            [-74.1515, 11.2545],
+            [-74.1448, 11.253],
+            [-74.1375, 11.2512],
+            [-74.13, 11.2498],
+            [-74.122, 11.2488],
+            [-74.114, 11.2478],
+
+            // 2. Corredor y lóbulo oriental de Bonda
+            [-74.1065, 11.2468],
+            [-74.1005, 11.2458],
+            [-74.0955, 11.2435],
+            [-74.092, 11.2405],
+            [-74.0945, 11.2365],
+            [-74.099, 11.2335],
+            [-74.1055, 11.231],
+            [-74.113, 11.2285],
+            [-74.1215, 11.2255],
+            [-74.129, 11.2228],
+            [-74.1365, 11.2198],
+
+            // 3. Suroriente - Falda de cerros de Santa Marta (Curinca, El Cisne, Ciudadela)
+            [-74.1435, 11.2168],
+            [-74.151, 11.214],
+            [-74.1585, 11.2118],
+            [-74.166, 11.2095],
+            [-74.1735, 11.2075],
+            [-74.1805, 11.2055],
+            [-74.1865, 11.204],
+            [-74.1925, 11.2025],
+            [-74.1965, 11.201],
+
+            // 4. Conector Troncal hacia Gaira
+            [-74.2005, 11.197],
+            [-74.2045, 11.1925],
+            [-74.2085, 11.187],
+            [-74.211, 11.1805],
+            [-74.2125, 11.1735],
+            [-74.2135, 11.1665],
+
+            // 5. Franja oriental Pozos Colorados / Bello Horizonte (base de cerros / ferrocarril)
+            [-74.214, 11.1585],
+            [-74.2145, 11.151],
+            [-74.2148, 11.1435],
+            [-74.2152, 11.136],
+            [-74.2155, 11.1285],
+            [-74.2158, 11.121],
+            [-74.216, 11.115],
+
+            // 6. Límite sur (corte horizontal en Bello Horizonte / Pozos Colorados)
+            [-74.2225, 11.115],
+            [-74.229, 11.115],
+
+            // 7. Línea costera real hacia el norte (ciñéndose a la costa sin invadir el mar)
+            [-74.2298, 11.1215],
+            [-74.2305, 11.1285],
+            [-74.2312, 11.136],
+            [-74.2318, 11.1435],
+            [-74.2322, 11.151],
+            [-74.2325, 11.1585],
+            [-74.232, 11.166],
+            [-74.2315, 11.1735],
+            [-74.231, 11.181],
+            [-74.2305, 11.1885],
+            [-74.23, 11.196],
+            [-74.2292, 11.2035],
+            [-74.2285, 11.211],
+            [-74.2265, 11.2185],
+            [-74.2242, 11.2255],
+            [-74.2225, 11.232],
+            [-74.221, 11.2385],
+            [-74.2198, 11.245],
+            [-74.2185, 11.2515],
+            [-74.216, 11.2575],
+            [-74.2115, 11.263],
+            [-74.206, 11.2675],
+            [-74.2005, 11.271],
+            [-74.1942, 11.2738],
+          ],
+        ],
+      },
+    },
+  ],
+};
+
+// Conversión automática a formato Leaflet [lat, lng]
+let PERIMETRO_APROXIMADO = PERIMETRO_GEOJSON.features[0].geometry.coordinates[0].map(
+  ([lng, lat]) => [lat, lng],
+);
+
+// Máscara mundial con hueco interior en Santa Marta (efecto GIS "Cookie Cutter" estilo Reno/Sparks).
+// Todo lo que quede fuera de Santa Marta se oscurece/atenúa, resaltando únicamente la ciudad.
+let MASCARA_MUNDO = [
+  [
+    [85.0, -180.0],
+    [85.0, 180.0],
+    [-85.0, 180.0],
+    [-85.0, -180.0],
+    [85.0, -180.0],
+  ],
+  PERIMETRO_APROXIMADO,
 ];
 
 const mapaCapturaElemento = document.querySelector("#mapa-captura");
@@ -84,8 +172,8 @@ let capasSeleccionadas = new Set(["calor"]);
 let paletaSeleccionada = "serena";
 
 const PALETAS_CALOR = {
-  serena: ["#fef08a", "#facc15", "#fb923c", "#ef4444", "#7f1d1d"],
-  termica: ["#2166ac", "#00bcd4", "#4caf50", "#ffeb3b", "#ff9800", "#e53935"],
+  serena: ["#fde047", "#facc15", "#fb923c", "#ef4444", "#c026d3", "#701a75"],
+  termica: ["#38bdf8", "#fef08a", "#fb923c", "#ef4444", "#991b1b"],
 };
 
 // Servidor de mapas OpenStreetMap (100% libre, sin requerir API Key ni presentar marcas de agua)
@@ -95,6 +183,8 @@ const ATRIBUCION_OSM = '&copy; <a href="https://www.openstreetmap.org/copyright"
 let capaBaseCaptura;
 let capaBaseTablero;
 let capaCalorCaptura;
+let capaBordeCaptura;
+let capaBordeTablero;
 
 function puntoEnSegmento(latitud, longitud, inicio, fin) {
   const productoCruzado =
@@ -117,10 +207,23 @@ function estaDentroDelPerimetro(latitud, longitud) {
     return false;
   }
 
+  // 1. Validación preferente con Turf.js (booleanPointInPolygon)
+  if (window.turf && typeof window.turf.booleanPointInPolygon === "function") {
+    try {
+      const puntoTurf = window.turf.point([longitud, latitud]);
+      return window.turf.booleanPointInPolygon(puntoTurf, PERIMETRO_GEOJSON.features[0]);
+    } catch {
+      // Si falla Turf por cualquier razón, recurrir al algoritmo ray casting local
+    }
+  }
+
+  // 2. Algoritmo de respaldo (Ray Casting)
   let dentro = false;
-  for (let indice = 0, anterior = PERIMETRO_APROXIMADO.length - 1;
+  for (
+    let indice = 0, anterior = PERIMETRO_APROXIMADO.length - 1;
     indice < PERIMETRO_APROXIMADO.length;
-    anterior = indice, indice += 1) {
+    anterior = indice, indice += 1
+  ) {
     const inicio = PERIMETRO_APROXIMADO[anterior];
     const fin = PERIMETRO_APROXIMADO[indice];
 
@@ -205,30 +308,172 @@ function seleccionarUbicacion(latitud, longitud, centrarMapa = false) {
   );
 }
 
+const capasMascara = [];
+const capasBordePerimetro = [];
+
+function obtenerConfiguracionPerimetro() {
+  const esOscuro =
+    document.documentElement.dataset.tema !== "claro" &&
+    document.documentElement.getAttribute("data-theme") !== "light";
+
+  return {
+    colorMascara: esOscuro ? "#0b1116" : "#ffffff",
+    opacidadMascara: esOscuro ? 0.6 : 0.65,
+    colorBorde: esOscuro ? "#ffffff" : "#0f172a",
+    pesoBorde: 2,
+    rellenoPerimetro: esOscuro ? "#ffffff" : "#0f172a",
+    opacidadRelleno: 0.03,
+  };
+}
+
+function aplicarPerimetroYMascara(mapa, opciones = {}) {
+  if (!mapa.getPane("mascaraPerimetro")) {
+    const pane = mapa.createPane("mascaraPerimetro");
+    pane.style.zIndex = "450";
+    pane.style.pointerEvents = "none";
+  }
+
+  const {
+    colorMascara,
+    opacidadMascara,
+    colorBorde,
+    pesoBorde,
+    rellenoPerimetro,
+    opacidadRelleno,
+  } = obtenerConfiguracionPerimetro();
+
+  // 1. Máscara exterior que atenúa todo el territorio fuera del perímetro urbano (estilo Reno/Sparks / Cookie Cutter)
+  const capaMascara = L.polygon(MASCARA_MUNDO, {
+    pane: "mascaraPerimetro",
+    fillColor: colorMascara,
+    fillOpacity: opacidadMascara,
+    stroke: false,
+    interactive: false,
+  }).addTo(mapa);
+
+  // 2. Capa GeoJSON oficial del perímetro urbano (L.geoJSON con borde blanco punteado y relleno suave)
+  const capaBorde = L.geoJSON(PERIMETRO_GEOJSON, {
+    pane: "mascaraPerimetro",
+    className: "perimetro-borde-urbano",
+    style: {
+      color: colorBorde,
+      weight: pesoBorde,
+      dashArray: "6, 6",
+      lineCap: "round",
+      lineJoin: "round",
+      fillColor: rellenoPerimetro,
+      fillOpacity: opacidadRelleno,
+    },
+    interactive: false,
+  }).addTo(mapa);
+
+  if (opciones.ajustarBounds) {
+    try {
+      const size = mapa.getSize();
+      if (size && size.x > 50 && size.y > 50) {
+        const bounds = capaBorde.getBounds();
+        if (bounds.isValid()) {
+          mapa.fitBounds(bounds, {
+            padding: [20, 20],
+            maxZoom: 14,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("No se pudo ajustar bounds al perímetro:", e);
+    }
+  }
+
+  capasMascara.push(capaMascara);
+  capasBordePerimetro.push(capaBorde);
+
+  return { capaMascara, capaBorde };
+}
+
+function actualizarEstilosPerimetro() {
+  const {
+    colorMascara,
+    opacidadMascara,
+    colorBorde,
+    pesoBorde,
+    rellenoPerimetro,
+    opacidadRelleno,
+  } = obtenerConfiguracionPerimetro();
+
+  for (const mascara of capasMascara) {
+    mascara.setStyle({
+      fillColor: colorMascara,
+      fillOpacity: opacidadMascara,
+    });
+  }
+  for (const borde of capasBordePerimetro) {
+    borde.setStyle({
+      color: colorBorde,
+      weight: pesoBorde,
+      fillColor: rellenoPerimetro,
+      fillOpacity: opacidadRelleno,
+    });
+  }
+}
+
+// Carga asíncrona del archivo santa-marta-perimetro.geojson desde disco
+async function cargarArchivoPerimetroGeoJSON() {
+  if (typeof fetch !== "function" || location.protocol === "file:") return;
+  const rutas = ["./datos/santa-marta-perimetro.geojson", "./santa-marta-perimetro.geojson"];
+  for (const ruta of rutas) {
+    try {
+      const res = await fetch(ruta, { cache: "no-store" });
+      if (res.ok) {
+        const geojson = await res.json();
+        const coords = geojson?.features?.[0]?.geometry?.coordinates?.[0];
+        if (Array.isArray(coords) && coords.length > 3) {
+          PERIMETRO_GEOJSON = geojson;
+          PERIMETRO_APROXIMADO = coords.map(([lng, lat]) => [lat, lng]);
+          MASCARA_MUNDO = [
+            [
+              [85.0, -180.0],
+              [85.0, 180.0],
+              [-85.0, 180.0],
+              [-85.0, -180.0],
+              [85.0, -180.0],
+            ],
+            PERIMETRO_APROXIMADO,
+          ];
+          for (const borde of capasBordePerimetro) {
+            borde.clearLayers?.();
+            borde.addData?.(geojson);
+          }
+          for (const mascara of capasMascara) {
+            mascara.setLatLngs?.(MASCARA_MUNDO);
+          }
+          break;
+        }
+      }
+    } catch {
+      // Mantener geometría integrada de respaldo
+    }
+  }
+}
+
 function crearMapa(elemento, opciones = {}) {
   const centro = opciones.center || CENTRO_SANTA_MARTA;
   const zoom = opciones.zoom || NIVEL_ZOOM_INICIAL;
-  const { center: _c, zoom: _z, ...restoOpciones } = opciones;
+  const { center: _c, zoom: _z, ajustarBounds = false, ...restoOpciones } = opciones;
   const mapa = L.map(elemento, {
     zoomControl: true,
     ...restoOpciones,
   }).setView(centro, zoom);
 
+  // Servidor OpenStreetMap 100% libre (sin API key ni marcas de agua)
   const capaBase = L.tileLayer(URL_OSM, {
     maxZoom: 19,
     attribution: ATRIBUCION_OSM,
   });
   capaBase.addTo(mapa);
 
-  L.polygon(PERIMETRO_APROXIMADO, {
-    color: "#2DD4BF",
-    weight: 2,
-    dashArray: "6 5",
-    fillColor: "#2DD4BF",
-    fillOpacity: 0.05,
-  }).addTo(mapa);
+  const { capaMascara, capaBorde } = aplicarPerimetroYMascara(mapa, { ajustarBounds });
 
-  return { mapa, capaBase };
+  return { mapa, capaBase, capaMascara, capaBorde };
 }
 
 function actualizarCalorCaptura(reportes) {
@@ -238,17 +483,17 @@ function actualizarCalorCaptura(reportes) {
     .map((r) => [r.lat, r.lng, obtenerPesoCriticidad(r)]);
   if (!capaCalorCaptura) {
     capaCalorCaptura = L.heatLayer(puntos, {
-      radius: 20,
-      blur: 12,
-      minOpacity: 0.05,
-      max: 12,
+      radius: 22,
+      blur: 11,
+      minOpacity: 0.18,
+      max: 6,
       gradient: {
-        0.0: "rgba(255, 255, 255, 0)",
-        0.2: "#fef08a",
-        0.4: "#fde047",
-        0.65: "#fb923c",
-        0.85: "#ef4444",
-        1.0: "#7f1d1d",
+        0.0: "rgba(0, 0, 0, 0)",
+        0.08: "rgba(254, 240, 138, 0.45)",
+        0.22: "#fde047",
+        0.45: "#fb923c",
+        0.68: "#ef4444",
+        1.0: "#c026d3",
       },
     }).addTo(mapaCaptura);
   } else {
@@ -270,14 +515,27 @@ function clamp(valor, minimo, maximo) {
 
 // 1. Radio dinámico según el nivel de zoom
 function calcularRadioPorZoom(zoom) {
-  const base = 10 + (zoom - 10) * 3.8;
-  return clamp(Math.round(base), 12, 40);
+  // Calibrado según mapas de densidad urbana (hotspots concéntricos por sectores):
+  if (zoom <= 10) return 6;
+  if (zoom === 11) return 8;
+  if (zoom === 12) return 11;
+  if (zoom === 13) return 15;
+  if (zoom === 14) return 21;
+  if (zoom === 15) return 27;
+  if (zoom === 16) return 33;
+  return clamp(33 + (zoom - 16) * 4, 33, 42);
 }
 
 // 4. Desvanecimiento y blur dinámico
 function calcularBlurPorZoom(radio, zoom) {
-  const factor = zoom <= 12 ? 0.6 : 0.72;
-  return clamp(Math.round(radio * factor), 6, 26);
+  // Proporción del 45-50% para lograr anillos concéntricos nítidos (estilo GIS)
+  // con centro definido y halo perimetral suave que no invade cuadras adyacentes
+  if (zoom <= 10) return 3;
+  if (zoom === 11) return 4;
+  if (zoom === 12) return 5;
+  if (zoom === 13) return 7;
+  if (zoom === 14) return 10;
+  return clamp(Math.round(radio * 0.48), 8, 20);
 }
 
 // 3. Agrupación espacial por cuadrícula según el zoom (Spatial Clustering)
@@ -286,11 +544,14 @@ function agruparReportesPorZoom(reportes, zoom) {
     return { puntos: [], maxPeso: 1 };
   }
 
-  // Paso angular adaptativo en grados según el zoom:
-  // Zoom 11: ~0.002° (~200m)
-  // Zoom 14: ~0.0006° (~60m)
-  // Zoom >= 16: ~0.0001° (~10m)
-  const pasoGrados = Math.max(0.0001, 0.003 / Math.pow(1.5, zoom - 10));
+  // Cuadrícula compacta calibrada para mantener focos independientes por manzana / cruce vial
+  // (evita que focos a 100m se unan en una sola mancha, manteniendo focos múltiples definidos):
+  const pasoGrados = zoom <= 11
+    ? 0.00075 // ~80m
+    : zoom <= 13
+      ? 0.0005  // ~55m
+      : Math.max(0.00008, 0.0025 / Math.pow(1.55, zoom - 10));
+
   const celdas = new Map();
 
   for (const r of reportes) {
@@ -321,43 +582,60 @@ function agruparReportesPorZoom(reportes, zoom) {
   const puntos = [];
 
   for (const c of celdas.values()) {
-    if (c.pesoTotal > maxPeso) {
-      maxPeso = c.pesoTotal;
+    // Al hacer zoom out (<= 12), suavizamos el peso acumulado para que un grupo denso
+    // no desborde con una mancha masiva
+    let pesoAjustado = c.pesoTotal;
+    if (zoom <= 12) {
+      pesoAjustado = Math.min(c.pesoTotal, 3 + Math.log2(c.conteo + 1) * 3);
+    }
+
+    if (pesoAjustado > maxPeso) {
+      maxPeso = pesoAjustado;
     }
     puntos.push([
       c.latPonderada / c.pesoTotal,
       c.lngPonderada / c.pesoTotal,
-      c.pesoTotal,
+      pesoAjustado,
     ]);
   }
 
   return { puntos, maxPeso };
 }
 
-// 2. Intensidad normalizada y cálculo dinámico de max
-function calcularMaxCalor(maxPeso) {
+// 2. Intensidad normalizada y cálculo dinámico de max según el nivel de zoom
+function calcularMaxCalor(maxPeso, zoom = 14) {
   const factorSensibilidad = Number(controlesCalor.sensibilidad?.value || 6);
-  // Con max entre 4 y 7:
-  // 1 reporte (peso 1) -> 1 / 5 = 0.20 (amarillo suave)
-  // 2 reportes (peso 2-3) -> 2 / 5 = 0.40 (amarillo cálido, sin rojo)
-  // 4+ reportes (peso 6+) -> saturación hacia rojo (> 0.8)
-  const base = Math.max(4, Math.round(maxPeso * 0.85));
-  return Math.max(3, base + (6 - factorSensibilidad));
+
+  // A zoom cercano (>= 15), los puntos se dispersan en la pantalla a escala de cuadra.
+  // Reducimos el umbral 'max' para que 1 solo reporte aislado (peso 1.5) tenga un halo
+  // visible y reconocible, y un grupo pequeño (2-3) pase a naranja/rojo.
+  let base;
+  if (zoom >= 16) {
+    base = Math.min(3.8, Math.max(2.4, maxPeso * 0.35));
+  } else if (zoom >= 14) {
+    base = Math.min(5.5, Math.max(3.5, maxPeso * 0.6));
+  } else {
+    base = Math.max(8, Math.round(maxPeso * 1.08));
+  }
+
+  return Math.max(2.0, base + (6 - factorSensibilidad) * 0.4);
 }
 
 function crearCapaCalor() {
   return L.heatLayer([], {
-    radius: 18,
-    blur: 12,
-    minOpacity: 0.35,
-    max: 5,
+    radius: 12,
+    blur: 6,
+    minOpacity: 0.12,
+    max: 6,
     maxZoom: 18,
     gradient: {
-      0.15: "#fef08a",
-      0.38: "#facc15",
-      0.62: "#fb923c",
-      0.82: "#ef4444",
-      1.00: "#7f1d1d",
+      0.0: "rgba(0, 0, 0, 0)",
+      0.08: "rgba(254, 240, 138, 0.45)",
+      0.22: "#fde047",
+      0.45: "#fb923c",
+      0.68: "#ef4444",
+      0.85: "#c026d3",
+      1.00: "#701a75",
     },
   });
 }
@@ -489,8 +767,10 @@ function crearContenidoPopup(reporte) {
 }
 
 function obtenerPesoCriticidad(reporte) {
-  const nivel = reporte.criticidad.nivel.toLowerCase();
-  return nivel === "alto" ? 3 : nivel === "medio" ? 2 : 1;
+  const nivel = reporte.criticidad?.nivel?.toLowerCase() || "";
+  // Ponderación base de 1.5 para que reportes de criticidad 'Bajo' tengan presencia
+  // visible al hacer zoom in, evitando que se vuelvan transparentes.
+  return nivel === "alto" ? 3.2 : nivel === "medio" ? 2.2 : 1.5;
 }
 
 // Interpola entre los colores de la paleta para una intensidad relativa.
@@ -568,13 +848,17 @@ function actualizarCapaCalorDinamica() {
   const blur = calcularBlurPorZoom(radio, zoom);
 
   const { puntos, maxPeso } = agruparReportesPorZoom(reportesEnMapa, zoom);
-  const maxNormalizado = calcularMaxCalor(maxPeso);
+  const maxNormalizado = calcularMaxCalor(maxPeso, zoom);
+  // A zoom bajo (<= 12) minOpacity muy bajo para no crear niebla gigante.
+  // A zoom cercano (>= 15) minOpacity de 0.22 para que todo reporte individual
+  // tenga un halo cálido luminoso y visible.
+  const minOpacity = zoom <= 12 ? 0.05 : zoom <= 14 ? 0.12 : 0.22;
 
   capaCalor.setOptions({
     radius: radio,
     blur: blur,
     max: maxNormalizado,
-    minOpacity: 0.35,
+    minOpacity: minOpacity,
     gradient: obtenerGradienteCalor(),
   });
 
@@ -706,10 +990,12 @@ function actualizarPaleta() {
   if (mapaTablero.hasLayer(capaCalor)) {
     capaCalor.setOptions({ gradient: obtenerGradienteCalor() });
   }
-  document.querySelector(".leyenda-criticidad__degradado").style.setProperty(
-    "--degradado-calor",
-    `linear-gradient(to right, ${pasos.join(", ")})`,
-  );
+  document.querySelectorAll(".leyenda-criticidad__degradado").forEach((barra) => {
+    barra.style.setProperty(
+      "--degradado-calor",
+      `linear-gradient(to right, ${pasos.join(", ")})`,
+    );
+  });
   aplicarCapas();
 }
 
@@ -722,15 +1008,30 @@ function actualizarAjustesCalor() {
 
 function obtenerGradienteCalor() {
   if (paletaSeleccionada === "serena") {
+    // Inspirada en mapas urbanos de densidad GIS:
+    // Comienza en 0.08 para que puntos aislados muestren halo dorado/amarillo visible
     return {
-      0.15: "#fef08a",
-      0.38: "#facc15",
-      0.62: "#fb923c",
-      0.82: "#ef4444",
-      1.00: "#7f1d1d",
+      0.0: "rgba(0, 0, 0, 0)",
+      0.08: "rgba(254, 240, 138, 0.45)",
+      0.22: "#fde047",
+      0.45: "#fb923c",
+      0.68: "#ef4444",
+      0.85: "#c026d3",
+      1.00: "#701a75",
     };
   }
-  const colores = PALETAS_CALOR[paletaSeleccionada];
+  if (paletaSeleccionada === "termica") {
+    // Inspirada en el mapa térmico urbano Reno / Sparks:
+    return {
+      0.0: "rgba(0, 0, 0, 0)",
+      0.08: "rgba(56, 189, 248, 0.5)",
+      0.25: "#fef08a",
+      0.50: "#fb923c",
+      0.78: "#ef4444",
+      1.00: "#991b1b",
+    };
+  }
+  const colores = PALETAS_CALOR[paletaSeleccionada] || PALETAS_CALOR.serena;
   return Object.fromEntries(
     colores.map((color, indice) => [indice / (colores.length - 1), color]),
   );
@@ -778,6 +1079,16 @@ function activarCapas() {
     }
 
     mapaTablero.invalidateSize();
+    try {
+      if (capaBordeTablero) {
+        const bounds = capaBordeTablero.getBounds();
+        if (bounds.isValid()) {
+          mapaTablero.fitBounds(bounds, { padding: [20, 20], maxZoom: 14 });
+        }
+      }
+    } catch {
+      // Ignorar si ya está ajustado
+    }
     aplicarCapas();
     dibujar(reportesDelTablero);
   });
@@ -798,13 +1109,18 @@ function inicializarMapas() {
   const resCaptura = crearMapa(mapaCapturaElemento, {
     center: [11.232, -74.195],
     zoom: 15,
+    ajustarBounds: false,
   });
   mapaCaptura = resCaptura.mapa;
   capaBaseCaptura = resCaptura.capaBase;
+  capaBordeCaptura = resCaptura.capaBorde;
 
-  const resTablero = crearMapa(mapaTableroElemento);
+  const resTablero = crearMapa(mapaTableroElemento, {
+    ajustarBounds: false,
+  });
   mapaTablero = resTablero.mapa;
   capaBaseTablero = resTablero.capaBase;
+  capaBordeTablero = resTablero.capaBorde;
 
   capaCalor = crearCapaCalor();
   capaPuntos = L.layerGroup();
@@ -815,6 +1131,13 @@ function inicializarMapas() {
   setModo("una");
   actualizarAjustesCalor();
   actualizarPaleta();
+
+  window.addEventListener("tema:cambiado", () => {
+    actualizarEstilosPerimetro();
+  });
+
+  // Carga asíncrona desde disco (santa-marta-perimetro.geojson) si se ejecuta en servidor web
+  cargarArchivoPerimetroGeoJSON();
 
   // Escuchar eventos de zoom y paneo para recalcular proporcionalidad del mapa de calor
   mapaTablero.on("zoomend", () => programarActualizacionCalor(true));
@@ -895,6 +1218,15 @@ function inicializarMapas() {
 
   setTimeout(() => {
     mapaCaptura?.invalidateSize();
+    if (mapaTablero && mapaTableroElemento.offsetWidth > 50) {
+      mapaTablero.invalidateSize();
+      if (capaBordeTablero) {
+        const bounds = capaBordeTablero.getBounds();
+        if (bounds.isValid()) {
+          mapaTablero.fitBounds(bounds, { padding: [20, 20], maxZoom: 14 });
+        }
+      }
+    }
   }, 100);
 }
 

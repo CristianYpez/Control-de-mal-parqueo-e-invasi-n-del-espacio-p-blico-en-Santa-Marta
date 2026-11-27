@@ -1794,6 +1794,16 @@ main {
   min-height: 560px;
 }
 
+/* Borde perimetral discontinuo de Santa Marta (estilo GIS / Reno-Sparks) */
+.perimetro-borde-urbano {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.45));
+}
+
+[data-theme="light"] .perimetro-borde-urbano,
+[data-tema="claro"] .perimetro-borde-urbano {
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.65));
+}
+
 .panel-capas-mapa {
   position: absolute;
   z-index: 1100;
@@ -2001,6 +2011,15 @@ main {
   font-size: 0.75rem;
 }
 
+.fila-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 .leyenda-criticidad {
   display: flex;
   align-items: center;
@@ -2014,7 +2033,116 @@ main {
   width: min(16rem, 55%);
   height: 0.65rem;
   border-radius: 999px;
-  background: var(--degradado-calor, linear-gradient(to right, #fff9c4, #ffee58, #ffb300, #f4511e, #7f0000));
+  background: var(--degradado-calor, linear-gradient(to right, #fde047, #facc15, #fb923c, #ef4444, #c026d3, #701a75));
+}
+
+/* Leyenda en la cabecera del mapa (arriba del lienzo, siempre visible) */
+.leyenda-criticidad--cabecera {
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--surface-2, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--texto-secundario);
+}
+
+.leyenda-criticidad--cabecera .leyenda-criticidad__degradado {
+  width: 7.5rem;
+  height: 0.55rem;
+}
+
+/* Leyenda flotante HUD fija directamente sobre el mapa (estilo GIS Reno/Sparks) */
+.leyenda-mapa-flotante {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.8rem;
+  background: var(--mapa-panel, rgba(15, 23, 42, 0.9));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.14));
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--texto-secundario);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.leyenda-mapa-flotante__titulo {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--texto);
+}
+
+.leyenda-mapa-flotante .leyenda-criticidad__degradado {
+  width: 7rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="light"] .leyenda-mapa-flotante,
+[data-tema="claro"] .leyenda-mapa-flotante {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  color: #475569;
+}
+
+[data-theme="light"] .leyenda-criticidad--cabecera,
+[data-tema="claro"] .leyenda-criticidad--cabecera {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #475569;
+}
+
+/* Pie de información del mapa en una sola fila compacta */
+.pie-info-mapa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.55rem;
+  padding: 0 0.2rem;
+}
+
+.textos-estado-mapa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.textos-estado-mapa p {
+  margin: 0;
+}
+
+@media (max-width: 48rem) {
+  .leyenda-mapa-flotante {
+    top: auto;
+    bottom: 3.8rem;
+    right: 0.5rem;
+    padding: 0.35rem 0.65rem;
+  }
+  .leyenda-mapa-flotante .leyenda-criticidad__degradado {
+    width: 5rem;
+  }
+  .leyenda-mapa-flotante__titulo {
+    display: none;
+  }
 }
 
 .columna-resumen {
@@ -3948,7 +4076,7 @@ main {
   margin-bottom: 4px !important;
 }
 
-/* Modo Oscuro estilizado para mapas OpenStreetMap (100% libre, sin marcas de agua ni API Key) */
+/* Estilo escala de grises oscuro para OpenStreetMap (100% libre, sin API key ni marcas de agua) */
 :root:not([data-theme="light"]):not([data-tema="claro"]) .leaflet-tile-pane,
 [data-tema="oscuro"] .leaflet-tile-pane {
   filter: brightness(0.6) invert(1) contrast(2.8) hue-rotate(200deg) saturate(0.28) brightness(0.75);
