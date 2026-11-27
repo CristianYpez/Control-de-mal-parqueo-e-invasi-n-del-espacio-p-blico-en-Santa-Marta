@@ -115,25 +115,25 @@ Siguiendo la exigencia del Reto No. 2, se documentan fallos reales presentados p
 
 * **Evidencia visual (Antes y Después):**
 
-  #### Antes: Mancha masiva desproporcionada en Zoom-Out
-  Al alejar el mapa, la falta de calibración dinámica creaba una mancha térmica gigantesca y desbordada sobre Santa Marta:
+  #### 1. Antes: Mancha masiva desproporcionada en Zoom-Out
+  Al alejar el mapa ($\text{zoom} \le 12$), la falta de calibración dinámica creaba una mancha térmica gigantesca y desbordada sobre Santa Marta:
   
   ![Antes: Mancha gigante de calor en zoom out](img/calor_zoom_out_antes.jpg)
 
-  #### Antes: Puntos saturados e imprecisos en Zoom-In
-  Al acercar el mapa, los puntos individuales saturaban de inmediato a tonos morados continuos sin respetar la escala de la manzana vial:
+  #### 2. Antes: Puntos individuales no se alcanzaban a ver en Zoom-In
+  Al acercar el mapa ($\text{zoom} \ge 15$), los puntos individuales no se alcanzaban a distinguir; la capa condensaba una sola masa central en Villa Marbella y los reportes aislados de las demás calles desaparecían de la vista:
   
-  ![Antes: Puntos saturados en zoom in](img/calor_zoom_in_puntos.jpg)
+  ![Antes: Puntos individuales no se distinguen en zoom in](img/calor_zoom_in_antes.jpg)
 
-  #### Fallo intermedio en el chat: Bloqueo de teselas por API Key de CartoDB
-  Durante el intento de cambiar el fondo a escala de grises, se introdujo CartoDB sin contemplar que ahora exige API Key de pago, bloqueando el mapa:
+  #### 3. Fallo intermedio en el chat: Bloqueo de teselas por API Key de CartoDB
+  Durante el intento de cambiar el fondo a escala de grises, la IA introdujo el servicio de CartoDB sin advertir que ahora exige API Key de pago, cubriendo todo el mapa con marcas de agua de *"API KEY REQUIRED"*:
   
   ![Fallo intermedio: Marca de agua API Key en Carto](img/fallo_carto_apikey.jpg)
 
-  #### Después: Mapa de calor dinámico calibrado, proporcional y sin marcas de agua
-  Resultado final tras la resolución guiada por el chat: núcleos concéntricos nítidos por sector (Av. Ferrocarril, Unimagdalena y Calle 30), halos proporcionados a la calzada y mapa base OpenStreetMap con filtro oscuro nativo:
+  #### 4. Después (Última foto): Resultado final calibrado con puntos y focos visibles en Zoom-In
+  Resultado final alcanzado en el chat: cada reporte individual en las calles tiene ahora presencia visual nítida con sus propios halos concéntricos, respetando la escala de la vía, sin saturar la cuadra y sobre OpenStreetMap monocromático libre de marcas de agua:
   
-  ![Después: Mapa de calor adaptativo por zoom con sectores delimitados](img/calor_calibrado_despues.jpg)
+  ![Después (Última foto): Puntos individuales y focos concéntricos claramente visibles](img/calor_resultado_final.jpg)
 
 * **Cómo se resolvió mediante el chat con la IA:**  
   La solución definitiva requirió una reingeniería matemática y algorítmica en [mapa.js](file:///c:/Users/User/OneDrive/Desktop/proyecto_parqueo/mapa.js) implementada en 5 pasos coordinados:
