@@ -116,24 +116,24 @@ Siguiendo la exigencia del Reto No. 2, se documentan fallos reales presentados p
 * **Evidencia visual (Antes y Después):**
 
   #### 1. Antes: Mancha masiva desproporcionada en Zoom-Out
-  Al alejar el mapa ($\text{zoom} \le 12$), la falta de calibración dinámica creaba una mancha térmica gigantesca y desbordada sobre Santa Marta:
+  Al alejar el mapa ($\text{zoom} \le 12$), la falta de calibración dinámica creaba una masa térmica gigantesca y desbordada sobre Santa Marta, cubriendo la bahía y cerros sin distinguir focos de criticidad:
   
   ![Antes: Mancha gigante de calor en zoom out](img/calor_zoom_out_antes.jpg)
 
-  #### 2. Antes: Puntos individuales no se alcanzaban a ver en Zoom-In
-  Al acercar el mapa ($\text{zoom} \ge 15$), los puntos individuales no se alcanzaban a distinguir; la capa condensaba una sola masa central en Villa Marbella y los reportes aislados de las demás calles desaparecían de la vista:
-  
-  ![Antes: Puntos individuales no se distinguen en zoom in](img/calor_zoom_in_antes.jpg)
-
-  #### 3. Fallo intermedio en el chat: Bloqueo de teselas por API Key de CartoDB
+  #### 2. Fallo intermedio en el chat: Bloqueo de teselas por API Key de CartoDB
   Durante el intento de cambiar el fondo a escala de grises, la IA introdujo el servicio de CartoDB sin advertir que ahora exige API Key de pago, cubriendo todo el mapa con marcas de agua de *"API KEY REQUIRED"*:
   
   ![Fallo intermedio: Marca de agua API Key en Carto](img/fallo_carto_apikey.jpg)
 
-  #### 4. Después (Última foto): Resultado final calibrado con puntos y focos visibles en Zoom-In
-  Resultado final alcanzado en el chat: cada reporte individual en las calles tiene ahora presencia visual nítida con sus propios halos concéntricos, respetando la escala de la vía, sin saturar la cuadra y sobre OpenStreetMap monocromático libre de marcas de agua:
+  #### 3. Ahora (Resultado calibrado por sector): Focos concéntricos independientes
+  Resultado actual del sistema a escala de sector: núcleos concéntricos diferenciados en Villa Marbella, Portal Universitario, Av. Ferrocarril y Calle 30, respetando el entorno urbano sin desbordarse:
   
-  ![Después (Última foto): Puntos individuales y focos concéntricos claramente visibles](img/calor_resultado_final.jpg)
+  ![Ahora: Focos de calor independientes y calibrados por sector](img/calor_sector_ahora.jpg)
+
+  #### 4. Ahora (Última foto a nivel de calle): Detalle en Zoom-In con puntos individuales
+  Resultado final a escala de calle alcanzado en el chat: al acercar el mapa, cada reporte individual tiene presencia visual nítida con sus propios halos concéntricos, respetando el ancho de la calzada, sin saturar la cuadra y sobre OpenStreetMap monocromático libre de marcas de agua:
+  
+  ![Ahora (Última foto): Detalle a nivel de calle con puntos individuales y halos definidos](img/calor_zoom_in_ahora.jpg)
 
 * **Cómo se resolvió mediante el chat con la IA:**  
   La solución definitiva requirió una reingeniería matemática y algorítmica en [mapa.js](file:///c:/Users/User/OneDrive/Desktop/proyecto_parqueo/mapa.js) implementada en 5 pasos coordinados:
