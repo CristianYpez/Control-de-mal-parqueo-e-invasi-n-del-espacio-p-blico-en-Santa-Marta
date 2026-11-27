@@ -108,14 +108,15 @@ flowchart TD
 | `index.html` | Estructura semántica HTML5, vistas de captura, tablero, visor modal y gráficas. |
 | `styles.css` | Sistema de diseño oscuro SaaS, tokens CSS `:root`, layouts Grid y Flexbox responsivos. |
 | `captura.js` | Controlador de formulario, censura en canvas, filtros reactivos, scroll infinito e importación. |
-| `mapa.js` | Mapas Leaflet, polígono de cobertura, mapa de calor dinámico y centrado animado. |
+| `mapa.js` | Mapas Leaflet, capa GeoJSON del perímetro, mapa de calor dinámico y validación espacial con Turf.js. |
 | `criticidad.js` | Función pura de cálculo de severidad y puntaje ponderado. |
 | `cuadras.js` | Detección geométrica del tramo vial más cercano (< 30 m). |
 | `filtros.js` | Normalización y filtrado multidimensional de reportes. |
 | `resumen.js` | Agrupación analítica por cuadra y asignación de reglas de recomendación. |
+| `santa-marta-perimetro.geojson` | Límite geográfico oficial detallado de la zona urbana de Santa Marta (73 vértices). |
 | `logo/` | Identidad institucional de la Universidad del Magdalena. |
-| `datos/` | Datasets JSON (`reportes.json`, `vias.json`, `criterios.json`) y fotos censuradas. |
-| `documentos/` | Anexo de evidencia de campo, bitácora de ingeniería con IA y arquitectura. |
+| `datos/` | Datasets JSON (`reportes.json`, `vias.json`, `criterios.json`), perímetro GeoJSON y fotos censuradas. |
+| `documentos/` | Documento del proyecto (`Santa Marta en orden.md`), anexo de campo, bitácora y arquitectura. |
 
 ---
 

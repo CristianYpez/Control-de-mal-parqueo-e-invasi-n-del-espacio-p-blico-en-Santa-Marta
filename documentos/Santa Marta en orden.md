@@ -163,22 +163,82 @@ Barras comparativas por cuadra, categoría, actor, franja, criticidad y día.
 
 Importa y exporta reportes en JSON e imprime el resumen.
 
-Tecnología
+Tecnología y Arquitectura
 
-## Una app web estática, sin servidor
+## Una app web estática, modular y sin servidor
 
-HTMLCSSJavaScriptLeafletLeaflet.heatOpenStreetMapPhotonlocalStorage
+Stack tecnológico: HTML5 · CSS3 · JavaScript (ES6+ Modules) · Leaflet · Leaflet.heat · Turf.js · Chart.js · OpenStreetMap · Photon · localStorage
 
-Se ejecuta con cualquier servidor estático. Los mapas necesitan conexión a internet.
+Se ejecuta con cualquier servidor estático (como Live Server o GitHub Pages). Los mapas base y la geocodificación requieren conexión a internet; la lógica analítica, el mapa de calor y el almacenamiento operan localmente en el navegador.
 
-| Archivo | Propósito |
-| --- | --- |
-| captura.js | Registro, validación, almacenamiento y estadísticas |
-| mapa.js | Mapas, ubicación y capas de reportes |
-| criticidad.js | Puntaje y nivel de criticidad |
-| filtros.js | Filtros y franjas horarias |
-| resumen.js | Agrupación por cuadra y recomendaciones |
-| datos/\*.json | Reportes, vías y criterios |
+---
+
+## Qué hace cada archivo y módulo del proyecto
+
+### 1. Capa de Presentación e Interfaz de Usuario
+
+* **`index.html` (Estructura semántica y vistas de la aplicación):**
+  - Define la interfaz estructurada en tres vistas principales accesibles por pestañas: **Reportar** (formulario de captura rápida en < 30 s), **Tablero** (mapa interactivo de calor, filtros y lista de incidentes) y **Gráficas** (análisis estadístico comparativo).
+  - Aloja el modal interactivo de censura fotográfica (canvas interactivo para pixelado), la leyenda flotante de criticidad en tiempo real, atajos rápidos a sectores representativos de Santa Marta y diálogos accesibles compatibles con estándares WAI-ARIA.
+
+* **`styles.css` (Diseño responsivo, variables y estilos visuales):**
+  - Implementa un sistema de diseño con variables CSS (`--bg-canvas`, `--accent-primary`, etc.) con soporte completo para **modo oscuro nativo** y **modo claro**.
+  - Incluye efectos visuales de desenfoque de fondo (*glassmorphism*), animaciones de radar en el pin de captura y adaptación fluida a pantallas móviles, tabletas y computadores de escritorio.
+  - Aplica un filtro monocromático optimizado a las teselas de OpenStreetMap en modo oscuro para lograr una estética limpia tipo GIS sin depender de servicios externos con marcas de agua.
+
+---
+
+### 2. Módulos de Lógica del Sistema (JavaScript ES6+)
+
+* **`captura.js` (Controlador central y orquestador del flujo de usuario):**
+  - **Formulario de captura:** Valida datos de entrada (categoría, tipo de actor, fotos, coordenadas y dirección) y emite notificaciones de estado.
+  - **Censura interactiva obligatoria:** Controla el canvas de pixelado de rostros y placas en bloques de 12 px (Ley 1581 de protección de datos personales), bloqueando el envío del reporte hasta que el usuario confirme que no existen datos sensibles visibles.
+  - **Geocodificación inversa automática:** Consulta los servicios de Photon y OpenStreetMap para autocompletar la dirección de la vía a partir de las coordenadas del mapa.
+  - **Scroll infinito progresivo:** Administra la lista de reportes en el tablero mediante un observador de intersección (*IntersectionObserver*), renderizando elementos en lotes de 6 para mantener una navegación fluida y sin bloqueos de memoria.
+  - **Persistencia e importación/exportación:** Lee y guarda en el `localStorage` del navegador, y permite descargar o cargar copias de seguridad en formato JSON evitando registros duplicados.
+
+* **`mapa.js` (Motor cartográfico, mapa de calor y validación espacial):**
+  - **Gestión de mapas duales:** Inicializa y sincroniza los dos mapas Leaflet (el mapa de marcado en la vista de captura y el mapa analítico de calor en el tablero).
+  - **Mapa de calor adaptativo:** Implementa `Leaflet.heat` con calibración dinámica según el zoom (radio de 8 px a 42 px, desenfoque proporcional y agrupación en cuadrícula) para evitar manchas desproporcionadas al alejarse y halos invisibles al acercarse.
+  - **Perímetro urbano y máscara exterior:** Dibuja el polígono oficial de Santa Marta (`L.geoJSON`) con borde blanco discontinuo (`dashArray: "6, 6"`) y proyecta una máscara exterior invertida (*Cookie Cutter*) que atenúa el mar y la sierra para resaltar únicamente la ciudad.
+  - **Validación espacial con Turf.js:** Emplea `turf.booleanPointInPolygon` para verificar que cualquier clic, reporte o punto del mapa de calor se ubique estrictamente dentro de la zona urbana autorizada de Santa Marta.
+
+* **`criticidad.js` (Algoritmo de cálculo de severidad e índice de riesgo):**
+  - Calcula de manera transparente un puntaje entero entre **2 y 9 puntos** para cada incidente.
+  - Aplica la fórmula ponderada de tres dimensiones configuradas en `criterios.json`:
+    1. **Gravedad de la infracción:** Doble fila (3 pts), invasión de andén (3 pts), rampa/cebra (2 pts).
+    2. **Tipo de vía:** Vía arterial/principal (3 pts), vía secundaria/colectora (1 pt).
+    3. **Franja horaria:** Hora pico (3 pts), hora valle (1 pt).
+  - Clasifica el resultado en tres niveles de alerta: **Bajo (2–4 pts)**, **Medio (5–7 pts)** y **Alto (8–9 pts)**.
+
+* **`cuadras.js` (Geometría espacial y asignación de tramos viales):**
+  - Implementa un algoritmo geométrico de distancia perpendicular punto-a-segmento para asociar automáticamente las coordenadas de un reporte con el tramo vial más cercano (< 30 m) registrado en `vias.json`.
+  - Si el reporte se ubica fuera de los corredores mapeados, se le asigna la etiqueta "Fuera de la zona" aportando 0 puntos al componente de tipo de vía.
+
+* **`filtros.js` (Motor de filtrado reactivo multidimensional):**
+  - Permite filtrar instantáneamente el conjunto de reportes por dirección/sector, franja horaria (mañana, tarde, noche, horas pico), situación de mal parqueo y tipo de actor vial (particular, moto, carga, comercial).
+  - Emite eventos desacoplados para actualizar simultáneamente las tarjetas del tablero, el mapa de calor y las gráficas analíticas.
+
+* **`resumen.js` (Agregación territorial y recomendaciones operativas):**
+  - Agrupa los reportes filtrados por cuadra o intersección y totaliza los puntajes de criticidad acumulados.
+  - Genera automáticamente el **Top 5 de ubicaciones críticas prioritarias** con recomendaciones operativas derivadas de reglas explícitas (por ejemplo, operativos de grúa para doble fila, horarios de descargue comercial o despeje de andenes).
+
+---
+
+### 3. Capa de Datos y Geometría Espacial
+
+* **`santa-marta-perimetro.geojson` (Límite Urbano Oficial):**
+  - Archivo en formato estándar GeoJSON (`FeatureCollection`) que contiene el polígono de **73 vértices detallados** de la zona urbana de Santa Marta.
+  - Traza la silueta real de la línea de costa (Taganga, Bahía de Santa Marta, El Rodadero, Pozos Colorados), el corredor oriental hacia Bonda y el límite suroriental en el pie de monte, excluyendo el mar y las áreas rurales de la Sierra Nevada.
+
+* **`datos/vias.json` (Malla de corredores y tramos viales):**
+  - Catálogo geoespacial con los tramos viales caracterizados en campo, incluyendo sus coordenadas de inicio y fin (`lat`, `lng`), nombre de la vía, sentido y jerarquía (arterial o secundaria).
+
+* **`datos/criterios.json` (Reglas normativas y parámetros de evaluación):**
+  - Almacena las ponderaciones de cada categoría de mal parqueo, la definición horaria exacta de las horas pico de Santa Marta y los rangos de puntaje para los niveles de criticidad.
+
+* **`datos/reportes.json` (Base de datos de campo inicial):**
+  - Contiene los 30 registros reales recopilados durante el levantamiento en terreno, con sus coordenadas, estampas de tiempo, tipo de actor vial, fotografías con censura aplicada y evaluaciones calculadas.
 
 Alcance
 
